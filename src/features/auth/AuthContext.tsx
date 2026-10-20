@@ -106,7 +106,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Adresse e-mail ou mot de passe incorrect.' : error.message);
     // Profil chargé avant la redirection, sinon les pages protégées renverraient vers /connexion.
-    setProfile(await loadProfile(data.user.id).catch(() => null));
+    let loaded: Profile | null;
+    try {
+      loaded = await loadProfile(data.user.id);
+    } catch (e) {
+      const detail = e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : String(e);
+      throw new Error(`Mot de passe accepté, mais le profil n’a pas pu être lu : ${detail}`);
+    }
+    if (!loaded) throw new Error('Mot de passe accepté, mais aucun profil n’existe pour ce compte.');
+    setProfile(loaded);
   }, []);
 
   const signInDemo = useCallback((role: RoleKey) => {

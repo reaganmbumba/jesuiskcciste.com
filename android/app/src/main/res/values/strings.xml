@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">JE SUIS KCCiste</string>
+    <string name="title_activity_main">JE SUIS KCCiste</string>
+    <string name="package_name">com.jesuiskcciste.connect</string>
+    <string name="custom_url_scheme">com.jesuiskcciste.connect</string>
+</resources>

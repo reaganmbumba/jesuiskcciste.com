@@ -1,0 +1,242 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight, BookOpen, CalendarDays, Church, Globe2, GraduationCap, HandHeart, Music2, Sparkles, Users } from 'lucide-react';
+import { useI18n } from '@/i18n';
+import { useAuth } from '@/features/auth/AuthContext';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useAsync } from '@/hooks/useAsync';
+import { coursesRepo, getCommunityStats, listPublishedAnnouncements, listUpcomingEvents, parishesRepo, projectsRepo } from '@/services';
+import { HeroBackdrop } from '@/components/common/HeroBackdrop';
+import { ButtonLink } from '@/components/ui/Button';
+import { SectionHeading } from '@/components/ui/Misc';
+import { DemoBadge } from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Spinner';
+import { EmptyState, ErrorState } from '@/components/ui/States';
+import { AnnouncementCard, CourseCard, EventCard, ProjectCard } from '@/components/cards/Cards';
+import { formatDate, formatNumber, formatTime } from '@/utils/format';
+
+const SERVICES = [
+  { title: 'Les membres', text: 'Un annuaire respectueux de la vie privée pour se retrouver, où que l’on soit.', to: '/communaute/annuaire', icon: Users },
+  { title: 'Les formations', text: 'L’Académie KCC : parcours, examens et certificats vérifiables.', to: '/academie', icon: GraduationCap },
+  { title: 'Les activités', text: 'Cultes, réunions, séminaires et rassemblements dans un agenda commun.', to: '/agenda', icon: CalendarDays },
+  { title: 'KCC Music', text: 'Chants, albums, chorales et artistes, dans le respect des droits.', to: '/musique', icon: Music2 },
+  { title: 'La solidarité', text: 'Des projets transparents, suivis et documentés, au service de tous.', to: '/solidarite', icon: HandHeart },
+  { title: 'Les paroisses', text: 'Les paroisses et leurs sections, en RD Congo et dans la diaspora.', to: '/paroisses', icon: Church },
+];
+
+export default function HomePage() {
+  const { t, locale } = useI18n();
+  const { profile } = useAuth();
+  const { settings } = useSiteSettings();
+  const signedIn = !!profile;
+
+  const stats = useAsync(getCommunityStats, []);
+  const anns = useAsync(() => listPublishedAnnouncements({ signedIn, limit: 3 }), [signedIn]);
+  const events = useAsync(() => Promise.all([listUpcomingEvents({ signedIn, limit: 4 }), parishesRepo.all()]), [signedIn]);
+  const courses = useAsync(async () => (await coursesRepo.all()).filter((c) => c.status === 'published').slice(0, 3), []);
+  const projects = useAsync(async () => (await projectsRepo.all()).filter((p) => p.status === 'active').slice(0, 3), []);
+  const next = events.data?.[0][0];
+
+  const statItems = stats.data
+    ? [
+        { label: t('home.stats.countries'), value: stats.data.stats.countries, icon: Globe2 },
+        { label: t('home.stats.parishes'), value: stats.data.stats.parishes, icon: Church },
+        { label: t('home.stats.members'), value: stats.data.stats.members, icon: Users },
+        { label: t('home.stats.courses'), value: stats.data.stats.courses, icon: BookOpen },
+        { label: t('home.stats.events'), value: stats.data.stats.events, icon: CalendarDays },
+      ]
+    : [];
+
+  return (
+    <>
+      {/* HERO */}
+      <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden bg-night-950 pb-36 pt-32 text-white sm:pb-40">
+        <HeroBackdrop src={settings.heroImageUrl} />
+        <div className="container-page relative grid items-center gap-12 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <p className="mb-7 inline-flex animate-fade-up items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] py-1.5 pl-1.5 pr-4 text-xs font-medium text-white/80 backdrop-blur-md">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-gold-300 to-gold-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-night">
+                <Sparkles className="h-3 w-3" aria-hidden /> KCC
+              </span>
+              La communauté KCCiste, partout dans le monde
+            </p>
+            <h1 className="animate-fade-up font-display text-[3rem] font-medium leading-[0.98] tracking-[-0.03em] [animation-delay:80ms] sm:text-7xl lg:text-[5.6rem]">
+              Un seul peuple.<br />
+              <span className="animate-shimmer italic text-gold-gradient">Une même communauté.</span>
+            </h1>
+            <p className="mt-7 max-w-xl animate-fade-up text-lg leading-relaxed text-white/70 [animation-delay:160ms] sm:text-xl">{t('hero.subtitle')}</p>
+            <div className="mt-10 flex animate-fade-up flex-col gap-3 [animation-delay:240ms] sm:flex-row">
+              <ButtonLink to={signedIn ? '/espace' : '/inscription'} variant="gold" size="lg" icon={<Users className="h-5 w-5" />}>{signedIn ? t('nav.mySpace') : t('hero.join')}</ButtonLink>
+              <ButtonLink to="/agenda" variant="light" size="lg" className="group">{t('hero.discover')} <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" /></ButtonLink>
+            </div>
+            <ul className="mt-12 flex animate-fade-up flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/55 [animation-delay:320ms]">
+              {['RD Congo & diaspora', 'Académie et certificats', 'Français · Lingala · Português · English'].map((x) => (
+                <li key={x} className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-gold shadow-glow" aria-hidden />{x}</li>
+              ))}
+            </ul>
+          </div>
+          {next && (
+            <aside className="relative lg:col-span-5 lg:pl-6" aria-label="Prochain rendez-vous">
+              <div className="pointer-events-none absolute -inset-6 hidden rounded-[2.5rem] bg-gradient-to-br from-gold/20 via-transparent to-transparent blur-2xl lg:block" aria-hidden />
+              <Link to={`/agenda/${next.id}`} className="group relative block animate-fade-up overflow-hidden rounded-3xl glass p-6 transition duration-500 [animation-delay:300ms] hover:border-gold/30 hover:bg-white/[0.09] sm:p-7 lg:animate-float">
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold-200">
+                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-70" /><span className="relative inline-flex h-2 w-2 rounded-full bg-gold" /></span>
+                    Prochain rendez-vous
+                  </p>
+                  <CalendarDays className="h-5 w-5 text-white/40" aria-hidden />
+                </div>
+                <div className="mt-6 flex items-start gap-5">
+                  <div className="flex w-20 shrink-0 flex-col items-center rounded-2xl bg-gradient-to-b from-gold-300 to-gold-500 py-3 text-night shadow-glow">
+                    <span className="text-[11px] font-bold uppercase tracking-wider">{formatDate(next.startsAt, locale, { month: 'short' }, next.timezone)}</span>
+                    <span className="font-display text-4xl font-medium leading-none">{formatDate(next.startsAt, locale, { day: '2-digit' }, next.timezone)}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display text-2xl font-medium leading-snug">{next.title}</p>
+                    <p className="mt-2 text-sm capitalize text-white/65">{formatDate(next.startsAt, locale, { weekday: 'long' }, next.timezone)} · {formatTime(next.startsAt, locale, next.timezone)}</p>
+                    <p className="text-sm text-white/45">{next.location}</p>
+                  </div>
+                </div>
+                <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5">
+                  <span className="text-sm font-semibold text-white">Voir l’événement</span>
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-night transition group-hover:bg-gold"><ArrowRight className="h-4 w-4 transition group-hover:-rotate-45" /></span>
+                </div>
+              </Link>
+            </aside>
+          )}
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-night-950/60" aria-hidden />
+      </section>
+
+      {/* INDICATEURS */}
+      <section className="relative z-10 -mt-24 sm:-mt-28" aria-labelledby="stats-title">
+        <div className="container-page">
+          <div className="relative overflow-hidden rounded-[2rem] border border-night/[0.04] bg-white p-5 shadow-lift sm:p-8">
+            <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
+            <div className="relative mb-6 flex flex-wrap items-center justify-between gap-2">
+              <h2 id="stats-title" className="font-display text-2xl font-medium text-night">{t('home.stats.title')}</h2>
+              {stats.data?.isExample && <span className="flex items-center gap-2 text-xs text-ink/55"><DemoBadge /> Valeurs d’exemple, non officielles</span>}
+            </div>
+            {stats.error ? <ErrorState error={stats.error} onRetry={stats.reload} /> : (
+              <dl className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-0 lg:divide-x lg:divide-night/[0.07]">
+                {stats.loading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />) : statItems.map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="group flex items-center gap-3 rounded-2xl bg-mist/80 p-3.5 sm:flex-col sm:items-start lg:items-start last:col-span-2 sm:last:col-span-1 lg:rounded-none lg:bg-transparent lg:px-6 lg:py-1 lg:first:pl-0">
+                    <span className="grid h-10 w-10 place-items-center rounded-xl bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><Icon className="h-5 w-5" aria-hidden /></span>
+                    <div>
+                      <dd className="font-display text-3xl font-medium leading-none tracking-tight text-night sm:text-4xl">{formatNumber(value, locale)}</dd>
+                      <dt className="mt-1.5 text-[13px] leading-tight text-ink/55">{label}</dt>
+                    </div>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* VALEURS */}
+      <div className="relative mt-16 overflow-hidden border-y border-night/[0.06] bg-white py-5" aria-hidden>
+        <div className="flex w-max animate-marquee gap-10 whitespace-nowrap font-display text-2xl italic text-night/70 sm:text-3xl">
+          {[0, 1].map((k) => (
+            <div key={k} className="flex gap-10">
+              {['Foi', 'Unité', 'Formation', 'Louange', 'Solidarité', 'Service', 'Diaspora', 'Espérance'].map((w) => (
+                <span key={w} className="flex items-center gap-10">{w}<Sparkles className="h-5 w-5 text-gold" /></span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SERVICES */}
+      <section className="py-20 sm:py-28" aria-labelledby="services-title">
+        <div className="container-page">
+          <SectionHeading eyebrow="Nos espaces" title={t('home.services.title')} description="Six espaces pensés pour se connecter, apprendre, servir et grandir ensemble." />
+          <h2 id="services-title" className="sr-only">{t('home.services.title')}</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+            {SERVICES.map(({ title, text, to, icon: Icon }, i) => (
+              <Link key={to} to={to} className="group relative isolate flex min-h-[15rem] flex-col overflow-hidden rounded-3xl border border-night/[0.06] bg-white p-7 shadow-soft transition duration-500 hover:-translate-y-1 hover:border-night hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                <div className="absolute inset-0 -z-10 bg-gradient-to-br from-night-700 via-night-800 to-night-950 opacity-0 transition-opacity duration-500 group-hover:opacity-100" aria-hidden />
+                <div className="pointer-events-none absolute -right-16 -top-16 -z-10 h-48 w-48 rounded-full bg-gold/10 blur-2xl transition duration-500 group-hover:scale-150 group-hover:bg-gold/30" aria-hidden />
+                <div className="flex items-start justify-between">
+                  <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 ring-1 ring-inset ring-gold/30 transition duration-500 group-hover:from-gold-300 group-hover:to-gold-500 group-hover:text-night"><Icon className="h-6 w-6" aria-hidden /></span>
+                  <span className="font-display text-sm italic text-ink/30 transition group-hover:text-gold-200/70">0{i + 1}</span>
+                </div>
+                <h3 className="mt-auto pt-8 font-display text-2xl font-medium text-night transition-colors group-hover:text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink/60 transition-colors group-hover:text-white/65">{text}</p>
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-600 transition-colors group-hover:text-gold-300">Découvrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ANNONCES */}
+      <section className="relative bg-white py-20 sm:py-28" aria-labelledby="ann-title">
+        <div className="container-page">
+          <SectionHeading eyebrow="Actualités" title={t('home.announcements.title')} action={<ButtonLink to="/actualites" variant="outline" size="sm">{t('common.seeAll')} <ArrowRight className="h-4 w-4" /></ButtonLink>} />
+          <h2 id="ann-title" className="sr-only">{t('home.announcements.title')}</h2>
+          {anns.error ? <ErrorState error={anns.error} onRetry={anns.reload} /> : anns.loading ? (
+            <div className="grid gap-5 md:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-80" />)}</div>
+          ) : anns.data?.length ? (
+            <div className="grid gap-5 md:grid-cols-3">{anns.data.map((a) => <AnnouncementCard key={a.id} a={a} />)}</div>
+          ) : <EmptyState title="Aucune annonce publiée pour le moment." />}
+        </div>
+      </section>
+
+      {/* ÉVÉNEMENTS + FORMATIONS */}
+      <section className="py-20 sm:py-28">
+        <div className="container-page grid gap-16 lg:grid-cols-2">
+          <div aria-labelledby="evt-title">
+            <SectionHeading eyebrow="Agenda" title={t('home.events.title')} action={<ButtonLink to="/agenda" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
+            <h2 id="evt-title" className="sr-only">{t('home.events.title')}</h2>
+            {events.error ? <ErrorState error={events.error} onRetry={events.reload} /> : events.loading ? (
+              <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-28" />)}</div>
+            ) : events.data?.[0].length ? (
+              <div className="space-y-3">{events.data[0].map((e) => <EventCard key={e.id} e={e} parishes={events.data![1]} />)}</div>
+            ) : <EmptyState title="Aucun événement à venir." />}
+          </div>
+          <div aria-labelledby="crs-title">
+            <SectionHeading eyebrow="Académie KCC" title={t('home.courses.title')} action={<ButtonLink to="/academie/formations" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
+            <h2 id="crs-title" className="sr-only">{t('home.courses.title')}</h2>
+            {courses.loading ? <Skeleton className="h-96" /> : courses.data?.length ? (
+              <div className="grid gap-4 sm:grid-cols-2">{courses.data.slice(0, 2).map((c) => <CourseCard key={c.id} c={c} />)}</div>
+            ) : <EmptyState title="Aucune formation publiée." />}
+          </div>
+        </div>
+      </section>
+
+      {/* SOLIDARITÉ */}
+      <section className="relative isolate overflow-hidden bg-night-950 py-20 text-white sm:py-28" aria-labelledby="sol-title">
+        <div className="pointer-events-none absolute -bottom-40 -left-32 -z-10 h-[32rem] w-[32rem] rounded-full bg-gold/20 blur-[130px]" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 top-0 -z-10 h-96 w-96 rounded-full bg-[#3b5ea8]/25 blur-[120px]" aria-hidden />
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-radial" aria-hidden />
+        <div className="container-page relative">
+          <SectionHeading light eyebrow="Ensemble" title={t('home.solidarity.title')} description="Chaque projet affiche son objectif et les montants confirmés. Les contributions simplement déclarées ne sont pas comptabilisées tant qu’elles ne sont pas vérifiées." action={<ButtonLink to="/solidarite/projets" variant="gold" size="sm">Tous les projets</ButtonLink>} />
+          <h2 id="sol-title" className="sr-only">{t('home.solidarity.title')}</h2>
+          {projects.data?.length ? (
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{projects.data.map((p) => <ProjectCard key={p.id} p={p} dark />)}</div>
+          ) : projects.loading ? <Skeleton className="h-64 bg-white/10" /> : <EmptyState title="Aucun projet actif." />}
+        </div>
+      </section>
+
+      {/* APPEL */}
+      <section className="py-20 sm:py-28">
+        <div className="container-page">
+          <div className="relative isolate overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-gold-200 via-gold-300 to-gold-500 p-8 shadow-lift sm:p-14 lg:p-16">
+            <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full border-[28px] border-white/25" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-32 right-24 -z-10 h-72 w-72 rounded-full bg-white/30 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-noise opacity-[0.08] mix-blend-multiply" aria-hidden />
+            <div className="relative max-w-2xl">
+              <p className="eyebrow mb-4 text-night/70">Bienvenue</p>
+              <h2 className="font-display text-4xl font-medium leading-[1.05] text-night sm:text-5xl">Rejoignez la maison numérique des KCCistes.</h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-night/75 sm:text-lg">Créez votre compte, rattachez-vous à votre paroisse et à votre section, suivez les formations et restez informé des activités de la communauté.</p>
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <ButtonLink to="/inscription" size="lg">{t('hero.join')} <ArrowRight className="h-5 w-5" /></ButtonLink>
+                <ButtonLink to="/a-propos" variant="outline" size="lg" className="border-night/15 bg-white/50 hover:bg-white">À propos de l’Église</ButtonLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

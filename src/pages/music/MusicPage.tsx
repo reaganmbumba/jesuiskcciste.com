@@ -1,0 +1,83 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Disc3, Mic2, Music2, Play, Search, ShoppingBag } from 'lucide-react';
+import { PageHeader } from '@/components/ui/Misc';
+import { Input, Select } from '@/components/ui/Form';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/States';
+import { Skeleton } from '@/components/ui/Spinner';
+import { useAsync } from '@/hooks/useAsync';
+import { albumsRepo, artistsRepo, tracksRepo } from '@/services';
+import { AudioPlayer } from '@/features/music/AudioPlayer';
+import { cn, formatDuration } from '@/utils/format';
+import { CoverArt } from '@/components/cards/Cards';
+
+const RIGHTS = { authorized: { label: 'Diffusion autorisée', tone: 'green' }, pending: { label: 'Autorisation en attente', tone: 'amber' }, restricted: { label: 'Diffusion restreinte', tone: 'red' } } as const;
+
+export default function MusicPage() {
+  const [params] = useSearchParams();
+  const { data, loading } = useAsync(() => Promise.all([tracksRepo.all(), artistsRepo.all(), albumsRepo.all()]), []);
+  const [tracks = [], artists = [], albums = []] = data ?? [];
+  const [q, setQ] = useState('');
+  const [cat, setCat] = useState('');
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  useEffect(() => { const t = params.get('titre'); if (t) setCurrentId(t); }, [params]);
+  const list = useMemo(() => tracks.filter((t) => (!cat || t.category === cat) && (!q || `${t.title} ${t.author} ${artists.find((a) => a.id === t.artistId)?.name}`.toLowerCase().includes(q.toLowerCase()))), [tracks, artists, q, cat]);
+  const current = tracks.find((t) => t.id === currentId) ?? null;
+  const idx = list.findIndex((t) => t.id === currentId);
+  const cats = Array.from(new Set(tracks.map((t) => t.category)));
+
+  return (
+    <div className={current ? 'pb-24' : ''}>
+      <PageHeader eyebrow="Médias" title="KCC Music" description="Chants, albums, chorales et artistes de la communauté, diffusés avec l’autorisation des ayants droit.">
+        <div className="flex flex-wrap gap-3"><Link to="/musique/artistes" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Mic2 className="h-4 w-4" />Artistes et chorales</Link><Link to="/enseignements#pgm" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Music2 className="h-4 w-4" />Vision PGM et paroles</Link></div>
+      </PageHeader>
+      <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px]">
+            <div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" /><Input className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Titre, auteur, chorale…" aria-label="Rechercher un chant" /></div>
+            <Select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Catégorie"><option value="">Toutes les catégories</option>{cats.map((c) => <option key={c}>{c}</option>)}</Select>
+          </div>
+          {loading ? <Skeleton className="h-72" /> : list.length ? (
+            <ol className="overflow-hidden rounded-2xl border border-night/[0.06] bg-white shadow-soft">
+              {list.map((t, i) => {
+                const artist = artists.find((a) => a.id === t.artistId);
+                const r = RIGHTS[t.broadcastRights];
+                return (
+                  <li key={t.id} className={cn('flex items-center gap-3 border-b border-night/[0.05] px-4 py-3 last:border-0', currentId === t.id && 'bg-gold-50')}>
+                    <span className="w-5 text-right text-sm tabular-nums text-ink/40">{i + 1}</span>
+                    <button onClick={() => setCurrentId(t.id)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-night text-gold hover:bg-deep" aria-label={`Écouter ${t.title}`}><Play className="h-4 w-4" /></button>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-night">{t.title}</p>
+                      <p className="truncate text-xs text-ink/55">{artist?.name} · {t.author}</p>
+                    </div>
+                    <span className="hidden sm:block"><Badge tone={r.tone}>{r.label}</Badge></span>
+                    <span className="text-xs tabular-nums text-ink/50">{formatDuration(t.durationSeconds)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : <EmptyState icon={<Music2 className="h-6 w-6" />} title="Aucun titre ne correspond." />}
+        </div>
+        <aside className="space-y-6">
+          <div>
+            <h2 className="mb-3 font-display text-xl font-semibold text-night">Albums</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {albums.map((a) => (
+                <div key={a.id} className="overflow-hidden rounded-xl bg-white shadow-soft">
+                  {a.coverUrl ? <img src={a.coverUrl} alt="" className="aspect-square w-full object-cover" loading="lazy" /> : <CoverArt seed={a.id} icon={<Disc3 />} className="aspect-square" />}
+                  <div className="p-3"><p className="truncate text-sm font-semibold text-night">{a.title}</p><p className="truncate text-xs text-ink/55">{artists.find((x) => x.id === a.artistId)?.name}{a.year ? ` · ${a.year}` : ''}</p></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-dashed border-gold/50 bg-gold-50/60 p-5">
+            <p className="flex items-center gap-2 font-semibold text-night"><ShoppingBag className="h-5 w-5 text-gold-600" />Boutique musicale</p>
+            <p className="mt-1 text-sm text-ink/70">Prochainement. L’achat en ligne (M-Pesa, Orange Money, Airtel Money) n’est pas encore disponible.</p>
+          </div>
+        </aside>
+      </section>
+      <AudioPlayer track={current} artistName={artists.find((a) => a.id === current?.artistId)?.name} onPrev={() => idx > 0 && setCurrentId(list[idx - 1].id)} onNext={() => idx >= 0 && idx < list.length - 1 && setCurrentId(list[idx + 1].id)} />
+    </div>
+  );
+}

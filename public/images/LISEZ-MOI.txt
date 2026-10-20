@@ -1,0 +1,9 @@
+Emplacements des visuels officiels (à fournir par l'administration) :
+
+- hero-communaute.jpg : grande photographie communautaire de la page d'accueil
+  (format paysage, ~2400 px de large, < 400 Ko en JPEG/WebP compressé).
+  Utilisez uniquement une photo dont vous détenez les droits et l'accord
+  des personnes représentées. Tant que ce fichier est absent, une illustration
+  vectorielle est affichée.
+- logo-officiel.svg : logo officiel autorisé de l'Église. Renseignez ensuite son
+  chemin dans Administration > Paramètres > Identité visuelle.

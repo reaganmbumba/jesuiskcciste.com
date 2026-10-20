@@ -1,8 +1,11 @@
 {
   // Déploiement Cloudflare Workers (site statique Vite).
-  // Cloudflare lance `npm run build` puis `npx wrangler deploy`.
+  // `npx wrangler deploy` construit d'abord le site (build.command) puis publie dist.
   "name": "jesuiskcciste-com",
   "compatibility_date": "2026-10-01",
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"

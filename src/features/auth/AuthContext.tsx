@@ -57,7 +57,7 @@ function writeDemoSession(p: Profile | null) {
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase!
     .from('profiles')
-    .select('*, roles:role_assignments(role:roles(key), parish_id, section_id, course_id)')
+    .select('*, roles:role_assignments!user_id(role:roles(key), parish_id, section_id, course_id)')
     .eq('id', userId)
     .maybeSingle();
   if (error) throw error;

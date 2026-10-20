@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, CalendarDays, Church, Globe2, GraduationCap, HandHeart, Music2, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, Disc3, FileText, Globe2, GraduationCap, HandHeart, Mail, MapPin, Music2, Phone, PlayCircle, ScrollText, Users } from 'lucide-react';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -21,7 +21,22 @@ const SERVICES: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
   { title: { fr: 'Les activités', en: 'Activities', pt: 'As atividades' }, text: { fr: 'Cultes, réunions, séminaires et rassemblements dans un agenda commun.', en: 'Services, meetings, seminars and gatherings in one shared calendar.', pt: 'Cultos, reuniões, seminários e encontros numa agenda comum.' }, to: '/agenda', icon: CalendarDays },
   { title: { fr: 'KCC Music', en: 'KCC Music', pt: 'KCC Music' }, text: { fr: 'Chants, albums, chorales et artistes, dans le respect des droits.', en: 'Songs, albums, choirs and artists, with respect for copyright.', pt: 'Cânticos, álbuns, coros e artistas, respeitando os direitos.' }, to: '/musique', icon: Music2 },
   { title: { fr: 'La solidarité', en: 'Solidarity', pt: 'A solidariedade' }, text: { fr: 'Des projets transparents, suivis et documentés, au service de tous.', en: 'Transparent, tracked and documented projects that serve everyone.', pt: 'Projetos transparentes, acompanhados e documentados, ao serviço de todos.' }, to: '/solidarite', icon: HandHeart },
-  { title: { fr: 'Les paroisses', en: 'Parishes', pt: 'As paróquias' }, text: { fr: 'Les paroisses et leurs sections, en RD Congo et dans la diaspora.', en: 'Parishes and their sections, in the DR Congo and across the diaspora.', pt: 'As paróquias e as suas secções, na RD Congo e na diáspora.' }, to: '/paroisses', icon: Church },
+  { title: { fr: 'Les paroisses', en: 'Parishes', pt: 'As paróquias' }, text: { fr: 'Les paroisses et leurs sections, en RD Congo et dans la diaspora.', en: 'Parishes and their sections, in the DR Congo and across the diaspora.', pt: 'As paróquias e as suas secções, na RD Congo e na diáspora.' }, to: '/paroisses', icon: Building2 },
+];
+
+const GALLERY: { src: string; alt: Tri; className: string }[] = [
+  { src: '/images/archives/temple-kcc-assemblee.jpg', alt: { fr: 'Grande assemblée de la communauté devant un bâtiment KCC', en: 'Large community gathering in front of a KCC building', pt: 'Grande encontro da comunidade diante de um edifício KCC' }, className: 'sm:col-span-2 sm:row-span-2' },
+  { src: '/images/archives/temple-construction.jpg', alt: { fr: 'Membres de la communauté devant un grand bâtiment en construction', en: 'Community members in front of a large building under construction', pt: 'Membros da comunidade diante de um grande edifício em construção' }, className: '' },
+  { src: '/images/archives/centre-hospitalier-christ-sante-lemba.jpg', alt: { fr: 'Façade du centre hospitalier de Lemba', en: 'Front of the Lemba hospital centre', pt: 'Fachada do centro hospitalar de Lemba' }, className: '' },
+  { src: '/images/archives/archive-assemblee-noir-et-blanc.jpg', alt: { fr: 'Photographie d’archive en noir et blanc d’une famille de la communauté', en: 'Black-and-white archive photograph of a community family', pt: 'Fotografia de arquivo a preto e branco de uma família da comunidade' }, className: 'sm:col-span-2' },
+];
+
+const RESOURCES: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
+  { title: { fr: 'Doctrine et histoire', en: 'Doctrine and history', pt: 'Doutrina e história' }, text: { fr: 'Textes officiels, dates clés et archives.', en: 'Official texts, key dates and archives.', pt: 'Textos oficiais, datas-chave e arquivos.' }, to: '/doctrine', icon: ScrollText },
+  { title: { fr: 'Enseignements', en: 'Teachings', pt: 'Ensinamentos' }, text: { fr: 'Messages et enseignements à lire.', en: 'Messages and teachings to read.', pt: 'Mensagens e ensinamentos para ler.' }, to: '/enseignements', icon: BookOpen },
+  { title: { fr: 'Cantiques', en: 'Hymns', pt: 'Hinos' }, text: { fr: 'Le recueil des chants de la communauté.', en: 'The community songbook.', pt: 'O hinário da comunidade.' }, to: '/cantiques', icon: Music2 },
+  { title: { fr: 'KCC Music', en: 'KCC Music', pt: 'KCC Music' }, text: { fr: 'Albums, chorales et artistes à écouter.', en: 'Albums, choirs and artists to listen to.', pt: 'Álbuns, coros e artistas para ouvir.' }, to: '/musique', icon: Disc3 },
+  { title: { fr: 'Bibliothèque', en: 'Library', pt: 'Biblioteca' }, text: { fr: 'Documents et ressources à télécharger.', en: 'Documents and resources to download.', pt: 'Documentos e recursos para descarregar.' }, to: '/bibliotheque', icon: FileText },
 ];
 
 const VALUES: Tri<string[]> = {
@@ -46,7 +61,7 @@ export default function HomePage() {
   const statItems = stats.data
     ? [
         { label: t('home.stats.countries'), value: stats.data.stats.countries, icon: Globe2 },
-        { label: t('home.stats.parishes'), value: stats.data.stats.parishes, icon: Church },
+        { label: t('home.stats.parishes'), value: stats.data.stats.parishes, icon: Building2 },
         { label: t('home.stats.members'), value: stats.data.stats.members, icon: Users },
         { label: t('home.stats.courses'), value: stats.data.stats.courses, icon: BookOpen },
         { label: t('home.stats.events'), value: stats.data.stats.events, icon: CalendarDays },
@@ -62,7 +77,7 @@ export default function HomePage() {
           <div className="lg:col-span-7">
             <p className="mb-7 inline-flex animate-fade-up items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] py-1.5 pl-1.5 pr-4 text-xs font-medium text-white/80 backdrop-blur-md">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-gold-300 to-gold-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-night">
-                <Sparkles className="h-3 w-3" aria-hidden /> KCC
+                KCC
               </span>
               {tx('La communauté KCCiste, partout dans le monde', 'The KCCist community, all over the world', 'A comunidade KCCista, em todo o mundo')}
             </p>
@@ -146,7 +161,7 @@ export default function HomePage() {
           {[0, 1].map((k) => (
             <div key={k} className="flex gap-10">
               {pick(VALUES).map((w) => (
-                <span key={w} className="flex items-center gap-10">{w}<Sparkles className="h-5 w-5 text-gold" /></span>
+                <span key={w} className="flex items-center gap-10">{w}<span className="h-2 w-2 rotate-45 bg-gold" /></span>
               ))}
             </div>
           ))}
@@ -211,6 +226,58 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* GALERIE */}
+      <section className="bg-white py-20 sm:py-28" aria-labelledby="gal-title">
+        <div className="container-page">
+          <SectionHeading eyebrow={tx('Galerie', 'Gallery', 'Galeria')} title={tx('La communauté en images', 'The community in pictures', 'A comunidade em imagens')} description={tx('Rassemblements, bâtiments et moments de vie de la communauté, d’hier à aujourd’hui.', 'Gatherings, buildings and moments of community life, from yesterday to today.', 'Encontros, edifícios e momentos de vida da comunidade, de ontem a hoje.')} action={<ButtonLink to="/doctrine#archives" variant="outline" size="sm">{tx('Toutes les photos', 'All photos', 'Todas as fotos')} <ArrowRight className="h-4 w-4" /></ButtonLink>} />
+          <h2 id="gal-title" className="sr-only">{tx('Galerie photos', 'Photo gallery', 'Galeria de fotos')}</h2>
+          <div className="grid auto-rows-[11rem] grid-cols-1 gap-4 sm:auto-rows-[13rem] sm:grid-cols-4">
+            {GALLERY.map((g) => (
+              <Link key={g.src} to="/doctrine#archives" className={`group relative overflow-hidden rounded-3xl bg-night shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold ${g.className}`}>
+                <img src={g.src} alt={pick(g.alt)} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-night-950/60 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" aria-hidden />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* VIDÉOS ET RESSOURCES */}
+      <section className="py-20 sm:py-28" aria-labelledby="res-title">
+        <div className="container-page">
+          <SectionHeading eyebrow={tx('Médias', 'Media', 'Média')} title={tx('Vidéos et ressources', 'Videos and resources', 'Vídeos e recursos')} description={tx('Regarder, lire et écouter : tout ce qu’il faut pour apprendre et partager.', 'Watch, read and listen: everything you need to learn and share.', 'Ver, ler e ouvir: tudo o que é preciso para aprender e partilhar.')} />
+          <h2 id="res-title" className="sr-only">{tx('Vidéos et ressources', 'Videos and resources', 'Vídeos e recursos')}</h2>
+          <div className="grid gap-6 lg:grid-cols-12">
+            <figure className="overflow-hidden rounded-3xl bg-night-950 shadow-lift lg:col-span-7">
+              <video controls playsInline preload="none" poster="/images/kcc-explication-apparition-poster.jpg" className="aspect-video w-full">
+                <source src="/videos/kcc-explication-apparition.mp4" type="video/mp4" />
+              </video>
+              <figcaption className="flex items-center gap-3 p-5 text-white">
+                <PlayCircle className="h-5 w-5 shrink-0 text-gold" aria-hidden />
+                <span className="font-display text-lg">{tx('Le KCC expliqué en animation', 'The KCC explained in animation', 'O KCC explicado em animação')}</span>
+              </figcaption>
+            </figure>
+            <ul className="grid gap-3 lg:col-span-5">
+              {RESOURCES.map(({ title, text, to, icon: Icon }) => (
+                <li key={to}>
+                  <Link to={to} className="group flex items-center gap-4 rounded-2xl border border-night/[0.06] bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><Icon className="h-5 w-5" aria-hidden /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-night">{pick(title)}</span>
+                      <span className="block text-sm text-ink/60">{pick(text)}</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-gold-600 transition group-hover:translate-x-1" aria-hidden />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* CHAÎNE YOUTUBE */}
+      <YouTubeChannelSection showPageLink />
+
       {/* SOLIDARITÉ */}
       <section className="relative isolate overflow-hidden bg-night-950 py-20 text-white sm:py-28" aria-labelledby="sol-title">
         <div className="pointer-events-none absolute -bottom-40 -left-32 -z-10 h-[32rem] w-[32rem] rounded-full bg-gold/20 blur-[130px]" aria-hidden />
@@ -225,17 +292,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CHAÎNE YOUTUBE */}
-      <YouTubeChannelSection showPageLink />
-
-      {/* APPEL */}
+      {/* PRÉSENTATION ET CONTACT */}
       <section className="py-20 sm:py-28">
         <div className="container-page">
           <div className="relative isolate overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-gold-200 via-gold-300 to-gold-500 p-8 shadow-lift sm:p-14 lg:p-16">
             <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full border-[28px] border-white/25" aria-hidden />
             <div className="pointer-events-none absolute -bottom-32 right-24 -z-10 h-72 w-72 rounded-full bg-white/30 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-noise opacity-[0.08] mix-blend-multiply" aria-hidden />
-            <div className="relative max-w-2xl">
+            <div className="relative grid gap-10 lg:grid-cols-12 lg:items-center">
+            <div className="lg:col-span-7">
               <p className="eyebrow mb-4 text-night/70">{tx('Bienvenue', 'Welcome', 'Bem-vindo')}</p>
               <h2 className="font-display text-4xl font-medium leading-[1.05] text-night sm:text-5xl">{tx('Rejoignez la maison numérique des KCCistes.', 'Join the digital home of the KCCists.', 'Junte-se à casa digital dos KCCistas.')}</h2>
               <p className="mt-4 text-[15px] leading-relaxed text-night/75 sm:text-lg">{tx('Créez votre compte, rattachez-vous à votre paroisse et à votre section, suivez les formations et restez informé des activités de la communauté.', 'Create your account, link it to your parish and section, follow courses and stay informed about community activities.', 'Crie a sua conta, associe-se à sua paróquia e secção, siga as formações e fique a par das atividades da comunidade.')}</p>
@@ -243,6 +308,18 @@ export default function HomePage() {
                 <ButtonLink to="/inscription" size="lg">{t('hero.join')} <ArrowRight className="h-5 w-5" /></ButtonLink>
                 <ButtonLink to="/a-propos" variant="outline" size="lg" className="border-night/15 bg-white/50 hover:bg-white">{tx('À propos de l’Église', 'About the Church', 'Sobre a Igreja')}</ButtonLink>
               </div>
+            </div>
+            <address className="not-italic lg:col-span-5" aria-label={tx('Contact', 'Contact', 'Contacto')}>
+              <div className="rounded-3xl bg-night p-7 text-white shadow-lift">
+                <p className="eyebrow text-gold">{tx('Contact', 'Contact', 'Contacto')}</p>
+                <p className="mt-3 font-display text-2xl">{tx('Écrivez-nous, nous vous répondrons.', 'Write to us, we will answer.', 'Escreva-nos, responderemos.')}</p>
+                <ul className="mt-6 space-y-4 text-sm text-white/75">
+                  <li className="flex items-start gap-3"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.email ? <a className="hover:text-white" href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a> : <span className="italic text-white/45">{t('footer.notConfigured')}</span>}</li>
+                  <li className="flex items-start gap-3"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.phone ? <a className="hover:text-white" href={`tel:${settings.contact.phone.replace(/\s/g, '')}`}>{settings.contact.phone}</a> : <span className="italic text-white/45">{t('footer.notConfigured')}</span>}</li>
+                  <li className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address || <span className="italic text-white/45">{t('footer.notConfigured')}</span>}</li>
+                </ul>
+              </div>
+            </address>
             </div>
           </div>
         </div>

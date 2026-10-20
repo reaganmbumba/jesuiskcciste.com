@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Church, Layers, Network, Users } from 'lucide-react';
+import { ArrowRight, Building2, Layers, Network, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { useAsync } from '@/hooks/useAsync';
 import { parishesRepo, sectionsRepo, unitsRepo } from '@/services';
@@ -13,7 +13,7 @@ export default function CommunityPage() {
   const countries = Array.from(new Set(parishes.map((p) => p.country)));
   const links = [
     { to: '/communaute/annuaire', title: tx('Annuaire des membres', 'Member directory', 'Diretório de membros'), text: tx('Retrouver les membres selon leurs choix de visibilité.', 'Find members according to their visibility choices.', 'Encontrar membros segundo as suas escolhas de visibilidade.'), icon: Users },
-    { to: '/paroisses', title: tx('Paroisses', 'Parishes', 'Paróquias'), text: tx('Parcourir les paroisses par pays et par ville.', 'Browse parishes by country and city.', 'Percorrer as paróquias por país e cidade.'), icon: Church },
+    { to: '/paroisses', title: tx('Paroisses', 'Parishes', 'Paróquias'), text: tx('Parcourir les paroisses par pays et par ville.', 'Browse parishes by country and city.', 'Percorrer as paróquias por país e cidade.'), icon: Building2 },
     { to: '/sections', title: tx('Sections', 'Sections', 'Secções'), text: tx('Les sections rattachées à chaque paroisse.', 'The sections attached to each parish.', 'As secções associadas a cada paróquia.'), icon: Layers },
   ];
   return (

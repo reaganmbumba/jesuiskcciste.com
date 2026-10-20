@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Church, MapPin, Search } from 'lucide-react';
+import { ArrowRight, Building2, MapPin, Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Input, Select } from '@/components/ui/Form';
 import { EmptyState, ErrorState } from '@/components/ui/States';
@@ -32,7 +32,7 @@ export default function ParishesPage() {
             {list.map((p) => (
               <Link key={p.id} to={`/paroisses/${p.id}`} className="group rounded-2xl border border-night/[0.06] bg-white p-6 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
                 <div className="flex items-start justify-between">
-                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-night text-gold"><Church className="h-6 w-6" /></span>
+                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-night text-gold"><Building2 className="h-6 w-6" /></span>
                   {isDemoMode && <DemoBadge />}
                 </div>
                 <h2 className="mt-4 font-display text-xl font-semibold text-night">{p.name}</h2>

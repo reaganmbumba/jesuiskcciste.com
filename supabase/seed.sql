@@ -41,7 +41,7 @@ insert into public.organizational_units (name, level) values ('Administration ce
 insert into public.site_settings (key, value) values ('public', jsonb_build_object(
   'name', 'JE SUIS KCCiste', 'tagline', 'Un seul peuple. Une même communauté.',
   'secondary_message', 'Se connecter, apprendre, servir et faire vivre notre communauté partout dans le monde.',
-  'official_logo_url', '/images/logo-je-suis-kcciste.webp', 'hero_image_url', '/images/hero-communaute.jpg',
+  'official_logo_url', '/images/logo-kcc.svg', 'hero_image_url', '/images/hero-communaute.jpg',
   'contact', jsonb_build_object('email', '', 'phone', '', 'address', ''), 'socials', '[]'::jsonb, 'church_presentation', ''))
 on conflict (key) do nothing;
 

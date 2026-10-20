@@ -1,4 +1,4 @@
-import { Church, Layers, MapPin } from 'lucide-react';
+import { Building2, Layers, MapPin } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { ButtonLink } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/States';
@@ -16,11 +16,11 @@ export default function MyParishPage() {
     return { parish, section, parishes, events: events.filter((e) => e.parishId === profile.parishId), anns: anns.filter((a) => !a.parishId || a.parishId === profile.parishId).slice(0, 4) };
   }, [profile?.parishId]);
   if (loading) return <PageLoader />;
-  if (!data?.parish) return <EmptyState icon={<Church className="h-6 w-6" />} title="Aucune paroisse renseignée" description="Indiquez votre paroisse dans votre profil ; un responsable validera votre rattachement." action={<ButtonLink to="/espace/profil">Compléter mon profil</ButtonLink>} />;
+  if (!data?.parish) return <EmptyState icon={<Building2 className="h-6 w-6" />} title="Aucune paroisse renseignée" description="Indiquez votre paroisse dans votre profil ; un responsable validera votre rattachement." action={<ButtonLink to="/espace/profil">Compléter mon profil</ButtonLink>} />;
   return (
     <div className="space-y-6">
       <Card><CardBody className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <span className="grid h-16 w-16 place-items-center rounded-2xl bg-night text-gold"><Church className="h-8 w-8" /></span>
+        <span className="grid h-16 w-16 place-items-center rounded-2xl bg-night text-gold"><Building2 className="h-8 w-8" /></span>
         <div className="flex-1">
           <h1 className="font-display text-2xl font-semibold text-night">{data.parish.name}</h1>
           <p className="flex items-center gap-1 text-sm text-ink/60"><MapPin className="h-4 w-4" />{data.parish.city}, {data.parish.country}</p>

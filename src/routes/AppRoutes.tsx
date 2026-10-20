@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
-  Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Church, FileClock, GraduationCap, HandCoins, HandHeart,
+  Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Music2, Settings, ShieldCheck, User, Users,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
@@ -68,7 +68,7 @@ const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const MEMBER_MENU: SideItem[] = [
   { to: '/espace', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
   { to: '/espace/profil', label: 'Mon profil', icon: User },
-  { to: '/espace/paroisse', label: 'Ma paroisse', icon: Church },
+  { to: '/espace/paroisse', label: 'Ma paroisse', icon: Building2 },
   { to: '/espace/formations', label: 'Mes formations', icon: GraduationCap },
   { to: '/espace/activites', label: 'Mes activités', icon: CalendarDays },
   { to: '/espace/certificats', label: 'Mes certificats', icon: Award },
@@ -80,7 +80,7 @@ const MEMBER_MENU: SideItem[] = [
 const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin', label: 'Vue d’ensemble', icon: BarChart3, end: true, permission: 'admin.access' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
-  { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Church, permission: 'sections.manage' },
+  { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
   { to: '/admin/evenements', label: 'Événements', icon: CalendarDays, permission: 'events.manage' },
   { to: '/admin/formations', label: 'Formations et examens', icon: BookOpenCheck, permission: 'courses.manage_own' },

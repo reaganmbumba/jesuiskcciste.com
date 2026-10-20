@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, CalendarDays, Church, FileText, Lock, Receipt, Smartphone } from 'lucide-react';
+import { AlertCircle, CalendarDays, Building2, FileText, Lock, Receipt, Smartphone } from 'lucide-react';
 import { PageHeader, ProgressBar } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -74,7 +74,7 @@ export default function ProjectDetailPage() {
           <DemoInline>{tx('Démonstration : montants, contributions et dépenses fictifs.', 'Demo: amounts, contributions and expenses are fictitious.', 'Demonstração: montantes, contribuições e despesas fictícios.')}</DemoInline>
           <Card><CardBody><h2 className="font-display text-xl font-semibold text-night">{tx('Description', tx('Description', 'Description', 'Descrição'), 'Descrição')}</h2><p className="mt-2 text-ink/75">{p.description}</p>
             <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-              <p className="flex items-center gap-2"><Church className="h-4 w-4 text-gold" />{parish?.name ?? tx('Projet central', 'Central project', 'Projeto central')}</p>
+              <p className="flex items-center gap-2"><Building2 className="h-4 w-4 text-gold" />{parish?.name ?? tx('Projet central', 'Central project', 'Projeto central')}</p>
               <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gold" />{tx('Lancé le', 'Launched on', 'Lançado a')} {formatDate(p.launchedAt, locale, { dateStyle: 'medium' })}</p>
               {p.deadline && <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-gold" />{tx('Échéance', 'Deadline', 'Prazo')} {formatDate(p.deadline, locale, { dateStyle: 'medium' })}</p>}
             </div>

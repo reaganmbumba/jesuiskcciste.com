@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Ban, CheckCircle2, ShieldPlus } from 'lucide-react';
+import { Ban, CheckCircle2, UserCog } from 'lucide-react';
 import { CrudTable, IconAction } from '@/features/administration/CrudTable';
 import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Misc';
@@ -85,7 +85,7 @@ export default function AdminMembers() {
           <>
             {m.status !== 'active' && <IconAction label="Valider / réactiver" tone="green" onClick={() => setStatusChange({ m, to: 'active', reload })}><CheckCircle2 className="h-4 w-4" /></IconAction>}
             {m.status === 'active' && <IconAction label="Suspendre" tone="red" onClick={() => setStatusChange({ m, to: 'suspended', reload })}><Ban className="h-4 w-4" /></IconAction>}
-            <IconAction label="Attribuer un rôle" tone="gold" onClick={() => setRoleFor(m)}><ShieldPlus className="h-4 w-4" /></IconAction>
+            <IconAction label="Attribuer un rôle" tone="gold" onClick={() => setRoleFor(m)}><UserCog className="h-4 w-4" /></IconAction>
           </>
         )}
       />

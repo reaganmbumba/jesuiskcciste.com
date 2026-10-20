@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Award, CalendarDays, Church, Clock, GraduationCap, HandCoins, Megaphone, Users } from 'lucide-react';
+import { Award, CalendarDays, Building2, Clock, GraduationCap, HandCoins, Megaphone, Users } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { StatCard } from '@/components/ui/Misc';
 import { DemoBadge } from '@/components/ui/Badge';
@@ -31,7 +31,7 @@ export default function AdminOverview() {
       </div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={<Users className="h-5 w-5" />} label="Membres actifs" value={members.filter((m) => m.status === 'active').length} />
-        <StatCard icon={<Church className="h-5 w-5" />} label="Paroisses" value={parishes.length} />
+        <StatCard icon={<Building2 className="h-5 w-5" />} label="Paroisses" value={parishes.length} />
         <StatCard icon={<CalendarDays className="h-5 w-5" />} label="Événements à venir" value={events.filter((e) => e.startsAt > new Date().toISOString() && e.status === 'scheduled').length} />
         <StatCard icon={<GraduationCap className="h-5 w-5" />} label="Formations publiées" value={courses.filter((c) => c.status === 'published').length} />
       </div>

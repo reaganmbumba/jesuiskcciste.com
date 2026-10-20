@@ -21,7 +21,7 @@ export const defaultSiteSettings: SiteSettings = {
   name: 'JE SUIS KCCiste',
   tagline: 'Un seul peuple. Une même communauté.',
   secondaryMessage: 'Se connecter, apprendre, servir et faire vivre notre communauté partout dans le monde.',
-  officialLogoUrl: '/images/logo-je-suis-kcciste.webp',
+  officialLogoUrl: '/images/logo-kcc.svg',
   heroImageUrl: '/images/hero-communaute.jpg',
   contact: { email: '', phone: '', address: '' },
   socials: [],

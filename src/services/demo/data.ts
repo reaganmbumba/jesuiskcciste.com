@@ -129,14 +129,14 @@ export const demoCertificates: Certificate[] = [];
 
 export const demoArtists: Artist[] = [
   { id: 'art-patrick-beckham', name: 'Patrick Beckham', kind: 'artist', bio: 'Artiste de la communauté KCCiste.', parishId: null },
-  { id: 'art-ebnm', name: 'Ensemble EBNM / KCC', kind: 'choir', bio: 'Cantiques d’ensemble de l’Église Bon Nouveau Message (KCC).', parishId: null, imageUrl: '/images/logo-je-suis-kcciste.webp' },
+  { id: 'art-ebnm', name: 'Ensemble EBNM / KCC', kind: 'choir', bio: 'Cantiques d’ensemble de l’Église Bon Nouveau Message (KCC).', parishId: null, imageUrl: '/images/logo-kcc.png' },
   { id: 'art-1', name: 'Chorale exemple A', kind: 'choir', bio: 'Fiche chorale de démonstration.', parishId: 'par-1' },
   { id: 'art-2', name: 'Chorale exemple B', kind: 'choir', bio: 'Fiche chorale de démonstration.', parishId: 'par-2' },
   { id: 'art-3', name: 'Artiste exemple', kind: 'artist', bio: 'Fiche artiste de démonstration.', parishId: 'par-4' },
 ];
 
 export const demoAlbums: Album[] = [
-  { id: 'alb-cantiques-5', title: 'Sélection cantiques d’ensemble – Volume 5', artistId: 'art-ebnm', year: null, coverUrl: '/images/logo-je-suis-kcciste.webp' },
+  { id: 'alb-cantiques-5', title: 'Sélection cantiques d’ensemble – Volume 5', artistId: 'art-ebnm', year: null, coverUrl: '/images/logo-kcc.png' },
   { id: 'alb-1', title: 'Album de démonstration', artistId: 'art-1', year: 2026 },
   { id: 'alb-2', title: 'Enregistrements exemple', artistId: 'art-3', year: 2025 },
 ];

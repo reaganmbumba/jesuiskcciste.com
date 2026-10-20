@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, GraduationCap, HandHeart, Megaphone, Music, Church, Search, X } from 'lucide-react';
+import { Calendar, GraduationCap, HandHeart, Megaphone, Music, Building2, Search, X } from 'lucide-react';
 import { announcementsRepo, coursesRepo, eventsRepo, parishesRepo, projectsRepo, tracksRepo } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useDebounced } from '@/hooks/useAsync';
@@ -29,7 +29,7 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
         ...e.filter((x) => x.audience === 'public' || signed).map((x) => ({ type: tx('Événement', 'Event', 'Evento'), title: x.title, to: `/agenda/${x.id}`, icon: <Calendar className="h-4 w-4" /> })),
         ...c.filter((x) => x.status === 'published').map((x) => ({ type: tx('Formation', 'Course', 'Formação'), title: x.title, to: `/academie/formations/${x.slug}`, icon: <GraduationCap className="h-4 w-4" /> })),
         ...p.map((x) => ({ type: tx('Projet', 'Project', 'Projeto'), title: x.name, to: `/solidarite/projets/${x.slug}`, icon: <HandHeart className="h-4 w-4" /> })),
-        ...par.map((x) => ({ type: tx('Paroisse', 'Parish', 'Paróquia'), title: `${x.name} — ${x.city}`, to: `/paroisses/${x.id}`, icon: <Church className="h-4 w-4" /> })),
+        ...par.map((x) => ({ type: tx('Paroisse', 'Parish', 'Paróquia'), title: `${x.name} — ${x.city}`, to: `/paroisses/${x.id}`, icon: <Building2 className="h-4 w-4" /> })),
         ...tr.map((x) => ({ type: tx('Chant', 'Song', 'Cântico'), title: x.title, to: `/musique?titre=${x.id}`, icon: <Music className="h-4 w-4" /> })),
       ]);
     });

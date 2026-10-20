@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { BookOpen, CalendarDays, Camera, Church, Landmark, ScrollText, Sparkles } from 'lucide-react';
+import { BookOpen, CalendarDays, Camera, Building2, Landmark, ScrollText, Star } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -13,7 +13,7 @@ import { useI18n, type Tri } from '@/i18n';
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
 const anchors = [
-  { id: 'kcc', label: T('Le KCC', 'The KCC', 'O KCC'), icon: Sparkles },
+  { id: 'kcc', label: T('Le KCC', 'The KCC', 'O KCC'), icon: Star },
   { id: 'foi', label: T('Profession de foi', 'Profession of faith', 'Profissão de fé'), icon: BookOpen },
   { id: 'loi', label: T('Alliance et commandements', 'Covenant and commandments', 'Aliança e mandamentos'), icon: ScrollText },
   { id: 'culte', label: T('Sacrements et fêtes', 'Sacraments and feasts', 'Sacramentos e festas'), icon: CalendarDays },
@@ -24,11 +24,8 @@ const anchors = [
 const photos = [
   { src: '/images/archives/temple-kcc-assemblee.jpg', alt: T('Assemblée de fidèles devant un temple marqué des lettres KCC', 'Congregation in front of a temple bearing the letters KCC', 'Assembleia de fiéis diante de um templo com as letras KCC'), caption: T('Assemblée devant un temple KCC', 'Congregation in front of a KCC temple', 'Assembleia diante de um templo KCC') },
   { src: '/images/archives/temple-construction.jpg', alt: T('Fidèles devant un grand temple en construction', 'Believers in front of a large temple under construction', 'Fiéis diante de um grande templo em construção'), caption: T('Un temple en construction', 'A temple under construction', 'Um templo em construção') },
-  { src: '/images/archives/paroisse-batiment.jpg', alt: T('Fidèles réunis devant la paroisse de Matadi, dont le fronton porte l’inscription Communauté de Douze Apôtres au Zaïre (C.D.A.Z.)', 'Believers gathered in front of the Matadi parish, whose pediment reads Communauté de Douze Apôtres au Zaïre (C.D.A.Z.)', 'Fiéis reunidos diante da paróquia de Matadi, cujo frontão tem a inscrição Communauté de Douze Apôtres au Zaïre (C.D.A.Z.)'), caption: T('Paroisse de Matadi (fronton : « Communauté de Douze Apôtres au Zaïre »)', 'Matadi parish (pediment: “Communauté de Douze Apôtres au Zaïre”)', 'Paróquia de Matadi (frontão: «Communauté de Douze Apôtres au Zaïre»)') },
   { src: '/images/archives/centre-hospitalier-christ-sante-lemba.jpg', alt: T('Façade du Centre hospitalier Christ-Santé de Lemba, Église Bon Nouveau Message', 'Front of the Christ-Santé hospital centre in Lemba, Église Bon Nouveau Message', 'Fachada do Centro hospitalar Christ-Santé de Lemba, Église Bon Nouveau Message'), caption: T('Centre hospitalier Christ-Santé de Lemba (EBNM)', 'Christ-Santé hospital centre, Lemba (EBNM)', 'Centro hospitalar Christ-Santé de Lemba (EBNM)') },
-  { src: '/images/archives/polyclinique-christ-sante.jpg', alt: T('Personnel en blouse blanche devant la Polyclinique Christ-Santé', 'Staff in white coats in front of the Christ-Santé polyclinic', 'Pessoal de bata branca diante da Policlínica Christ-Santé'), caption: T('Polyclinique Christ-Santé (C.D.A.Z.)', 'Christ-Santé polyclinic (C.D.A.Z.)', 'Policlínica Christ-Santé (C.D.A.Z.)') },
   { src: '/images/archives/archive-assemblee-noir-et-blanc.jpg', alt: T('Photographie ancienne en noir et blanc d’une grande assemblée', 'Old black-and-white photograph of a large congregation', 'Fotografia antiga a preto e branco de uma grande assembleia'), caption: T('Archive en noir et blanc : une assemblée', 'Black-and-white archive: a congregation', 'Arquivo a preto e branco: uma assembleia') },
-  { src: '/images/archives/archive-ceremonie-noir-et-blanc.jpg', alt: T('Photographie ancienne en noir et blanc d’une cérémonie', 'Old black-and-white photograph of a ceremony', 'Fotografia antiga a preto e branco de uma cerimónia'), caption: T('Archive en noir et blanc : une cérémonie', 'Black-and-white archive: a ceremony', 'Arquivo a preto e branco: uma cerimónia') },
 ];
 
 const langCode = (l: string) => (l.startsWith('English') ? 'en' : l.startsWith('Français') ? 'fr' : l.startsWith('Português') ? 'pt' : undefined);
@@ -149,7 +146,7 @@ export default function DoctrinePage() {
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {professionOfFaith.church.map((c) => (
               <div key={c.t} className="rounded-2xl bg-night p-5 text-white shadow-soft">
-                <Church className="h-6 w-6 text-gold" aria-hidden />
+                <Building2 className="h-6 w-6 text-gold" aria-hidden />
                 <h4 className="mt-2 font-display text-xl font-semibold">{c.t}</h4>
                 <p className="mt-1 text-sm text-white/70">{c.d}</p>
               </div>
@@ -234,7 +231,7 @@ export default function DoctrinePage() {
       <section id="archives" className="scroll-mt-32 bg-white py-14">
         <div className="container-page">
           <SectionHeading eyebrow={tx('Archives', 'Archives', 'Arquivo')} title={tx('Archives photographiques', 'Photo archive', 'Arquivo fotográfico')} description={tx('Photos d’archives de l’Église (fonds Reagan MBUMBA).', 'Archive photos of the Church (Reagan MBUMBA collection).', 'Fotos de arquivo da Igreja (fundo Reagan MBUMBA).')} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {photos.map((p) => (
               <figure key={p.src} className="overflow-hidden rounded-2xl border border-night/[0.06] bg-white shadow-soft">
                 <img src={p.src} alt={pick(p.alt)} loading="lazy" className="aspect-[4/3] w-full object-cover" />

@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Briefcase, Church, Layers, Lock, Mail, MapPin, Phone } from 'lucide-react';
+import { Briefcase, Building2, Layers, Lock, Mail, MapPin, Phone } from 'lucide-react';
 import { Avatar } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/States';
@@ -28,7 +28,7 @@ export default function MemberProfilePage() {
   const { entry, raw } = data;
   const rows = [
     { icon: MapPin, label: tx('Localisation', 'Location', 'Localização'), value: [entry.city, entry.country].filter(Boolean).join(', ') },
-    { icon: Church, label: tx('Paroisse', 'Parish', 'Paróquia'), value: entry.parishName },
+    { icon: Building2, label: tx('Paroisse', 'Parish', 'Paróquia'), value: entry.parishName },
     { icon: Layers, label: tx('Section', 'Section', 'Secção'), value: entry.sectionName },
     { icon: Briefcase, label: tx('Fonction', 'Role', 'Função'), value: entry.functionTitle },
     { icon: Mail, label: tx('E-mail', 'Email', 'E-mail'), value: entry.email },

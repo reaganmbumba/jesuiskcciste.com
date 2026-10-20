@@ -81,8 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(data.session ? await loadProfile(data.session.user.id).catch(() => null) : null);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setProfile(session ? await loadProfile(session.user.id).catch(() => null) : null);
+    // Ne jamais attendre un appel Supabase dans ce callback : il tient le verrou d'auth,
+    // et signInWithPassword() resterait bloqué indéfiniment. On diffère donc la lecture du profil.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setTimeout(async () => {
+        const next = session ? await loadProfile(session.user.id).catch(() => null) : null;
+        if (active) setProfile(next);
+      }, 0);
     });
     return () => {
       active = false;
@@ -92,8 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     if (isDemoMode) throw new Error('Supabase n’est pas configuré : utilisez un compte de démonstration ci-dessous.');
-    const { error } = await supabase!.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Adresse e-mail ou mot de passe incorrect.' : error.message);
+    // Profil chargé avant la redirection, sinon les pages protégées renverraient vers /connexion.
+    setProfile(await loadProfile(data.user.id).catch(() => null));
   }, []);
 
   const signInDemo = useCallback((role: RoleKey) => {

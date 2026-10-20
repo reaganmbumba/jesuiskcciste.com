@@ -31,7 +31,18 @@ export default function AdminMembers() {
 
   const applyStatus = async () => {
     if (!statusChange) return;
-    await membersRepo.update(statusChange.m.id, { status: statusChange.to });
+    try {
+      if (isDemoMode) await membersRepo.update(statusChange.m.id, { status: statusChange.to });
+      else {
+        // « status » est exclu des écritures génériques du dépôt : mise à jour explicite, contrôlée par RLS.
+        const { data: rows, error } = await supabase!.from('profiles').update({ status: statusChange.to }).eq('id', statusChange.m.id).select('id');
+        if (error) throw error;
+        if (!rows?.length) throw new Error('Modification refusée : ce membre n’est pas dans votre périmètre.');
+      }
+    } catch (e) {
+      notify(`Échec : ${e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e)}`, 'error');
+      return;
+    }
     await writeAudit(actor, `member.${statusChange.to}`, 'profiles', statusChange.m.id);
     notify(statusChange.to === 'active' ? 'Adhésion validée.' : 'Compte suspendu.');
     statusChange.reload();
@@ -78,7 +89,7 @@ export default function AdminMembers() {
           </>
         )}
       />
-      <ConfirmDialog open={!!statusChange} title={statusChange?.to === 'active' ? 'Valider ce compte ?' : 'Suspendre ce compte ?'} message={statusChange ? `${statusChange.m.firstName} ${statusChange.m.lastName}` : ''} danger={statusChange?.to === 'suspended'} onConfirm={applyStatus} onCancel={() => setStatusChange(null)} />
+      <ConfirmDialog open={!!statusChange} title={statusChange?.to === 'active' ? 'Valider ce compte ?' : 'Suspendre ce compte ?'} message={statusChange ? `${statusChange.m.firstName} ${statusChange.m.lastName}`.trim() + (statusChange.m.email ? ` — ${statusChange.m.email}` : '') : ''} danger={statusChange?.to === 'suspended'} onConfirm={applyStatus} onCancel={() => setStatusChange(null)} />
       <Modal open={!!roleFor} onClose={() => setRoleFor(null)} title="Attribuer un rôle" footer={<><Button variant="outline" onClick={() => setRoleFor(null)}>Annuler</Button><Button onClick={assignRole}>Attribuer</Button></>}>
         <p className="mb-4 text-sm text-ink/70">{roleFor?.firstName} {roleFor?.lastName} — le rôle est limité au périmètre de sa paroisse ou section. Seul l’administrateur central peut attribuer les rôles transverses.</p>
         <Field label="Rôle">{(p) => <Select {...p} value={role} onChange={(e) => setRole(e.target.value as RoleKey)}>{(Object.keys(ROLE_LABELS) as RoleKey[]).filter((r) => r !== 'visitor' && r !== 'member' && (isCentral || r === 'section_leader')).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}</Select>}</Field>

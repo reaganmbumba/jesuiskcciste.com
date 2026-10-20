@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from '@/features/auth/AuthContext';
 import { RequireAuth, RequirePermission } from '@/routes/guards';
 import { getQuiz, submitQuiz, verifyCertificate, listPublishedAnnouncements, declareContribution, listProjectContributions } from '@/services';
 import { signupStep3 } from '@/features/auth/schemas';
+import { useForm } from 'react-hook-form';
+import { Checkbox } from '@/components/ui/Form';
 
 function Harness({ initial }: { initial: string }) {
   return (
@@ -99,5 +101,19 @@ describe('Validation du formulaire d’inscription', () => {
     expect(signupStep3.safeParse({ email: 'a@b.cd', password: 'MotDePasse123', confirm: 'Autre123456', consent: true }).success).toBe(false);
     expect(signupStep3.safeParse({ email: 'a@b.cd', password: 'MotDePasse123', confirm: 'MotDePasse123', consent: false }).success).toBe(false);
     expect(signupStep3.safeParse({ email: 'a@b.cd', password: 'MotDePasse123', confirm: 'MotDePasse123', consent: true }).success).toBe(true);
+  });
+});
+
+describe('Case à cocher reliée au formulaire', () => {
+  it('transmet la valeur cochée à react-hook-form', async () => {
+    let value: unknown;
+    function ConsentForm() {
+      const { register, handleSubmit } = useForm<{ consent: boolean }>({ defaultValues: { consent: false } });
+      return <form onSubmit={handleSubmit((v) => { value = v.consent; })}><Checkbox {...register('consent')} label="J’accepte" /><button type="submit">Envoyer</button></form>;
+    }
+    render(<ConsentForm />);
+    fireEvent.click(screen.getByLabelText('J’accepte'));
+    fireEvent.click(screen.getByText('Envoyer'));
+    await waitFor(() => expect(value).toBe(true));
   });
 });

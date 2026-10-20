@@ -47,15 +47,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   );
 });
 
-export function Checkbox({ label, description, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: ReactNode; description?: string }) {
+export const Checkbox = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { label: ReactNode; description?: string }>(function Checkbox({ label, description, ...rest }, ref) {
   const id = useId();
   return (
     <div className="flex items-start gap-3">
-      <input id={id} type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 rounded border-night/25 text-night accent-[#101B33] focus:ring-gold" {...rest} />
+      <input ref={ref} id={id} type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 rounded border-night/25 text-night accent-[#101B33] focus:ring-gold" {...rest} />
       <label htmlFor={id} className="text-sm text-ink">
         <span className="font-medium">{label}</span>
         {description && <span className="block text-ink/60">{description}</span>}
       </label>
     </div>
   );
-}
+});

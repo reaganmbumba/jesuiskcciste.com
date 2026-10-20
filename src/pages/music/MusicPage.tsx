@@ -13,6 +13,8 @@ import { cn, formatDuration } from '@/utils/format';
 import { CoverArt } from '@/components/cards/Cards';
 import { useI18n } from '@/i18n';
 import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
+import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
+import { isForSale } from '@/features/music/shop';
 
 const RIGHTS = {
   authorized: { label: { fr: 'Diffusion autorisée', en: 'Broadcast allowed', pt: 'Difusão autorizada' }, tone: 'green' },
@@ -23,6 +25,7 @@ const RIGHTS = {
 export default function MusicPage() {
   const [params] = useSearchParams();
   const { tx, pick } = useI18n();
+  const [buying, setBuying] = useState<SaleItem | null>(null);
   const { data, loading } = useAsync(() => Promise.all([tracksRepo.all(), artistsRepo.all(), albumsRepo.all()]), []);
   const [tracks = [], artists = [], albums = []] = data ?? [];
   const [q, setQ] = useState('');
@@ -32,6 +35,7 @@ export default function MusicPage() {
   const list = useMemo(() => tracks.filter((t) => (!cat || t.category === cat) && (!q || `${t.title} ${t.author} ${artists.find((a) => a.id === t.artistId)?.name}`.toLowerCase().includes(q.toLowerCase()))), [tracks, artists, q, cat]);
   const current = tracks.find((t) => t.id === currentId) ?? null;
   const idx = list.findIndex((t) => t.id === currentId);
+  const forSale = tracks.some((t) => isForSale(t) && t.broadcastRights === 'authorized') || albums.some(isForSale);
   const cats = Array.from(new Set(tracks.map((t) => t.category)));
 
   return (
@@ -60,6 +64,7 @@ export default function MusicPage() {
                     </div>
                     <span className="hidden sm:block"><Badge tone={r.tone}>{pick(r.label)}</Badge></span>
                     <span className="text-xs tabular-nums text-ink/50">{formatDuration(t.durationSeconds)}</span>
+                    {isForSale(t) && t.broadcastRights === 'authorized' && <BuyButton compact item={{ type: 'track', id: t.id, title: t.title, subtitle: artist?.name, amount: t.priceAmount!, currency: t.priceCurrency! }} onBuy={setBuying} />}
                   </li>
                 );
               })}
@@ -68,23 +73,29 @@ export default function MusicPage() {
         </div>
         <aside className="space-y-6">
           <div>
-            <h2 className="mb-3 font-display text-xl font-semibold text-night">{tx('Albums', tx('Albums', 'Albums', 'Álbuns'), 'Álbuns')}</h2>
+            <h2 className="mb-3 font-display text-xl font-semibold text-night">{tx('Albums', 'Albums', 'Álbuns')}</h2>
             <div className="grid grid-cols-2 gap-3">
               {albums.map((a) => (
                 <div key={a.id} className="overflow-hidden rounded-xl bg-white shadow-soft">
                   {a.coverUrl ? <img src={a.coverUrl} alt="" className="aspect-square w-full object-cover" loading="lazy" /> : <CoverArt seed={a.id} icon={<Disc3 />} className="aspect-square" />}
-                  <div className="p-3"><p className="truncate text-sm font-semibold text-night">{a.title}</p><p className="truncate text-xs text-ink/55">{artists.find((x) => x.id === a.artistId)?.name}{a.year ? ` · ${a.year}` : ''}</p></div>
+                  <div className="p-3"><p className="truncate text-sm font-semibold text-night">{a.title}</p><p className="truncate text-xs text-ink/55">{artists.find((x) => x.id === a.artistId)?.name}{a.year ? ` · ${a.year}` : ''}</p>
+                    {isForSale(a) && <div className="mt-2"><BuyButton compact item={{ type: 'album', id: a.id, title: a.title, subtitle: artists.find((x) => x.id === a.artistId)?.name, amount: a.priceAmount!, currency: a.priceCurrency! }} onBuy={setBuying} /></div>}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-dashed border-gold/50 bg-gold-50/60 p-5">
+          <div className="rounded-2xl border border-gold/40 bg-gold-50/70 p-5">
             <p className="flex items-center gap-2 font-semibold text-night"><ShoppingBag className="h-5 w-5 text-gold-600" />{tx('Boutique musicale', 'Music shop', 'Loja de música')}</p>
-            <p className="mt-1 text-sm text-ink/70">{tx('Prochainement. L’achat en ligne (M-Pesa, Orange Money, Airtel Money) n’est pas encore disponible.', 'Coming soon. Online purchase (M-Pesa, Orange Money, Airtel Money) is not available yet.', 'Brevemente. A compra online (M-Pesa, Orange Money, Airtel Money) ainda não está disponível.')}</p>
+            <p className="mt-1 text-sm text-ink/70">{forSale
+              ? tx('Achetez les chants et albums marqués d’un prix et soutenez les artistes et chorales de la communauté. Paiement sécurisé depuis votre téléphone, téléchargement immédiat.', 'Buy the songs and albums showing a price and support the community’s artists and choirs. Secure payment from your phone, instant download.', 'Compre os cânticos e álbuns com preço e apoie os artistas e coros da comunidade. Pagamento seguro pelo telemóvel, descarga imediata.')
+              : tx('Bientôt : achat des chants et albums de la communauté, payés depuis votre téléphone.', 'Coming soon: buy the community’s songs and albums, paid from your phone.', 'Em breve: compra dos cânticos e álbuns da comunidade, pagos pelo telemóvel.')}</p>
+            <ProviderBadges className="mt-3" />
           </div>
         </aside>
       </section>
       <div className="container-page pb-12"><YouTubeMoreVideos /></div>
+      <PurchaseDialog item={buying} onClose={() => setBuying(null)} />
       <AudioPlayer track={current} artistName={artists.find((a) => a.id === current?.artistId)?.name} onPrev={() => idx > 0 && setCurrentId(list[idx - 1].id)} onNext={() => idx >= 0 && idx < list.length - 1 && setCurrentId(list[idx + 1].id)} />
     </div>
   );

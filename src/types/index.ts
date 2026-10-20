@@ -242,6 +242,8 @@ export interface Album {
   artistId: UUID;
   year?: number | null;
   coverUrl?: string | null;
+  priceAmount?: number | null;
+  priceCurrency?: 'USD' | 'CDF' | null;
 }
 
 export interface Track {
@@ -256,6 +258,30 @@ export interface Track {
   videoUrl?: string | null;
   lyrics?: string | null;
   broadcastRights: 'authorized' | 'pending' | 'restricted';
+  /** Boutique : prix de vente (vide = pas en vente). */
+  priceAmount?: number | null;
+  priceCurrency?: 'USD' | 'CDF' | null;
+  /** Fichier livré à l'acheteur dans le bucket privé `music` (sinon audioUrl). */
+  saleFilePath?: string | null;
+}
+
+export type MusicOrderStatus = 'pending' | 'paid' | 'failed' | 'cancelled';
+
+export interface MusicOrder {
+  id: UUID;
+  userId: UUID;
+  trackId?: UUID | null;
+  albumId?: UUID | null;
+  itemTitle: string;
+  amount: number;
+  currency: 'USD' | 'CDF';
+  provider: 'mpesa' | 'orange_money' | 'airtel_money';
+  phone: string;
+  status: MusicOrderStatus;
+  gatewayOrderNumber?: string | null;
+  providerReference?: string | null;
+  createdAt: ISODate;
+  paidAt?: ISODate | null;
 }
 
 export interface MediaItem {

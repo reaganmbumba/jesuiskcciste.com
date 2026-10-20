@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
-  LayoutDashboard, Megaphone, Music2, Settings, ShieldCheck, User, Users,
+  LayoutDashboard, Megaphone, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -51,6 +51,7 @@ const MyCoursesPage = lazy(() => import('@/pages/member/MyCoursesPage'));
 const MyActivitiesPage = lazy(() => import('@/pages/member/MyActivitiesPage'));
 const MyCertificatesPage = lazy(() => import('@/pages/member/MyCertificatesPage'));
 const MyContributionsPage = lazy(() => import('@/pages/member/MyContributionsPage'));
+const MyPurchasesPage = lazy(() => import('@/pages/member/MyPurchasesPage'));
 const NotificationsPage = lazy(() => import('@/pages/member/NotificationsPage'));
 const SettingsPage = lazy(() => import('@/pages/member/SettingsPage'));
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview'));
@@ -73,6 +74,7 @@ const MEMBER_MENU: SideItem[] = [
   { to: '/espace/activites', label: 'Mes activités', icon: CalendarDays },
   { to: '/espace/certificats', label: 'Mes certificats', icon: Award },
   { to: '/espace/contributions', label: 'Mes contributions', icon: HandCoins },
+  { to: '/espace/achats', label: 'Mes achats', icon: ShoppingBag },
   { to: '/espace/notifications', label: 'Notifications', icon: Bell },
   { to: '/espace/parametres', label: 'Paramètres', icon: Settings },
 ];
@@ -149,6 +151,7 @@ export function AppRoutes() {
           <Route path="activites" element={<MyActivitiesPage />} />
           <Route path="certificats" element={<MyCertificatesPage />} />
           <Route path="contributions" element={<MyContributionsPage />} />
+          <Route path="achats" element={<MyPurchasesPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="parametres" element={<SettingsPage />} />
         </Route>

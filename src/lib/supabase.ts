@@ -7,7 +7,14 @@ import { env, isSupabaseConfigured } from '@/config/env';
  */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(env.supabaseUrl, env.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        // Pas de verrou partagé entre onglets (navigator.locks) : un onglet resté bloqué
+        // empêchait tous les autres de lire la session (« Chargement… » sans fin).
+        lock: (_name, _acquireTimeout, fn) => fn(),
+      },
     })
   : null;
 

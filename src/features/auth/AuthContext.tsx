@@ -76,11 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isDemoMode || !supabase) return;
     let active = true;
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return;
-      setProfile(data.session ? await loadProfile(data.session.user.id).catch(() => null) : null);
-      setLoading(false);
-    });
+    // Filet de sécurité : la page ne doit jamais rester sur « Chargement… ».
+    const fallback = setTimeout(() => { if (active) setLoading(false); }, 8000);
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        const next = data.session ? await loadProfile(data.session.user.id).catch(() => null) : null;
+        if (active) setProfile(next);
+      })
+      .catch(() => { if (active) setProfile(null); })
+      .finally(() => { clearTimeout(fallback); if (active) setLoading(false); });
     // Ne jamais attendre un appel Supabase dans ce callback : il tient le verrou d'auth,
     // et signInWithPassword() resterait bloqué indéfiniment. On diffère donc la lecture du profil.
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -91,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => {
       active = false;
+      clearTimeout(fallback);
       sub.subscription.unsubscribe();
     };
   }, []);

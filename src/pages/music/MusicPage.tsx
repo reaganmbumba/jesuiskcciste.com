@@ -12,6 +12,7 @@ import { AudioPlayer } from '@/features/music/AudioPlayer';
 import { cn, formatDuration } from '@/utils/format';
 import { CoverArt } from '@/components/cards/Cards';
 import { useI18n } from '@/i18n';
+import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 
 const RIGHTS = {
   authorized: { label: { fr: 'Diffusion autorisée', en: 'Broadcast allowed', pt: 'Difusão autorizada' }, tone: 'green' },
@@ -83,6 +84,7 @@ export default function MusicPage() {
           </div>
         </aside>
       </section>
+      <div className="container-page pb-12"><YouTubeMoreVideos /></div>
       <AudioPlayer track={current} artistName={artists.find((a) => a.id === current?.artistId)?.name} onPrev={() => idx > 0 && setCurrentId(list[idx - 1].id)} onNext={() => idx >= 0 && idx < list.length - 1 && setCurrentId(list[idx + 1].id)} />
     </div>
   );

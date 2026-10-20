@@ -1,5 +1,6 @@
 import { PlayCircle } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { YouTubeMoreVideos } from './YouTubeChannel';
 
 /**
  * Archives visuelles : photo du fondateur (archive Reagan MBUMBA)
@@ -35,6 +36,7 @@ export function FounderMedia() {
           </div>
         </figcaption>
       </figure>
+      <YouTubeMoreVideos className="lg:col-span-5" />
     </div>
   );
 }

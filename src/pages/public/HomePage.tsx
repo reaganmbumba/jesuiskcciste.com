@@ -6,6 +6,7 @@ import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useAsync } from '@/hooks/useAsync';
 import { coursesRepo, getCommunityStats, listPublishedAnnouncements, listUpcomingEvents, parishesRepo, projectsRepo } from '@/services';
 import { HeroBackdrop } from '@/components/common/HeroBackdrop';
+import { YouTubeChannelSection } from '@/components/common/YouTubeChannel';
 import { ButtonLink } from '@/components/ui/Button';
 import { SectionHeading } from '@/components/ui/Misc';
 import { DemoBadge } from '@/components/ui/Badge';
@@ -223,6 +224,9 @@ export default function HomePage() {
           ) : projects.loading ? <Skeleton className="h-64 bg-white/10" /> : <EmptyState title={tx('Aucun projet actif.', 'No active projects.', 'Nenhum projeto ativo.')} />}
         </div>
       </section>
+
+      {/* CHAÎNE YOUTUBE */}
+      <YouTubeChannelSection showPageLink />
 
       {/* APPEL */}
       <section className="py-20 sm:py-28">

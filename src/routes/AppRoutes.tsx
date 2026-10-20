@@ -16,6 +16,7 @@ const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const TeachingsPage = lazy(() => import('@/pages/public/TeachingsPage'));
 const DoctrinePage = lazy(() => import('@/pages/public/DoctrinePage'));
 const HymnalPage = lazy(() => import('@/pages/public/HymnalPage'));
+const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
 const ForbiddenPage = lazy(() => import('@/pages/public/ForbiddenPage'));
@@ -105,6 +106,7 @@ export function AppRoutes() {
         <Route path="enseignements" element={<TeachingsPage />} />
         <Route path="doctrine" element={<DoctrinePage />} />
         <Route path="cantiques" element={<HymnalPage />} />
+        <Route path="videos" element={<VideosPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />
         <Route path="communaute/membres/:id" element={<MemberProfilePage />} />

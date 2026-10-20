@@ -34,6 +34,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.media', to: '/musique', children: [
       { label: l('KCC Music', 'KCC Music', 'KCC Music'), to: '/musique', description: l('Chants, albums et lecteur', 'Songs, albums and player', 'Cânticos, álbuns e leitor') },
+      { label: l('Vidéos YouTube', 'YouTube videos', 'Vídeos YouTube'), to: '/videos', description: l('La chaîne « Je suis KCCiste »', 'The “Je suis KCCiste” channel', 'O canal «Je suis KCCiste»') },
       { label: l('Artistes et chorales', 'Artists and choirs', 'Artistas e coros'), to: '/musique/artistes', description: l('Les voix de la communauté', 'The voices of the community', 'As vozes da comunidade') },
       { label: l('Bibliothèque numérique', 'Digital library', 'Biblioteca digital'), to: '/bibliotheque', description: l('Documents et supports', 'Documents and resources', 'Documentos e materiais') },
       { label: l('Recueil de cantiques', 'Hymn book', 'Hinário'), to: '/cantiques', description: l('Cantiques lingala et kikongo', 'Hymns in Lingala and Kikongo', 'Hinos em lingala e kikongo') },

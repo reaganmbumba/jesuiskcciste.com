@@ -4,6 +4,8 @@ import { Logo } from '@/components/common/Logo';
 import { useI18n } from '@/i18n';
 import { LanguageSwitch } from './LanguagePicker';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { YouTubeIcon } from '@/components/common/YouTubeChannel';
+import { YOUTUBE_CHANNEL_NAME, youtubeSubscribeUrl } from '@/config/youtube';
 
 export function Footer() {
   const { t, tx } = useI18n();
@@ -40,6 +42,7 @@ export function Footer() {
             <li><Link className={link} to="/agenda">{tx('Agenda', 'Calendar', 'Agenda')}</Link></li>
             <li><Link className={link} to="/musique">KCC Music</Link></li>
             <li><Link className={link} to="/doctrine">{tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história')}</Link></li>
+            <li><Link className={link} to="/videos">{tx('Vidéos', 'Videos', 'Vídeos')}</Link></li>
             <li><Link className={link} to="/cantiques">{tx('Cantiques', 'Hymns', 'Hinos')}</Link></li>
             <li><Link className={link} to="/bibliotheque">{tx('Bibliothèque', 'Library', 'Biblioteca')}</Link></li>
             <li><Link className={link} to="/solidarite">{t('nav.solidarity')}</Link></li>
@@ -53,6 +56,10 @@ export function Footer() {
             <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.phone || missing}</li>
             <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address || missing}</li>
           </ul>
+          <a href={youtubeSubscribeUrl()} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-white/85 transition hover:border-[#FF0000] hover:bg-[#FF0000]/15 hover:text-white">
+            <YouTubeIcon className="h-4 w-6" />
+            <span>{tx('S’abonner sur YouTube', 'Subscribe on YouTube', 'Subscrever no YouTube')} · <strong>{YOUTUBE_CHANNEL_NAME}</strong></span>
+          </a>
           <div className="mt-5 flex flex-wrap gap-2">
             {settings.socials.length ? settings.socials.map((s) => (
               <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/75 transition hover:border-gold hover:bg-gold/10 hover:text-white">{s.label}</a>

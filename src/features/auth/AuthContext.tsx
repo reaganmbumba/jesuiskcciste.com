@@ -69,6 +69,18 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   };
 }
 
+/** Traduit les messages d'erreur de Supabase Auth en français compréhensible. */
+function authError(error: { message: string }): Error {
+  const m = error.message.toLowerCase();
+  if (m.includes('invalid login credentials')) return new Error('Adresse e-mail ou mot de passe incorrect.');
+  if (m.includes('rate limit')) return new Error('Trop d’e-mails envoyés en peu de temps. Réessayez dans une heure ou contactez l’administration.');
+  if (m.includes('already registered') || m.includes('already been registered')) return new Error('Un compte existe déjà avec cette adresse e-mail. Connectez-vous ou utilisez « Mot de passe oublié ».');
+  if (m.includes('email not confirmed')) return new Error('Votre adresse e-mail n’est pas encore confirmée : cliquez sur le lien reçu par e-mail.');
+  if (m.includes('password should be')) return new Error('Mot de passe trop faible : utilisez au moins 10 caractères, avec lettres et chiffres.');
+  if (m.includes('invalid') && m.includes('email')) return new Error('Adresse e-mail invalide.');
+  return new Error(error.message);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(() => (isDemoMode ? readDemoSession() : null));
   const [loading, setLoading] = useState(!isDemoMode);
@@ -104,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     if (isDemoMode) throw new Error('Supabase n’est pas configuré : utilisez un compte de démonstration ci-dessous.');
     const { data, error } = await supabase!.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Adresse e-mail ou mot de passe incorrect.' : error.message);
+    if (error) throw authError(error);
     // Profil chargé avant la redirection, sinon les pages protégées renverraient vers /connexion.
     let loaded: Profile | null;
     try {
@@ -140,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         data: { first_name: input.firstName, last_name: input.lastName, middle_name: input.middleName ?? null, phone: input.phone ?? null, country: input.country, city: input.city, parish_id: input.parishId || null, section_id: input.sectionId || null, consent_at: new Date().toISOString() },
       },
     });
-    if (error) throw error;
+    if (error) throw authError(error);
     return { needsEmailConfirmation: !data.session };
   }, []);
 
@@ -157,13 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestPasswordReset = useCallback(async (email: string) => {
     if (isDemoMode) throw new Error('Mode démonstration : aucun e-mail n’est envoyé. Configurez Supabase pour activer la réinitialisation.');
     const { error } = await supabase!.auth.resetPasswordForEmail(email, { redirectTo: `${env.siteUrl}/mot-de-passe-oublie?etape=nouveau` });
-    if (error) throw error;
+    if (error) throw authError(error);
   }, []);
 
   const updatePassword = useCallback(async (password: string) => {
     if (isDemoMode) throw new Error('Mode démonstration : aucun mot de passe n’est enregistré.');
     const { error } = await supabase!.auth.updateUser({ password });
-    if (error) throw error;
+    if (error) throw authError(error);
   }, []);
 
   const updateProfile = useCallback(

@@ -44,14 +44,14 @@ Commande de build : `npm run build`. Dossier publié : `dist`.
 ## 5. Paiements mobiles (phase future)
 Voir `src/features/solidarity/payments.ts`. Les secrets marchands sont stockés dans les secrets Supabase (`supabase secrets set`) et utilisés uniquement par des Edge Functions. La confirmation se fait par webhook signé, puis par une revérification auprès de l’opérateur.
 
-## 6. Cloudflare Pages en ligne de commande (jesuiskcciste.com)
-Avec `CLOUDFLARE_API_TOKEN` (droit « Cloudflare Pages : Modifier ») et `CLOUDFLARE_ACCOUNT_ID` définis :
-```bash
-npx wrangler@3 pages project create kcc-connect --production-branch main   # une seule fois
-npm run deploy
-```
-Puis, dans Cloudflare : Workers & Pages › kcc-connect › Domaines personnalisés › ajouter `jesuiskcciste.com` (et `www.jesuiskcciste.com`).
-Les en-têtes de sécurité sont dans `public/_headers` et la réécriture SPA dans `public/_redirects`.
+## 6. Cloudflare Workers (déploiement automatique, jesuiskcciste.com)
+Le site est publié par le Worker Cloudflare `jesuiskcciste-com`, relié au dépôt GitHub `reaganmbumba/jesuiskcciste.com`. Chaque envoi sur `main` lance `npx wrangler deploy`, qui lit `wrangler.jsonc` :
+- `build.command` construit le site (`npm run build`) puis `dist` est publié ;
+- `not_found_handling: single-page-application` sert `index.html` pour toutes les pages ;
+- `routes` branche `jesuiskcciste.com` et `www.jesuiskcciste.com` (le domaine est enregistré chez Cloudflare, sa zone DNS ne doit contenir aucun autre enregistrement pour ces deux noms) ;
+- `workers_dev` garde aussi l'adresse `jesuiskcciste-com.reaganmbumba.workers.dev`.
+
+Les en-têtes de sécurité sont dans `public/_headers` et les redirections Android dans `public/_redirects`.
 
 ## 7. Application Android (.apk et .aab)
 

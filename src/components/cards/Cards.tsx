@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/Misc';
 import { useI18n } from '@/i18n';
 import { formatCurrency, formatDate, formatTime, percent } from '@/utils/format';
-import { EVENT_CATEGORY_LABELS, EVENT_STATUS } from '@/features/events/labels';
-import { ACCESS_LABELS, LEVEL_LABELS } from '@/features/academy/labels';
+import { eventCategoryLabel, eventStatus } from '@/features/events/labels';
+import { accessLabel, levelLabel } from '@/features/academy/labels';
 
 /** Visuel de remplacement élégant lorsqu'aucune image n'est fournie. */
 export function CoverArt({ seed, icon, className = '' }: { seed: string; icon: React.ReactNode; className?: string }) {
@@ -27,7 +27,7 @@ export function CoverArt({ seed, icon, className = '' }: { seed: string; icon: R
 }
 
 export function AnnouncementCard({ a }: { a: Announcement }) {
-  const { locale } = useI18n();
+  const { locale, tx } = useI18n();
   return (
     <Link to={`/actualites/${a.id}`} className="group flex flex-col overflow-hidden rounded-3xl border border-night/[0.06] bg-white p-2 shadow-soft card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
       <div className="overflow-hidden rounded-[1.25rem]">
@@ -36,14 +36,14 @@ export function AnnouncementCard({ a }: { a: Announcement }) {
       <div className="flex flex-1 flex-col p-4 pt-5">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge tone="gold">{a.category}</Badge>
-          {a.pinned && <Badge tone="night"><Pin className="h-3 w-3" /> Épinglée</Badge>}
-          {a.audience !== 'public' && <Badge tone="blue">Membres</Badge>}
+          {a.pinned && <Badge tone="night"><Pin className="h-3 w-3" /> {tx('Épinglée', 'Pinned', 'Fixado')}</Badge>}
+          {a.audience !== 'public' && <Badge tone="blue">{tx('Membres', 'Members', 'Membros')}</Badge>}
         </div>
         <h3 className="font-display text-xl font-medium leading-snug text-night transition-colors group-hover:text-gold-700">{a.title}</h3>
         <p className="mt-2 line-clamp-2 text-sm text-ink/65">{a.summary}</p>
         <div className="mt-auto flex items-center justify-between border-t border-night/[0.06] pt-4 text-xs text-ink/55">
           <time dateTime={a.publishedAt}>{formatDate(a.publishedAt, locale)}</time>
-          <span className="flex items-center gap-1.5 font-semibold text-night">Lire <span className="grid h-7 w-7 place-items-center rounded-full bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><ArrowRight className="h-3.5 w-3.5 transition group-hover:-rotate-45" /></span></span>
+          <span className="flex items-center gap-1.5 font-semibold text-night">{tx('Lire', 'Read', 'Ler')} <span className="grid h-7 w-7 place-items-center rounded-full bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><ArrowRight className="h-3.5 w-3.5 transition group-hover:-rotate-45" /></span></span>
         </div>
       </div>
     </Link>
@@ -54,7 +54,7 @@ export function EventCard({ e, parishes }: { e: KccEvent; parishes?: Parish[] })
   const { locale } = useI18n();
   const d = new Date(e.startsAt);
   const parish = parishes?.find((p) => p.id === e.parishId);
-  const status = EVENT_STATUS[e.status];
+  const status = eventStatus(e.status, locale);
   return (
     <Link to={`/agenda/${e.id}`} className="group flex gap-4 rounded-3xl border border-night/[0.06] bg-white p-3 shadow-soft card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold sm:p-4">
       <div className="relative flex w-[4.5rem] shrink-0 flex-col items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-b from-night-600 to-night-900 py-3 text-white shadow-inner-line">
@@ -65,7 +65,7 @@ export function EventCard({ e, parishes }: { e: KccEvent; parishes?: Parish[] })
       </div>
       <div className="min-w-0 flex-1 py-1">
         <div className="mb-1.5 flex flex-wrap gap-1.5">
-          <Badge tone="gold">{EVENT_CATEGORY_LABELS[e.category]}</Badge>
+          <Badge tone="gold">{eventCategoryLabel(e.category, locale)}</Badge>
           {e.status !== 'scheduled' && <Badge tone={status.tone}>{status.label}</Badge>}
         </div>
         <h3 className="truncate font-semibold text-night transition-colors group-hover:text-gold-700">{e.title}</h3>
@@ -79,7 +79,8 @@ export function EventCard({ e, parishes }: { e: KccEvent; parishes?: Parish[] })
 }
 
 export function CourseCard({ c }: { c: Course }) {
-  const access = ACCESS_LABELS[c.access];
+  const { locale, tx } = useI18n();
+  const access = accessLabel(c.access, locale);
   const lessons = c.modules.reduce((s, m) => s + m.lessons.length, 0);
   return (
     <Link to={`/academie/formations/${c.slug}`} className="group flex flex-col overflow-hidden rounded-3xl border border-night/[0.06] bg-white p-2 shadow-soft card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
@@ -91,9 +92,9 @@ export function CourseCard({ c }: { c: Course }) {
         <h3 className="mt-1.5 font-display text-xl font-medium leading-snug text-night transition-colors group-hover:text-gold-700">{c.title}</h3>
         <p className="mt-2 line-clamp-2 text-sm text-ink/65">{c.summary}</p>
         <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2 pt-4 text-xs text-ink/60">
-          <span className="flex items-center gap-1"><Signal className="h-3.5 w-3.5" />{LEVEL_LABELS[c.level]}</span>
+          <span className="flex items-center gap-1"><Signal className="h-3.5 w-3.5" />{levelLabel(c.level, locale)}</span>
           <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />≈ {c.estimatedHours} h</span>
-          <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{lessons} leçon{lessons > 1 ? 's' : ''}</span>
+          <span className="flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{lessons} {lessons > 1 ? tx('leçons', 'lessons', 'lições') : tx('leçon', 'lesson', 'lição')}</span>
         </div>
         <div className="mt-3"><Badge tone={access.tone}>{access.label}</Badge></div>
       </div>
@@ -102,26 +103,26 @@ export function CourseCard({ c }: { c: Course }) {
 }
 
 export function ProjectCard({ p, dark }: { p: SolidarityProject; dark?: boolean }) {
-  const { locale } = useI18n();
+  const { locale, tx } = useI18n();
   const pct = percent(p.confirmedAmount, p.goalAmount);
   return (
     <article className={`group relative flex flex-col overflow-hidden rounded-3xl p-6 transition duration-300 hover:-translate-y-1 sm:p-7 ${dark ? 'glass text-white hover:border-gold/30 hover:bg-white/[0.09]' : 'border border-night/[0.06] bg-white shadow-soft hover:shadow-lift'}`}>
       <div className="flex items-center justify-between gap-2">
-        <Badge tone={p.status === 'active' ? 'green' : p.status === 'completed' ? 'gold' : 'neutral'}>{p.status === 'active' ? 'En cours' : p.status === 'completed' ? 'Objectif atteint' : 'Clôturé'}</Badge>
-        {p.deadline && <span className={`text-xs ${dark ? 'text-white/55' : 'text-ink/55'}`}>Jusqu’au {formatDate(p.deadline, locale, { dateStyle: 'medium' })}</span>}
+        <Badge tone={p.status === 'active' ? 'green' : p.status === 'completed' ? 'gold' : 'neutral'}>{p.status === 'active' ? tx('En cours', 'Ongoing', 'Em curso') : p.status === 'completed' ? tx('Objectif atteint', 'Goal reached', 'Objetivo atingido') : tx('Clôturé', 'Closed', 'Encerrado')}</Badge>
+        {p.deadline && <span className={`text-xs ${dark ? 'text-white/55' : 'text-ink/55'}`}>{tx('Jusqu’au', 'Until', 'Até')} {formatDate(p.deadline, locale, { dateStyle: 'medium' })}</span>}
       </div>
       <h3 className={`mt-5 font-display text-2xl font-medium ${dark ? 'text-white' : 'text-night'}`}>{p.name}</h3>
       <p className={`mt-1.5 text-sm ${dark ? 'text-white/65' : 'text-ink/65'}`}>{p.summary}</p>
       <div className="mt-5">
-        <ProgressBar value={pct} label={`Progression du projet ${p.name}`} />
+        <ProgressBar value={pct} label={`${tx('Progression du projet', 'Project progress', 'Progresso do projeto')} ${p.name}`} />
         <div className="mt-2 flex items-baseline justify-between text-sm">
-          <span className={dark ? 'text-white' : 'text-night'}><strong className="font-semibold">{formatCurrency(p.confirmedAmount, p.currency, locale)}</strong> <span className={dark ? 'text-white/50' : 'text-ink/50'}>confirmés</span></span>
+          <span className={dark ? 'text-white' : 'text-night'}><strong className="font-semibold">{formatCurrency(p.confirmedAmount, p.currency, locale)}</strong> <span className={dark ? 'text-white/50' : 'text-ink/50'}>{tx('confirmés', 'confirmed', 'confirmados')}</span></span>
           <span className="font-display text-2xl font-medium text-gold">{pct} %</span>
         </div>
-        <p className={`text-xs ${dark ? 'text-white/45' : 'text-ink/50'}`}>Objectif : {formatCurrency(p.goalAmount, p.currency, locale)}</p>
+        <p className={`text-xs ${dark ? 'text-white/45' : 'text-ink/50'}`}>{tx('Objectif', 'Goal', 'Objetivo')} : {formatCurrency(p.goalAmount, p.currency, locale)}</p>
       </div>
       <Link to={`/solidarite/projets/${p.slug}`} className={`mt-5 inline-flex items-center gap-1.5 text-sm font-semibold ${dark ? 'text-gold-200 hover:text-gold' : 'text-gold-600 hover:text-gold-700'}`}>
-        Rapport et modalités <ArrowRight className="h-4 w-4" />
+        {tx('Rapport et modalités', 'Report and details', 'Relatório e modalidades')} <ArrowRight className="h-4 w-4" />
       </Link>
     </article>
   );

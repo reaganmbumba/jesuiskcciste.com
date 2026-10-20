@@ -1,6 +1,6 @@
 import type { Locale } from '@/i18n';
 
-const intlLocale: Record<Locale, string> = { fr: 'fr-FR', ln: 'fr-CD', pt: 'pt-PT', en: 'en-GB' };
+const intlLocale: Record<Locale, string> = { fr: 'fr-FR', pt: 'pt-PT', en: 'en-GB' };
 
 export function formatDate(iso: string, locale: Locale = 'fr', opts: Intl.DateTimeFormatOptions = { dateStyle: 'long' }, timeZone?: string) {
   try {

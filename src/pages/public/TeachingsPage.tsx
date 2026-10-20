@@ -5,19 +5,26 @@ import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FounderMedia } from '@/components/common/FounderMedia';
-import { minuteToLearn, pgmVision, prophetHistory, socialFund, songs, teachings } from '@/content/eglise';
+import * as fr from '@/content/eglise';
+import * as en from '@/content/eglise.en';
+import * as pt from '@/content/eglise.pt';
+import { useI18n, type Tri } from '@/i18n';
+
+const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
 const anchors = [
-  { id: 'enseignements', label: 'Enseignements', icon: BookOpen },
-  { id: 'histoire', label: 'Histoire du Prophète', icon: ScrollText },
-  { id: 'pgm', label: 'Vision PGM', icon: Music2 },
-  { id: 'chants', label: 'Chants', icon: Music2 },
-  { id: 'caisse', label: 'Caisse d’assistance', icon: HandHeart },
+  { id: 'enseignements', label: T('Enseignements', 'Teachings', 'Ensinamentos'), icon: BookOpen },
+  { id: 'histoire', label: T('Histoire du Prophète', 'The Prophet’s story', 'História do Profeta'), icon: ScrollText },
+  { id: 'pgm', label: T('Vision PGM', 'PGM vision', 'Visão PGM'), icon: Music2 },
+  { id: 'chants', label: T('Chants', 'Songs', 'Cânticos'), icon: Music2 },
+  { id: 'caisse', label: T('Caisse d’assistance', 'Assistance fund', 'Caixa de assistência'), icon: HandHeart },
 ];
 
 /** Enseignements, histoire et textes de référence de l'EBNM/KCC (contenus réels, voir src/content/eglise.ts). */
 export default function TeachingsPage() {
   const { hash } = useLocation();
+  const { tx, pick } = useI18n();
+  const { minuteToLearn, pgmVision, prophetHistory, socialFund, songs, teachings } = pick({ fr, en, pt });
   useEffect(() => {
     if (!hash) return;
     const el = document.getElementById(hash.slice(1));
@@ -26,18 +33,18 @@ export default function TeachingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Patrimoine KCC" title="Enseignements et histoire" description="La parole du Prophète, les récits de son appel, la vision de la musique et les textes de la solidarité KCCiste.">
-        <nav aria-label="Sections de la page" className="flex flex-wrap gap-2">
+      <PageHeader eyebrow={tx('Patrimoine KCC', 'KCC heritage', 'Património KCC')} title={tx('Enseignements et histoire', 'Teachings and history', 'Ensinamentos e história')} description={tx('La parole du Prophète, les récits de son appel, la vision de la musique et les textes de la solidarité KCCiste.', 'The Prophet’s word, the accounts of his calling, the vision for music and the texts of KCCist solidarity.', 'A palavra do Profeta, os relatos do seu chamamento, a visão da música e os textos da solidariedade KCCista.')}>
+        <nav aria-label={tx('Sections de la page', 'Page sections', 'Secções da página')} className="flex flex-wrap gap-2">
           {anchors.map(({ id, label, icon: Icon }) => (
             <a key={id} href={`#${id}`} className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-sm text-white/85 transition hover:border-gold/50 hover:text-white">
-              <Icon className="h-4 w-4 text-gold-300" aria-hidden />{label}
+              <Icon className="h-4 w-4 text-gold-300" aria-hidden />{pick(label)}
             </a>
           ))}
         </nav>
       </PageHeader>
 
       <section id="enseignements" className="container-page scroll-mt-32 py-14">
-        <SectionHeading eyebrow="Enseignements" title="La parole du Prophète" />
+        <SectionHeading eyebrow={tx('Enseignements', 'Teachings', 'Ensinamentos')} title={tx('La parole du Prophète', 'The Prophet’s word', 'A palavra do Profeta')} />
         <div className="grid gap-6 lg:grid-cols-3">
           {teachings.map((t) => (
             <Card key={t.id} className="lg:col-span-2">
@@ -74,7 +81,7 @@ export default function TeachingsPage() {
 
       <section id="histoire" className="scroll-mt-32 bg-white py-14">
         <div className="container-page">
-          <SectionHeading eyebrow="Histoire" title="L’appel de DIZOLELE Isaac" description="Récits des épreuves et de la consécration qui ont précédé son ministère." action={<Link to="/doctrine#prophete" className="text-sm font-semibold text-gold-700 hover:underline">Grandes dates du Prophète →</Link>} />
+          <SectionHeading eyebrow={tx('Histoire', 'History', 'História')} title={tx('L’appel de DIZOLELE Isaac', 'The calling of DIZOLELE Isaac', 'O chamamento de DIZOLELE Isaac')} description={tx('Récits des épreuves et de la consécration qui ont précédé son ministère.', 'Accounts of the trials and the consecration that came before his ministry.', 'Relatos das provas e da consagração que precederam o seu ministério.')} action={<Link to="/doctrine#prophete" className="text-sm font-semibold text-gold-700 hover:underline">{tx('Grandes dates du Prophète', 'Key dates of the Prophet', 'Grandes datas do Profeta')} →</Link>} />
           <FounderMedia />
           <ol className="relative space-y-8 border-l-2 border-gold/30 pl-6 sm:pl-8">
             {prophetHistory.map((c, i) => (
@@ -95,7 +102,7 @@ export default function TeachingsPage() {
       </section>
 
       <section id="pgm" className="container-page scroll-mt-32 py-14">
-        <SectionHeading eyebrow="Musique" title={pgmVision.title} description={pgmVision.intro} />
+        <SectionHeading eyebrow={tx('Musique', 'Music', 'Música')} title={pgmVision.title} description={pgmVision.intro} />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {pgmVision.axes.map((a, i) => (
             <div key={a.t} className="rounded-2xl border border-night/[0.06] bg-white p-5 shadow-soft">
@@ -109,7 +116,7 @@ export default function TeachingsPage() {
 
       <section id="chants" className="scroll-mt-32 bg-white py-14">
         <div className="container-page">
-          <SectionHeading eyebrow="Chants" title="Paroles de chants" action={<Link to="/cantiques" className="text-sm font-semibold text-gold-700 hover:underline">Recueil complet de cantiques →</Link>} />
+          <SectionHeading eyebrow={tx('Chants', 'Songs', 'Cânticos')} title={tx('Paroles de chants', 'Song lyrics', 'Letras de cânticos')} action={<Link to="/cantiques" className="text-sm font-semibold text-gold-700 hover:underline">{tx('Recueil complet de cantiques', 'Full hymn book', 'Hinário completo')} →</Link>} />
           <div className="grid gap-6 lg:grid-cols-3">
             {songs.map((s) => (
               <Card key={s.id}>
@@ -132,7 +139,7 @@ export default function TeachingsPage() {
       </section>
 
       <section id="caisse" className="container-page scroll-mt-32 py-14">
-        <SectionHeading eyebrow="Solidarité" title={socialFund.title} description={socialFund.preamble} />
+        <SectionHeading eyebrow={tx('Solidarité', 'Solidarity', 'Solidariedade')} title={socialFund.title} description={socialFund.preamble} />
         <Badge tone="amber">{socialFund.status}</Badge>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {socialFund.keyFacts.map((f) => (

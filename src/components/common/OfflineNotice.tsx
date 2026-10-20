@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { WifiOff } from 'lucide-react';
+import { useI18n } from '@/i18n';
 
 /** Informe l'utilisateur d'une perte de réseau. L'application ne fonctionne pas hors connexion. */
 export function OfflineNotice() {
+  const { tx } = useI18n();
   const [offline, setOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
   useEffect(() => {
     const on = () => setOffline(false);
@@ -14,7 +16,7 @@ export function OfflineNotice() {
   if (!offline) return null;
   return (
     <div role="status" className="bg-red-600 text-white">
-      <p className="container-page flex items-center justify-center gap-2 py-1.5 text-xs font-medium"><WifiOff className="h-3.5 w-3.5" /> Vous êtes hors connexion. Les contenus ne peuvent pas être mis à jour.</p>
+      <p className="container-page flex items-center justify-center gap-2 py-1.5 text-xs font-medium"><WifiOff className="h-3.5 w-3.5" /> {tx('Vous êtes hors connexion. Les contenus ne peuvent pas être mis à jour.', 'You are offline. Content cannot be updated.', 'Está sem ligação. Os conteúdos não podem ser atualizados.')}</p>
     </div>
   );
 }

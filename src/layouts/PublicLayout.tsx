@@ -4,6 +4,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { MobileTabBar } from '@/components/layout/MobileTabBar';
 import { PageLoader } from '@/components/ui/Spinner';
+import { LanguageWelcome } from '@/components/layout/LanguagePicker';
 
 export function ScrollToTop() {
   const { pathname } = useLocation();
@@ -24,6 +25,7 @@ export function PublicLayout() {
       </main>
       <Footer />
       <MobileTabBar />
+      <LanguageWelcome />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/utils/format';
+import { useI18n } from '@/i18n';
 
 type Tone = 'neutral' | 'gold' | 'night' | 'green' | 'amber' | 'red' | 'blue';
 const tones: Record<Tone, string> = {
@@ -16,6 +17,7 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; 
   return <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ring-1 ring-inset', tones[tone], className)}>{children}</span>;
 }
 
-export function DemoBadge({ label = 'Exemple' }: { label?: string }) {
-  return <Badge tone="amber" className="uppercase tracking-wide">{label}</Badge>;
+export function DemoBadge({ label }: { label?: string }) {
+  const { tx } = useI18n();
+  return <Badge tone="amber" className="uppercase tracking-wide">{label ?? tx('Exemple', 'Sample', 'Exemplo')}</Badge>;
 }

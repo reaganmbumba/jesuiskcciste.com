@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Globe, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import { Logo } from '@/components/common/Logo';
-import { LOCALES, useI18n, type Locale } from '@/i18n';
+import { useI18n } from '@/i18n';
+import { LanguageSwitch } from './LanguagePicker';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 export function Footer() {
-  const { t, locale, setLocale } = useI18n();
+  const { t, tx } = useI18n();
   const { settings } = useSiteSettings();
   const col = 'mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gold';
   const link = 'text-sm text-white/65 transition hover:text-white';
@@ -26,21 +27,23 @@ export function Footer() {
           <p className={col}>{t('footer.navigation')}</p>
           <ul className="space-y-2.5">
             <li><Link className={link} to="/">{t('nav.home')}</Link></li>
-            <li><Link className={link} to="/a-propos">À propos</Link></li>
+            <li><Link className={link} to="/a-propos">{tx('À propos', 'About', 'Sobre')}</Link></li>
             <li><Link className={link} to="/communaute">{t('nav.community')}</Link></li>
-            <li><Link className={link} to="/paroisses">Paroisses</Link></li>
-            <li><Link className={link} to="/actualites">Actualités</Link></li>
+            <li><Link className={link} to="/paroisses">{tx('Paroisses', 'Parishes', 'Paróquias')}</Link></li>
+            <li><Link className={link} to="/actualites">{tx('Actualités', 'News', 'Notícias')}</Link></li>
           </ul>
         </div>
         <div className="lg:col-span-2">
           <p className={col}>{t('footer.services')}</p>
           <ul className="space-y-2.5">
-            <li><Link className={link} to="/academie">Académie KCC</Link></li>
-            <li><Link className={link} to="/agenda">Agenda</Link></li>
+            <li><Link className={link} to="/academie">{tx('Académie KCC', 'KCC Academy', 'Academia KCC')}</Link></li>
+            <li><Link className={link} to="/agenda">{tx('Agenda', 'Calendar', 'Agenda')}</Link></li>
             <li><Link className={link} to="/musique">KCC Music</Link></li>
-            <li><Link className={link} to="/bibliotheque">Bibliothèque</Link></li>
-            <li><Link className={link} to="/solidarite">Solidarité</Link></li>
-            <li><a className={link} href="/app/android.apk">Application Android</a></li>
+            <li><Link className={link} to="/doctrine">{tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história')}</Link></li>
+            <li><Link className={link} to="/cantiques">{tx('Cantiques', 'Hymns', 'Hinos')}</Link></li>
+            <li><Link className={link} to="/bibliotheque">{tx('Bibliothèque', 'Library', 'Biblioteca')}</Link></li>
+            <li><Link className={link} to="/solidarite">{t('nav.solidarity')}</Link></li>
+            <li><a className={link} href="/app/android.apk">{tx('Application Android', 'Android app', 'Aplicação Android')}</a></li>
           </ul>
         </div>
         <div className="lg:col-span-4">
@@ -53,23 +56,17 @@ export function Footer() {
           <div className="mt-5 flex flex-wrap gap-2">
             {settings.socials.length ? settings.socials.map((s) => (
               <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/75 transition hover:border-gold hover:bg-gold/10 hover:text-white">{s.label}</a>
-            )) : <p className="text-xs text-white/40">Réseaux sociaux officiels : {t('footer.notConfigured').toLowerCase()}</p>}
+            )) : <p className="text-xs text-white/40">{tx('Réseaux sociaux officiels', 'Official social media', 'Redes sociais oficiais')} : {t('footer.notConfigured').toLowerCase()}</p>}
           </div>
         </div>
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-4 py-5 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} JE SUIS KCCiste. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} JE SUIS KCCiste. {tx('Tous droits réservés.', 'All rights reserved.', 'Todos os direitos reservados.')}</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/confidentialite" className="hover:text-white">{t('footer.privacy')}</Link>
             <Link to="/confidentialite#conditions" className="hover:text-white">{t('footer.legal')}</Link>
-            <label className="flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5" aria-hidden />
-              <span className="sr-only">{t('footer.language')}</span>
-              <select value={locale} onChange={(e) => setLocale(e.target.value as Locale)} className="rounded-md border border-white/15 bg-night px-2 py-1 text-white/80 focus:border-gold focus:outline-none">
-                {LOCALES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-              </select>
-            </label>
+            <LanguageSwitch light />
           </div>
         </div>
       </div>

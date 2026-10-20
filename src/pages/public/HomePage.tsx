@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen, CalendarDays, Church, Globe2, GraduationCap, HandHeart, Music2, Sparkles, Users } from 'lucide-react';
-import { useI18n } from '@/i18n';
+import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useAsync } from '@/hooks/useAsync';
@@ -14,17 +14,23 @@ import { EmptyState, ErrorState } from '@/components/ui/States';
 import { AnnouncementCard, CourseCard, EventCard, ProjectCard } from '@/components/cards/Cards';
 import { formatDate, formatNumber, formatTime } from '@/utils/format';
 
-const SERVICES = [
-  { title: 'Les membres', text: 'Un annuaire respectueux de la vie privée pour se retrouver, où que l’on soit.', to: '/communaute/annuaire', icon: Users },
-  { title: 'Les formations', text: 'L’Académie KCC : parcours, examens et certificats vérifiables.', to: '/academie', icon: GraduationCap },
-  { title: 'Les activités', text: 'Cultes, réunions, séminaires et rassemblements dans un agenda commun.', to: '/agenda', icon: CalendarDays },
-  { title: 'KCC Music', text: 'Chants, albums, chorales et artistes, dans le respect des droits.', to: '/musique', icon: Music2 },
-  { title: 'La solidarité', text: 'Des projets transparents, suivis et documentés, au service de tous.', to: '/solidarite', icon: HandHeart },
-  { title: 'Les paroisses', text: 'Les paroisses et leurs sections, en RD Congo et dans la diaspora.', to: '/paroisses', icon: Church },
+const SERVICES: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
+  { title: { fr: 'Les membres', en: 'Members', pt: 'Os membros' }, text: { fr: 'Un annuaire respectueux de la vie privée pour se retrouver, où que l’on soit.', en: 'A privacy-friendly directory to find one another, wherever you are.', pt: 'Um diretório que respeita a privacidade, para nos encontrarmos onde quer que estejamos.' }, to: '/communaute/annuaire', icon: Users },
+  { title: { fr: 'Les formations', en: 'Training', pt: 'As formações' }, text: { fr: 'L’Académie KCC : parcours, examens et certificats vérifiables.', en: 'The KCC Academy: learning paths, exams and verifiable certificates.', pt: 'A Academia KCC: percursos, exames e certificados verificáveis.' }, to: '/academie', icon: GraduationCap },
+  { title: { fr: 'Les activités', en: 'Activities', pt: 'As atividades' }, text: { fr: 'Cultes, réunions, séminaires et rassemblements dans un agenda commun.', en: 'Services, meetings, seminars and gatherings in one shared calendar.', pt: 'Cultos, reuniões, seminários e encontros numa agenda comum.' }, to: '/agenda', icon: CalendarDays },
+  { title: { fr: 'KCC Music', en: 'KCC Music', pt: 'KCC Music' }, text: { fr: 'Chants, albums, chorales et artistes, dans le respect des droits.', en: 'Songs, albums, choirs and artists, with respect for copyright.', pt: 'Cânticos, álbuns, coros e artistas, respeitando os direitos.' }, to: '/musique', icon: Music2 },
+  { title: { fr: 'La solidarité', en: 'Solidarity', pt: 'A solidariedade' }, text: { fr: 'Des projets transparents, suivis et documentés, au service de tous.', en: 'Transparent, tracked and documented projects that serve everyone.', pt: 'Projetos transparentes, acompanhados e documentados, ao serviço de todos.' }, to: '/solidarite', icon: HandHeart },
+  { title: { fr: 'Les paroisses', en: 'Parishes', pt: 'As paróquias' }, text: { fr: 'Les paroisses et leurs sections, en RD Congo et dans la diaspora.', en: 'Parishes and their sections, in the DR Congo and across the diaspora.', pt: 'As paróquias e as suas secções, na RD Congo e na diáspora.' }, to: '/paroisses', icon: Church },
 ];
 
+const VALUES: Tri<string[]> = {
+  fr: ['Foi', 'Unité', 'Formation', 'Louange', 'Solidarité', 'Service', 'Diaspora', 'Espérance'],
+  en: ['Faith', 'Unity', 'Learning', 'Praise', 'Solidarity', 'Service', 'Diaspora', 'Hope'],
+  pt: ['Fé', 'Unidade', 'Formação', 'Louvor', 'Solidariedade', 'Serviço', 'Diáspora', 'Esperança'],
+};
+
 export default function HomePage() {
-  const { t, locale } = useI18n();
+  const { t, tx, pick, locale } = useI18n();
   const { profile } = useAuth();
   const { settings } = useSiteSettings();
   const signedIn = !!profile;
@@ -57,11 +63,11 @@ export default function HomePage() {
               <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-gold-300 to-gold-500 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-night">
                 <Sparkles className="h-3 w-3" aria-hidden /> KCC
               </span>
-              La communauté KCCiste, partout dans le monde
+              {tx('La communauté KCCiste, partout dans le monde', 'The KCCist community, all over the world', 'A comunidade KCCista, em todo o mundo')}
             </p>
             <h1 className="animate-fade-up font-display text-[3rem] font-medium leading-[0.98] tracking-[-0.03em] [animation-delay:80ms] sm:text-7xl lg:text-[5.6rem]">
-              Un seul peuple.<br />
-              <span className="animate-shimmer italic text-gold-gradient">Une même communauté.</span>
+              {tx('Un seul peuple.', 'One people.', 'Um só povo.')}<br />
+              <span className="animate-shimmer italic text-gold-gradient">{tx('Une même communauté.', 'One community.', 'Uma mesma comunidade.')}</span>
             </h1>
             <p className="mt-7 max-w-xl animate-fade-up text-lg leading-relaxed text-white/70 [animation-delay:160ms] sm:text-xl">{t('hero.subtitle')}</p>
             <div className="mt-10 flex animate-fade-up flex-col gap-3 [animation-delay:240ms] sm:flex-row">
@@ -69,19 +75,19 @@ export default function HomePage() {
               <ButtonLink to="/agenda" variant="light" size="lg" className="group">{t('hero.discover')} <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" /></ButtonLink>
             </div>
             <ul className="mt-12 flex animate-fade-up flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/55 [animation-delay:320ms]">
-              {['RD Congo & diaspora', 'Académie et certificats', 'Français · Lingala · Português · English'].map((x) => (
+              {[tx('RD Congo & diaspora', 'DR Congo & diaspora', 'RD Congo & diáspora'), tx('Académie et certificats', 'Academy and certificates', 'Academia e certificados'), 'Français · English · Português'].map((x) => (
                 <li key={x} className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-gold shadow-glow" aria-hidden />{x}</li>
               ))}
             </ul>
           </div>
           {next && (
-            <aside className="relative lg:col-span-5 lg:pl-6" aria-label="Prochain rendez-vous">
+            <aside className="relative lg:col-span-5 lg:pl-6" aria-label={tx('Prochain rendez-vous', 'Next event', 'Próximo encontro')}>
               <div className="pointer-events-none absolute -inset-6 hidden rounded-[2.5rem] bg-gradient-to-br from-gold/20 via-transparent to-transparent blur-2xl lg:block" aria-hidden />
               <Link to={`/agenda/${next.id}`} className="group relative block animate-fade-up overflow-hidden rounded-3xl glass p-6 transition duration-500 [animation-delay:300ms] hover:border-gold/30 hover:bg-white/[0.09] sm:p-7 lg:animate-float">
                 <div className="flex items-center justify-between">
                   <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-gold-200">
                     <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-70" /><span className="relative inline-flex h-2 w-2 rounded-full bg-gold" /></span>
-                    Prochain rendez-vous
+                    {tx('Prochain rendez-vous', 'Next event', 'Próximo encontro')}
                   </p>
                   <CalendarDays className="h-5 w-5 text-white/40" aria-hidden />
                 </div>
@@ -97,7 +103,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5">
-                  <span className="text-sm font-semibold text-white">Voir l’événement</span>
+                  <span className="text-sm font-semibold text-white">{tx('Voir l’événement', 'View event', 'Ver o evento')}</span>
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-night transition group-hover:bg-gold"><ArrowRight className="h-4 w-4 transition group-hover:-rotate-45" /></span>
                 </div>
               </Link>
@@ -114,7 +120,7 @@ export default function HomePage() {
             <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-gold/15 blur-3xl" aria-hidden />
             <div className="relative mb-6 flex flex-wrap items-center justify-between gap-2">
               <h2 id="stats-title" className="font-display text-2xl font-medium text-night">{t('home.stats.title')}</h2>
-              {stats.data?.isExample && <span className="flex items-center gap-2 text-xs text-ink/55"><DemoBadge /> Valeurs d’exemple, non officielles</span>}
+              {stats.data?.isExample && <span className="flex items-center gap-2 text-xs text-ink/55"><DemoBadge /> {tx('Valeurs d’exemple, non officielles', 'Sample figures, not official', 'Valores de exemplo, não oficiais')}</span>}
             </div>
             {stats.error ? <ErrorState error={stats.error} onRetry={stats.reload} /> : (
               <dl className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-0 lg:divide-x lg:divide-night/[0.07]">
@@ -138,7 +144,7 @@ export default function HomePage() {
         <div className="flex w-max animate-marquee gap-10 whitespace-nowrap font-display text-2xl italic text-night/70 sm:text-3xl">
           {[0, 1].map((k) => (
             <div key={k} className="flex gap-10">
-              {['Foi', 'Unité', 'Formation', 'Louange', 'Solidarité', 'Service', 'Diaspora', 'Espérance'].map((w) => (
+              {pick(VALUES).map((w) => (
                 <span key={w} className="flex items-center gap-10">{w}<Sparkles className="h-5 w-5 text-gold" /></span>
               ))}
             </div>
@@ -149,7 +155,7 @@ export default function HomePage() {
       {/* SERVICES */}
       <section className="py-20 sm:py-28" aria-labelledby="services-title">
         <div className="container-page">
-          <SectionHeading eyebrow="Nos espaces" title={t('home.services.title')} description="Six espaces pensés pour se connecter, apprendre, servir et grandir ensemble." />
+          <SectionHeading eyebrow={tx('Nos espaces', 'Our spaces', 'Os nossos espaços')} title={t('home.services.title')} description={tx('Six espaces pensés pour se connecter, apprendre, servir et grandir ensemble.', 'Six spaces designed to connect, learn, serve and grow together.', 'Seis espaços pensados para nos ligarmos, aprendermos, servirmos e crescermos juntos.')} />
           <h2 id="services-title" className="sr-only">{t('home.services.title')}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
             {SERVICES.map(({ title, text, to, icon: Icon }, i) => (
@@ -160,9 +166,9 @@ export default function HomePage() {
                   <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 ring-1 ring-inset ring-gold/30 transition duration-500 group-hover:from-gold-300 group-hover:to-gold-500 group-hover:text-night"><Icon className="h-6 w-6" aria-hidden /></span>
                   <span className="font-display text-sm italic text-ink/30 transition group-hover:text-gold-200/70">0{i + 1}</span>
                 </div>
-                <h3 className="mt-auto pt-8 font-display text-2xl font-medium text-night transition-colors group-hover:text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink/60 transition-colors group-hover:text-white/65">{text}</p>
-                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-600 transition-colors group-hover:text-gold-300">Découvrir <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+                <h3 className="mt-auto pt-8 font-display text-2xl font-medium text-night transition-colors group-hover:text-white">{pick(title)}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink/60 transition-colors group-hover:text-white/65">{pick(text)}</p>
+                <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-600 transition-colors group-hover:text-gold-300">{tx('Découvrir', 'Discover', 'Descobrir')} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
               </Link>
             ))}
           </div>
@@ -172,13 +178,13 @@ export default function HomePage() {
       {/* ANNONCES */}
       <section className="relative bg-white py-20 sm:py-28" aria-labelledby="ann-title">
         <div className="container-page">
-          <SectionHeading eyebrow="Actualités" title={t('home.announcements.title')} action={<ButtonLink to="/actualites" variant="outline" size="sm">{t('common.seeAll')} <ArrowRight className="h-4 w-4" /></ButtonLink>} />
+          <SectionHeading eyebrow={tx('Actualités', 'News', 'Notícias')} title={t('home.announcements.title')} action={<ButtonLink to="/actualites" variant="outline" size="sm">{t('common.seeAll')} <ArrowRight className="h-4 w-4" /></ButtonLink>} />
           <h2 id="ann-title" className="sr-only">{t('home.announcements.title')}</h2>
           {anns.error ? <ErrorState error={anns.error} onRetry={anns.reload} /> : anns.loading ? (
             <div className="grid gap-5 md:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-80" />)}</div>
           ) : anns.data?.length ? (
             <div className="grid gap-5 md:grid-cols-3">{anns.data.map((a) => <AnnouncementCard key={a.id} a={a} />)}</div>
-          ) : <EmptyState title="Aucune annonce publiée pour le moment." />}
+          ) : <EmptyState title={tx('Aucune annonce publiée pour le moment.', 'No announcements yet.', 'Ainda não há anúncios publicados.')} />}
         </div>
       </section>
 
@@ -186,20 +192,20 @@ export default function HomePage() {
       <section className="py-20 sm:py-28">
         <div className="container-page grid gap-16 lg:grid-cols-2">
           <div aria-labelledby="evt-title">
-            <SectionHeading eyebrow="Agenda" title={t('home.events.title')} action={<ButtonLink to="/agenda" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
+            <SectionHeading eyebrow={tx('Agenda', 'Calendar', 'Agenda')} title={t('home.events.title')} action={<ButtonLink to="/agenda" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
             <h2 id="evt-title" className="sr-only">{t('home.events.title')}</h2>
             {events.error ? <ErrorState error={events.error} onRetry={events.reload} /> : events.loading ? (
               <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-28" />)}</div>
             ) : events.data?.[0].length ? (
               <div className="space-y-3">{events.data[0].map((e) => <EventCard key={e.id} e={e} parishes={events.data![1]} />)}</div>
-            ) : <EmptyState title="Aucun événement à venir." />}
+            ) : <EmptyState title={tx('Aucun événement à venir.', 'No upcoming events.', 'Nenhum evento previsto.')} />}
           </div>
           <div aria-labelledby="crs-title">
-            <SectionHeading eyebrow="Académie KCC" title={t('home.courses.title')} action={<ButtonLink to="/academie/formations" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
+            <SectionHeading eyebrow={tx('Académie KCC', 'KCC Academy', 'Academia KCC')} title={t('home.courses.title')} action={<ButtonLink to="/academie/formations" variant="outline" size="sm">{t('common.seeAll')}</ButtonLink>} />
             <h2 id="crs-title" className="sr-only">{t('home.courses.title')}</h2>
             {courses.loading ? <Skeleton className="h-96" /> : courses.data?.length ? (
               <div className="grid gap-4 sm:grid-cols-2">{courses.data.slice(0, 2).map((c) => <CourseCard key={c.id} c={c} />)}</div>
-            ) : <EmptyState title="Aucune formation publiée." />}
+            ) : <EmptyState title={tx('Aucune formation publiée.', 'No courses published.', 'Nenhuma formação publicada.')} />}
           </div>
         </div>
       </section>
@@ -210,11 +216,11 @@ export default function HomePage() {
         <div className="pointer-events-none absolute -right-20 top-0 -z-10 h-96 w-96 rounded-full bg-[#3b5ea8]/25 blur-[120px]" aria-hidden />
         <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-radial" aria-hidden />
         <div className="container-page relative">
-          <SectionHeading light eyebrow="Ensemble" title={t('home.solidarity.title')} description="Chaque projet affiche son objectif et les montants confirmés. Les contributions simplement déclarées ne sont pas comptabilisées tant qu’elles ne sont pas vérifiées." action={<ButtonLink to="/solidarite/projets" variant="gold" size="sm">Tous les projets</ButtonLink>} />
+          <SectionHeading light eyebrow={tx('Ensemble', 'Together', 'Juntos')} title={t('home.solidarity.title')} description={tx('Chaque projet affiche son objectif et les montants confirmés. Les contributions simplement déclarées ne sont pas comptabilisées tant qu’elles ne sont pas vérifiées.', 'Each project shows its goal and confirmed amounts. Contributions that are only declared are not counted until they are verified.', 'Cada projeto mostra o seu objetivo e os montantes confirmados. As contribuições apenas declaradas não são contabilizadas enquanto não forem verificadas.')} action={<ButtonLink to="/solidarite/projets" variant="gold" size="sm">{tx('Tous les projets', 'All projects', 'Todos os projetos')}</ButtonLink>} />
           <h2 id="sol-title" className="sr-only">{t('home.solidarity.title')}</h2>
           {projects.data?.length ? (
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{projects.data.map((p) => <ProjectCard key={p.id} p={p} dark />)}</div>
-          ) : projects.loading ? <Skeleton className="h-64 bg-white/10" /> : <EmptyState title="Aucun projet actif." />}
+          ) : projects.loading ? <Skeleton className="h-64 bg-white/10" /> : <EmptyState title={tx('Aucun projet actif.', 'No active projects.', 'Nenhum projeto ativo.')} />}
         </div>
       </section>
 
@@ -226,12 +232,12 @@ export default function HomePage() {
             <div className="pointer-events-none absolute -bottom-32 right-24 -z-10 h-72 w-72 rounded-full bg-white/30 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-noise opacity-[0.08] mix-blend-multiply" aria-hidden />
             <div className="relative max-w-2xl">
-              <p className="eyebrow mb-4 text-night/70">Bienvenue</p>
-              <h2 className="font-display text-4xl font-medium leading-[1.05] text-night sm:text-5xl">Rejoignez la maison numérique des KCCistes.</h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-night/75 sm:text-lg">Créez votre compte, rattachez-vous à votre paroisse et à votre section, suivez les formations et restez informé des activités de la communauté.</p>
+              <p className="eyebrow mb-4 text-night/70">{tx('Bienvenue', 'Welcome', 'Bem-vindo')}</p>
+              <h2 className="font-display text-4xl font-medium leading-[1.05] text-night sm:text-5xl">{tx('Rejoignez la maison numérique des KCCistes.', 'Join the digital home of the KCCists.', 'Junte-se à casa digital dos KCCistas.')}</h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-night/75 sm:text-lg">{tx('Créez votre compte, rattachez-vous à votre paroisse et à votre section, suivez les formations et restez informé des activités de la communauté.', 'Create your account, link it to your parish and section, follow courses and stay informed about community activities.', 'Crie a sua conta, associe-se à sua paróquia e secção, siga as formações e fique a par das atividades da comunidade.')}</p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <ButtonLink to="/inscription" size="lg">{t('hero.join')} <ArrowRight className="h-5 w-5" /></ButtonLink>
-                <ButtonLink to="/a-propos" variant="outline" size="lg" className="border-night/15 bg-white/50 hover:bg-white">À propos de l’Église</ButtonLink>
+                <ButtonLink to="/a-propos" variant="outline" size="lg" className="border-night/15 bg-white/50 hover:bg-white">{tx('À propos de l’Église', 'About the Church', 'Sobre a Igreja')}</ButtonLink>
               </div>
             </div>
           </div>

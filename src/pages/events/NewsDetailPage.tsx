@@ -15,23 +15,23 @@ import { formatDate } from '@/utils/format';
 export default function NewsDetailPage() {
   const { id } = useParams();
   const { profile } = useAuth();
-  const { locale } = useI18n();
+  const { locale, tx } = useI18n();
   const { data, loading } = useAsync(async () => (await listPublishedAnnouncements({ signedIn: !!profile })).find((a) => a.id === id) ?? null, [id, profile?.id]);
   if (loading) return <PageLoader />;
   if (!data) return (
     <div className="container-page py-16">
-      <EmptyState icon={<Lock className="h-6 w-6" />} title="Annonce introuvable ou réservée" description={profile ? 'Cette annonce n’existe pas ou ne vous est pas destinée.' : 'Cette annonce est peut-être réservée aux membres. Connectez-vous pour y accéder.'} action={<ButtonLink to={profile ? '/actualites' : '/connexion'} variant="outline">{profile ? 'Toutes les annonces' : 'Se connecter'}</ButtonLink>} />
+      <EmptyState icon={<Lock className="h-6 w-6" />} title={tx('Annonce introuvable ou réservée', 'Announcement not found or restricted', 'Anúncio não encontrado ou reservado')} description={profile ? tx('Cette annonce n’existe pas ou ne vous est pas destinée.', 'This announcement does not exist or is not meant for you.', 'Este anúncio não existe ou não se destina a si.') : tx('Cette annonce est peut-être réservée aux membres. Connectez-vous pour y accéder.', 'This announcement may be for members only. Log in to view it.', 'Este anúncio pode estar reservado aos membros. Inicie sessão para aceder.')} action={<ButtonLink to={profile ? '/actualites' : '/connexion'} variant="outline">{profile ? tx('Toutes les annonces', 'All announcements', 'Todos os anúncios') : tx('Se connecter', 'Log in', 'Iniciar sessão')}</ButtonLink>} />
     </div>
   );
   return (
     <>
       <PageHeader eyebrow={data.category} title={data.title} description={data.summary}>
-        <p className="text-sm text-white/65">Publié le {formatDate(data.publishedAt, locale)} · {data.author}</p>
+        <p className="text-sm text-white/65">{tx('Publié le', 'Published on', 'Publicado a')} {formatDate(data.publishedAt, locale)} · {data.author}</p>
       </PageHeader>
       <article className="container-page max-w-3xl py-12">
         {data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
         <Card><CardBody className="prose-kcc">{data.content.split('\n').map((p, i) => <p key={i}>{p}</p>)}</CardBody></Card>
-        <ButtonLink to="/actualites" variant="ghost" className="mt-6" icon={<ArrowLeft className="h-4 w-4" />}>Toutes les annonces</ButtonLink>
+        <ButtonLink to="/actualites" variant="ghost" className="mt-6" icon={<ArrowLeft className="h-4 w-4" />}>{tx('Toutes les annonces', 'All announcements', 'Todos os anúncios')}</ButtonLink>
       </article>
     </>
   );

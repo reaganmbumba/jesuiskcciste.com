@@ -9,10 +9,12 @@ import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { listDirectory } from '@/services';
+import { useI18n } from '@/i18n';
 
 export default function MemberProfilePage() {
   const { id = '' } = useParams();
   const { profile } = useAuth();
+  const { tx } = useI18n();
   const privileged = can(profile, 'members.read_private');
   const { data, loading } = useAsync(async () => {
     if (!profile) return null;
@@ -20,17 +22,17 @@ export default function MemberProfilePage() {
     return row ? { raw: row, entry: row.entry } : null;
   }, [id, profile?.id]);
 
-  if (!profile) return <div className="container-page py-16"><EmptyState icon={<Lock className="h-6 w-6" />} title="Profil réservé aux membres connectés" action={<ButtonLink to="/connexion">Se connecter</ButtonLink>} /></div>;
+  if (!profile) return <div className="container-page py-16"><EmptyState icon={<Lock className="h-6 w-6" />} title={tx('Profil réservé aux membres connectés', 'Profile for logged-in members only', 'Perfil reservado aos membros com sessão iniciada')} action={<ButtonLink to="/connexion">{tx('Se connecter', 'Log in', 'Iniciar sessão')}</ButtonLink>} /></div>;
   if (loading) return <PageLoader />;
-  if (!data) return <div className="container-page py-16"><EmptyState title="Profil introuvable ou non public." action={<ButtonLink to="/communaute/annuaire" variant="outline">Retour à l’annuaire</ButtonLink>} /></div>;
+  if (!data) return <div className="container-page py-16"><EmptyState title={tx('Profil introuvable ou non public.', 'Profile not found or not public.', 'Perfil não encontrado ou não público.')} action={<ButtonLink to="/communaute/annuaire" variant="outline">{tx('Retour à l’annuaire', 'Back to the directory', 'Voltar ao diretório')}</ButtonLink>} /></div>;
   const { entry, raw } = data;
   const rows = [
-    { icon: MapPin, label: 'Localisation', value: [entry.city, entry.country].filter(Boolean).join(', ') },
-    { icon: Church, label: 'Paroisse', value: entry.parishName },
-    { icon: Layers, label: 'Section', value: entry.sectionName },
-    { icon: Briefcase, label: 'Fonction', value: entry.functionTitle },
-    { icon: Mail, label: 'E-mail', value: entry.email },
-    { icon: Phone, label: 'Téléphone', value: entry.phone },
+    { icon: MapPin, label: tx('Localisation', 'Location', 'Localização'), value: [entry.city, entry.country].filter(Boolean).join(', ') },
+    { icon: Church, label: tx('Paroisse', 'Parish', 'Paróquia'), value: entry.parishName },
+    { icon: Layers, label: tx('Section', 'Section', 'Secção'), value: entry.sectionName },
+    { icon: Briefcase, label: tx('Fonction', 'Role', 'Função'), value: entry.functionTitle },
+    { icon: Mail, label: tx('E-mail', 'Email', 'E-mail'), value: entry.email },
+    { icon: Phone, label: tx('Téléphone', 'Phone', 'Telefone'), value: entry.phone },
   ];
   return (
     <div className="bg-mist">
@@ -41,14 +43,14 @@ export default function MemberProfilePage() {
             <Avatar person={raw} url={entry.avatarUrl} size={104} />
             <div>
               <h1 className="font-display text-3xl font-semibold text-night">{entry.displayName}</h1>
-              <p className="text-ink/60">{entry.parishName ?? 'Rattachement non public'}</p>
+              <p className="text-ink/60">{entry.parishName ?? tx('Rattachement non public', 'Affiliation not public', 'Vínculo não público')}</p>
             </div>
           </CardBody>
           <dl className="grid gap-px overflow-hidden rounded-b-2xl border-t border-night/[0.06] bg-night/[0.06] sm:grid-cols-2">
             {rows.map(({ icon: Icon, label, value }) => (
               <div key={label} className="flex items-center gap-3 bg-white px-6 py-4">
                 <Icon className="h-5 w-5 text-gold" aria-hidden />
-                <div><dt className="text-xs text-ink/50">{label}</dt><dd className="text-sm font-medium text-night">{value || <span className="italic text-ink/40">Non communiqué</span>}</dd></div>
+                <div><dt className="text-xs text-ink/50">{label}</dt><dd className="text-sm font-medium text-night">{value || <span className="italic text-ink/40">{tx('Non communiqué', 'Not provided', 'Não indicado')}</span>}</dd></div>
               </div>
             ))}
           </dl>

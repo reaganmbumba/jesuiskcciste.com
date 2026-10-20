@@ -3,6 +3,7 @@
   // `npx wrangler deploy` construit d'abord le site (build.command) puis publie dist.
   "name": "jesuiskcciste-com",
   "compatibility_date": "2026-10-01",
+  "workers_dev": true,
   "build": {
     "command": "npm run build"
   },

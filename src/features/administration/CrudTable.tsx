@@ -17,7 +17,7 @@ import { downloadCsv } from '@/utils/csv';
 import { isDemoMode } from '@/config/env';
 
 export interface Column<T> { key: string; label: string; render?: (row: T) => ReactNode; className?: string; csv?: (row: T) => unknown }
-export interface FormFieldDef { key: string; label: string; type: 'text' | 'textarea' | 'number' | 'select' | 'date' | 'datetime' | 'checkbox' | 'email' | 'url'; options?: { value: string; label: string }[]; required?: boolean; hint?: string; full?: boolean }
+export interface FormFieldDef { key: string; label: string; type: 'text' | 'textarea' | 'number' | 'select' | 'date' | 'datetime' | 'checkbox' | 'email' | 'url'; options?: { value: string; label: string }[]; required?: boolean; hint?: string; full?: boolean; /** Id d'un <datalist> de suggestions (champ texte). */ list?: string }
 export interface FilterDef { key: string; label: string; options: { value: string; label: string }[] }
 
 interface Props<T extends { id: string }> {
@@ -184,7 +184,7 @@ export function CrudTable<T extends { id: string }>({ entity, title, repo, colum
                 <Field label={f.label} required={f.required} hint={f.hint} error={errors[f.key]}>
                   {(p) => f.type === 'textarea' ? <Textarea {...p} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
                     : f.type === 'select' ? <Select {...p} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}><option value="">—</option>{f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
-                    : <Input {...p} type={f.type === 'datetime' ? 'datetime-local' : f.type} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />}
+                    : <Input {...p} type={f.type === 'datetime' ? 'datetime-local' : f.type} list={f.list} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />}
                 </Field>
               )}
             </div>

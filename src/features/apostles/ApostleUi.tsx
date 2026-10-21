@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import type { Apostle } from '@/types';
+import { OFFICIAL_PARISH_LIST_ID, OfficialParishList } from '@/components/common/OfficialParishList';
 import { submitApostleProposal } from './apostles';
 
 export const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
@@ -113,7 +114,7 @@ export function ProposeDialog({ apostle, mode, onClose }: { apostle: Apostle | n
           ) : (
             <div className="space-y-4 rounded-2xl bg-mist/60 p-4">
               <p className="text-xs text-ink/60">{tx('Remplissez seulement ce que vous savez avec certitude.', 'Only fill in what you know for sure.', 'Preencha apenas o que sabe com certeza.')}</p>
-              <Field label={tx('Paroisse qu’il encadre', 'Parish he oversees', 'Paróquia que dirige')}>{(p) => <Input {...p} value={place} onChange={(e) => setPlace(e.target.value)} maxLength={160} />}</Field>
+              <Field label={tx('Paroisse qu’il encadre', 'Parish he oversees', 'Paróquia que dirige')}>{(p) => <><Input {...p} value={place} onChange={(e) => setPlace(e.target.value)} maxLength={160} list={OFFICIAL_PARISH_LIST_ID} placeholder={tx('Tapez pour chercher dans la liste', 'Type to search the list', 'Escreva para pesquisar na lista')} /><OfficialParishList /></>}</Field>
               <Field label={tx('Date de consécration', 'Consecration date', 'Data de consagração')} hint={tx('La date exacte, ou seulement l’année.', 'The exact date, or just the year.', 'A data exata, ou apenas o ano.')}>{(p) => <Input {...p} value={consecration} onChange={(e) => setConsecration(e.target.value)} maxLength={60} placeholder="ex. 12/08/1984" />}</Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label={tx('Année de naissance', 'Year of birth', 'Ano de nascimento')}>{(p) => <Input {...p} inputMode="numeric" value={birth} onChange={(e) => setBirth(e.target.value)} maxLength={4} />}</Field>

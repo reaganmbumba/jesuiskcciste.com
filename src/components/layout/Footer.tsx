@@ -5,6 +5,7 @@ import { Logo } from '@/components/common/Logo';
 import { useI18n } from '@/i18n';
 import { LanguageSwitch } from './LanguagePicker';
 import { OnlineCount } from '@/components/common/OnlineCount';
+import { NewsTicker } from '@/components/common/NewsTicker';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { YouTubeIcon } from '@/components/common/YouTubeChannel';
 import { YOUTUBE_CHANNEL_NAME, youtubeSubscribeUrl } from '@/config/youtube';
@@ -78,12 +79,13 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="container-page flex flex-col gap-3 py-3 text-[11px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="container-page flex flex-col gap-3 py-3 text-[11px] text-white/50 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
             <p>© {new Date().getFullYear()} JE SUIS KCCiste. {tx('Tous droits réservés.', 'All rights reserved.', 'Todos os direitos reservados.')}</p>
             <OnlineCount light />
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <NewsTicker className="lg:flex-1" />
+          <div className="flex shrink-0 flex-wrap items-center gap-4">
             <Link to="/confidentialite" className="hover:text-white">{t('footer.privacy')}</Link>
             <Link to="/confidentialite#conditions" className="hover:text-white">{t('footer.legal')}</Link>
             <LanguageSwitch light />

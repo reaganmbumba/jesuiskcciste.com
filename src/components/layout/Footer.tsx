@@ -20,52 +20,45 @@ const socialIcon = (label: string) => {
 export function Footer() {
   const { t, tx } = useI18n();
   const { settings } = useSiteSettings();
-  const col = 'mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold';
+  const col = 'mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold';
   const link = 'text-[13px] text-white/65 transition hover:text-white';
+  const groups: { title: string; links: [string, string][] }[] = [
+    { title: t('footer.navigation'), links: [[tx('À propos', 'About', 'Sobre'), '/a-propos'], [t('nav.community'), '/communaute'], [tx('Paroisses', 'Parishes', 'Paróquias'), '/paroisses'], [tx('Actualités', 'News', 'Notícias'), '/actualites']] },
+    { title: tx('La Foi', 'Our Faith', 'A Fé'), links: [[tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), '/doctrine'], [tx('Catéchisme', 'Catechism', 'Catecismo'), '/catechisme'], [tx('Prédications', 'Sermons', 'Pregações'), '/predications'], [tx('Cantiques', 'Hymns', 'Hinos'), '/cantiques']] },
+    { title: tx('Médias', 'Media', 'Média'), links: [['KCC Music', '/musique'], [tx('Vidéos', 'Videos', 'Vídeos'), '/videos'], [tx('Galerie', 'Gallery', 'Galeria'), '/galerie'], [tx('Bibliothèque', 'Library', 'Biblioteca'), '/bibliotheque']] },
+    { title: t('footer.services'), links: [[tx('Académie KCC', 'KCC Academy', 'Academia KCC'), '/academie'], [tx('Agenda', 'Calendar', 'Agenda'), '/agenda'], [t('nav.solidarity'), '/solidarite'], [tx('Application Android', 'Android app', 'Aplicação Android'), '/app/android.apk']] },
+  ];
   return (
     <footer className="relative isolate overflow-hidden bg-night-950 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" aria-hidden />
       <div className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[30rem] w-[30rem] rounded-full bg-gold/10 blur-[120px]" aria-hidden />
       <div className="pointer-events-none absolute -bottom-40 -left-20 -z-10 h-96 w-96 rounded-full bg-night-500/40 blur-[110px]" aria-hidden />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-fade-b" aria-hidden />
-      <div className="container-page relative grid gap-8 py-9 sm:grid-cols-2 lg:grid-cols-12 lg:py-10">
-        <div className="lg:col-span-4">
+      <div className="container-page relative grid gap-7 py-7 lg:grid-cols-12 lg:gap-8">
+        <div className="lg:col-span-3">
           <Logo light large />
           <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-white/65">{t('footer.about')}</p>
-          <p className="mt-3 font-display text-lg italic leading-snug text-gold-gradient">« {t('hero.title')} »</p>
         </div>
-        <div className="lg:col-span-2">
-          <p className={col}>{t('footer.navigation')}</p>
-          <ul className="space-y-1.5">
-            <li><Link className={link} to="/">{t('nav.home')}</Link></li>
-            <li><Link className={link} to="/a-propos">{tx('À propos', 'About', 'Sobre')}</Link></li>
-            <li><Link className={link} to="/communaute">{t('nav.community')}</Link></li>
-            <li><Link className={link} to="/paroisses">{tx('Paroisses', 'Parishes', 'Paróquias')}</Link></li>
-            <li><Link className={link} to="/actualites">{tx('Actualités', 'News', 'Notícias')}</Link></li>
-          </ul>
-        </div>
+        <nav className="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:col-span-6" aria-label={tx('Plan du site', 'Site map', 'Mapa do site')}>
+          {groups.map((g) => (
+            <div key={g.title}>
+              <p className={col}>{g.title}</p>
+              <ul className="space-y-1">
+                {g.links.map(([label, to]) => (
+                  <li key={to}>{to.startsWith('/app/') ? <a className={link} href={to}>{label}</a> : <Link className={link} to={to}>{label}</Link>}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </nav>
         <div className="lg:col-span-3">
-          <p className={col}>{t('footer.services')}</p>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-            <li><Link className={link} to="/academie">{tx('Académie KCC', 'KCC Academy', 'Academia KCC')}</Link></li>
-            <li><Link className={link} to="/agenda">{tx('Agenda', 'Calendar', 'Agenda')}</Link></li>
-            <li><Link className={link} to="/musique">KCC Music</Link></li>
-            <li><Link className={link} to="/doctrine">{tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história')}</Link></li>
-            <li><Link className={link} to="/videos">{tx('Vidéos', 'Videos', 'Vídeos')}</Link></li>
-            <li><Link className={link} to="/cantiques">{tx('Cantiques', 'Hymns', 'Hinos')}</Link></li>
-            <li><Link className={link} to="/bibliotheque">{tx('Bibliothèque', 'Library', 'Biblioteca')}</Link></li>
-            <li><Link className={link} to="/solidarite">{t('nav.solidarity')}</Link></li>
-            <li><a className={link} href="/app/android.apk">{tx('Application Android', 'Android app', 'Aplicação Android')}</a></li>
-          </ul>
-        </div>
-        <div className="sm:col-span-2 lg:col-span-3">
           <p className={col}>{t('footer.contact')}</p>
-          <ul className="space-y-2.5 text-[13px] text-white/65">
+          <ul className="space-y-2 text-[13px] text-white/65">
             <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address}</li>
             {settings.contact.email && <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a></li>}
             {settings.contact.phone && <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`tel:${settings.contact.phone.replace(/\s/g, '')}`}>{settings.contact.phone}</a> · <a className={link} href={`https://wa.me/${settings.contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
           </ul>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
           <a href={youtubeSubscribeUrl()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 transition hover:border-[#FF0000] hover:bg-[#FF0000]/15 hover:text-white">
             <YouTubeIcon className="h-4 w-6" />
             <span>{tx('S’abonner', 'Subscribe', 'Subscrever')} · <strong>{YOUTUBE_CHANNEL_NAME}</strong></span>
@@ -84,7 +77,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <div className="container-page flex flex-col gap-3 py-4 text-[11px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="container-page flex flex-col gap-3 py-3 text-[11px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} JE SUIS KCCiste. {tx('Tous droits réservés.', 'All rights reserved.', 'Todos os direitos reservados.')}</p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/confidentialite" className="hover:text-white">{t('footer.privacy')}</Link>

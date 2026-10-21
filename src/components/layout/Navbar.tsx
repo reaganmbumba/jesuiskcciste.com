@@ -12,6 +12,7 @@ import { SearchDialog } from './SearchDialog';
 import { LanguageSwitch } from './LanguagePicker';
 import { DemoBanner } from '@/components/common/DemoNotice';
 import { OfflineNotice } from '@/components/common/OfflineNotice';
+import { OnlineCount } from '@/components/common/OnlineCount';
 import { cn } from '@/utils/format';
 
 export function Navbar({ transparent }: { transparent?: boolean }) {
@@ -117,6 +118,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
         {open && (
           <div id="menu-mobile" className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-night/10 bg-white/95 backdrop-blur-xl animate-fade-up xl:hidden">
             <nav className="container-page space-y-4 py-5" aria-label={tx('Navigation mobile', 'Mobile navigation', 'Navegação móvel')}>
+              <OnlineCount />
               <div className="flex items-center justify-between rounded-2xl bg-night px-4 py-3 text-white md:hidden">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-200">{t('footer.language')}</span>
                 <LanguageSwitch light />

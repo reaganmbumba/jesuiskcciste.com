@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/Misc';
+import { ShareButtons } from '@/components/common/ShareButtons';
 import { galleryPhotos, galleryThemes, type GalleryTheme } from '@/content/galerie';
 import { useI18n } from '@/i18n';
 
@@ -8,7 +10,12 @@ import { useI18n } from '@/i18n';
 export default function GalleryPage() {
   const { tx, pick } = useI18n();
   const [theme, setTheme] = useState<GalleryTheme | 'all'>('all');
-  const [open, setOpen] = useState<number | null>(null);
+  const [params] = useSearchParams();
+  // Lien partagé vers une photo : /galerie?photo=<n° dans la galerie complète>.
+  const [open, setOpen] = useState<number | null>(() => {
+    const n = Number(params.get('photo'));
+    return Number.isInteger(n) && n >= 1 && n <= galleryPhotos.length ? n - 1 : null;
+  });
   const shown = theme === 'all' ? galleryPhotos : galleryPhotos.filter((p) => p.theme === theme);
   const current = open === null ? null : shown[open];
 
@@ -53,6 +60,7 @@ export default function GalleryPage() {
           <figure className="relative max-h-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
             <img src={current.src} alt={pick(current.caption)} className="max-h-[80vh] w-auto rounded-2xl" />
             <figcaption className="mt-3 text-center text-sm text-white/80">{pick(current.caption)} · {open + 1}/{shown.length}</figcaption>
+            <ShareButtons tone="dark" size="sm" url={`/galerie?photo=${galleryPhotos.indexOf(current) + 1}`} title={pick(current.caption)} className="mt-3 justify-center" />
           </figure>
           <button type="button" onClick={(e) => { e.stopPropagation(); setOpen((open - 1 + shown.length) % shown.length); }} className="absolute left-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20" aria-label={tx('Photo précédente', 'Previous photo', 'Foto anterior')}><ChevronLeft className="h-6 w-6" /></button>
           <button type="button" onClick={(e) => { e.stopPropagation(); setOpen((open + 1) % shown.length); }} className="absolute right-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20" aria-label={tx('Photo suivante', 'Next photo', 'Foto seguinte')}><ChevronRight className="h-6 w-6" /></button>

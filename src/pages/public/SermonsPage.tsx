@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BookOpen, CalendarDays, MapPin, Mic } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
+import { ShareButtons } from '@/components/common/ShareButtons';
 import * as fr from '@/content/predications';
 import * as en from '@/content/predications.en';
 import * as pt from '@/content/predications.pt';
@@ -45,6 +46,7 @@ export default function SermonsPage() {
               )}
               <p className="my-4 rounded-2xl bg-night px-4 py-3 font-display text-lg italic text-white">{s.keyPoint}</p>
               <div className="prose-kcc">{s.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div>
+              <ShareButtons size="sm" url={`/predications#${s.id}`} title={s.title} text={s.keyPoint} className="mt-auto border-t border-night/[0.06] pt-4" />
             </article>
           ))}
         </div>

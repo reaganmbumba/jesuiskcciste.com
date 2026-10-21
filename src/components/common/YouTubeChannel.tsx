@@ -4,6 +4,7 @@ import { ExternalLink, Play } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { YOUTUBE_CHANNEL_NAME, YOUTUBE_VIDEOS, youtubeChannelUrl, youtubeSubscribeUrl, youtubeWatchUrl, type YouTubeVideo } from '@/config/youtube';
+import { ShareButtons } from '@/components/common/ShareButtons';
 
 export function YouTubeIcon({ className }: { className?: string }) {
   return (
@@ -55,11 +56,14 @@ export function YouTubeEmbed({ video, className }: { video: YouTubeVideo; classN
           </button>
         )}
       </div>
-      <figcaption className="flex items-start justify-between gap-3 px-4 py-3 text-white">
-        <p className="text-sm font-medium leading-snug">{title}</p>
-        <a href={youtubeWatchUrl(video.id)} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs text-white/60 hover:text-white">
-          YouTube <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-        </a>
+      <figcaption className="px-4 py-3 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium leading-snug">{title}</p>
+          <a href={youtubeWatchUrl(video.id)} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 text-xs text-white/60 hover:text-white">
+            YouTube <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          </a>
+        </div>
+        <ShareButtons tone="dark" size="sm" showLabel={false} url={youtubeWatchUrl(video.id)} title={title} className="mt-3" />
       </figcaption>
     </figure>
   );

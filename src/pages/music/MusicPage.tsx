@@ -15,6 +15,7 @@ import { useI18n } from '@/i18n';
 import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
 import { isForSale } from '@/features/music/shop';
+import { ShareButtons } from '@/components/common/ShareButtons';
 
 const RIGHTS = {
   authorized: { label: { fr: 'Diffusion autorisée', en: 'Broadcast allowed', pt: 'Difusão autorizada' }, tone: 'green' },
@@ -49,6 +50,12 @@ export default function MusicPage() {
             <div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" /><Input className="pl-10" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tx('Titre, auteur, chorale…', 'Title, author, choir…', 'Título, autor, coro…')} aria-label={tx('Rechercher un chant', 'Search for a song', 'Pesquisar um cântico')} /></div>
             <Select value={cat} onChange={(e) => setCat(e.target.value)} aria-label={tx('Catégorie', 'Category', 'Categoria')}><option value="">{tx('Toutes les catégories', 'All categories', 'Todas as categorias')}</option>{cats.map((c) => <option key={c}>{c}</option>)}</Select>
           </div>
+          {current && (
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-gold/30 bg-gold-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="min-w-0 truncate text-sm text-ink/70">{tx('En écoute', 'Now playing', 'A ouvir')} : <span className="font-semibold text-night">{current.title}</span></p>
+              <ShareButtons size="sm" url={`/musique?titre=${encodeURIComponent(current.id)}`} title={`${current.title} · KCC Music`} />
+            </div>
+          )}
           {loading ? <Skeleton className="h-72" /> : list.length ? (
             <ol className="overflow-hidden rounded-2xl border border-night/[0.06] bg-white shadow-soft">
               {list.map((t, i) => {

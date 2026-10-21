@@ -66,7 +66,7 @@ export default function ProjectDetailPage() {
 
   return (
     <>
-      <PageHeader eyebrow={tx('Projet de solidarité', 'Solidarity project', 'Projeto de solidariedade')} title={p.name} description={p.summary}>
+      <PageHeader image={p.imageUrl} eyebrow={tx('Projet de solidarité', 'Solidarity project', 'Projeto de solidariedade')} title={p.name} description={p.summary}>
         <Badge tone={p.status === 'active' ? 'green' : 'gold'}>{p.status === 'active' ? tx('En cours', 'Ongoing', 'Em curso') : p.status === 'completed' ? tx('Terminé', 'Completed', 'Concluído') : p.status}</Badge>
       </PageHeader>
       <section className="container-page grid gap-8 py-12 lg:grid-cols-3">

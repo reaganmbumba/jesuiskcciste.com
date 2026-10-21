@@ -36,3 +36,8 @@ export function useToast() {
   if (!ctx) throw new Error('useToast doit être utilisé dans ToastProvider');
   return ctx;
 }
+
+/** Comme useToast, mais ne lève pas d'erreur hors du fournisseur (tests, composants isolés). */
+export function useOptionalToast() {
+  return useContext(ToastContext);
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, MessageCircle, Mic, Music2, Phone, ScrollText, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, MessageCircle, Mic, Music2, Phone, PlayCircle, ScrollText, Sparkles, Users } from 'lucide-react';
+import { KccIcon } from '@/components/common/KccIcon';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -28,14 +29,16 @@ const SLIDES: { img: string; title: Tri; accent: Tri; text: Tri; cta: Tri; to: s
   { img: '/images/archives/archive-assemblee-noir-et-blanc.jpg', title: T('Notre histoire,', 'Our history,', 'A nossa história,'), accent: T('notre héritage.', 'our heritage.', 'a nossa herança.'), text: T('Archives, doctrine et grandes dates de l’Église Bon Nouveau Message.', 'Archives, doctrine and key dates of the Église Bon Nouveau Message.', 'Arquivos, doutrina e grandes datas da Église Bon Nouveau Message.'), cta: T('Lire notre histoire', 'Read our history', 'Ler a nossa história'), to: '/doctrine' },
 ];
 
-const QUICK: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
-  { title: T('Nos paroisses', 'Our parishes', 'As paróquias'), text: T('Trouver une paroisse près de chez vous', 'Find a parish near you', 'Encontrar uma paróquia perto de si'), to: '/paroisses', icon: Building2 },
-  { title: T('Agenda', 'Calendar', 'Agenda'), text: T('Cultes, réunions et rendez-vous', 'Services, meetings and events', 'Cultos, reuniões e encontros'), to: '/agenda', icon: CalendarDays },
-  { title: T('Communauté', 'Community', 'Comunidade'), text: T('Membres, sections, jeunesse', 'Members, sections, youth', 'Membros, secções, juventude'), to: '/communaute', icon: Users },
-  { title: T('Enseignements', 'Teachings', 'Ensinamentos'), text: T('Doctrine, histoire et formations', 'Doctrine, history and courses', 'Doutrina, história e formações'), to: '/doctrine', icon: BookOpen },
-  { title: T('Solidarité', 'Solidarity', 'Solidariedade'), text: T('Projets et entraide', 'Projects and mutual aid', 'Projetos e entreajuda'), to: '/solidarite', icon: HandHeart },
-  { title: T('Documents', 'Documents', 'Documentos'), text: T('Bibliothèque et publications', 'Library and publications', 'Biblioteca e publicações'), to: '/bibliotheque', icon: FileText },
-  { title: T('Musique', 'Music', 'Música'), text: T('Cantiques, chorales et albums', 'Hymns, choirs and albums', 'Hinos, coros e álbuns'), to: '/musique', icon: Music2 },
+const QUICK: { title: Tri; text: Tri; to: string; icon: typeof Users; from: string; to2: string }[] = [
+  { title: T('Nos paroisses', 'Our parishes', 'As paróquias'), text: T('Trouver une paroisse près de chez vous', 'Find a parish near you', 'Encontrar uma paróquia perto de si'), to: '/paroisses', icon: Building2, from: '#3B82F6', to2: '#1E3A8A' },
+  { title: T('Agenda', 'Calendar', 'Agenda'), text: T('Cultes, réunions et rendez-vous', 'Services, meetings and events', 'Cultos, reuniões e encontros'), to: '/agenda', icon: CalendarDays, from: '#6366F1', to2: '#312E81' },
+  { title: T('Communauté', 'Community', 'Comunidade'), text: T('Membres, sections, jeunesse', 'Members, sections, youth', 'Membros, secções, juventude'), to: '/communaute', icon: Users, from: '#10B981', to2: '#065F46' },
+  { title: T('Enseignements', 'Teachings', 'Ensinamentos'), text: T('Doctrine, histoire et catéchisme', 'Doctrine, history and catechism', 'Doutrina, história e catecismo'), to: '/doctrine', icon: BookOpen, from: '#8B5CF6', to2: '#4C1D95' },
+  { title: T('Formations', 'Courses', 'Formações'), text: T('L’Académie KCC à votre rythme', 'The KCC Academy at your pace', 'A Academia KCC ao seu ritmo'), to: '/academie', icon: GraduationCap, from: '#F2C063', to2: '#B07A1E' },
+  { title: T('Solidarité', 'Solidarity', 'Solidariedade'), text: T('Projets et entraide', 'Projects and mutual aid', 'Projetos e entreajuda'), to: '/solidarite', icon: HandHeart, from: '#FB923C', to2: '#C2410C' },
+  { title: T('Musique', 'Music', 'Música'), text: T('Cantiques, chorales et albums', 'Hymns, choirs and albums', 'Hinos, coros e álbuns'), to: '/musique', icon: Music2, from: '#EC4899', to2: '#9D174D' },
+  { title: T('Vidéos', 'Videos', 'Vídeos'), text: T('Notre chaîne YouTube', 'Our YouTube channel', 'O nosso canal YouTube'), to: '/videos', icon: PlayCircle, from: '#EF4444', to2: '#7F1D1D' },
+  { title: T('Documents', 'Documents', 'Documentos'), text: T('Bibliothèque et publications', 'Library and publications', 'Biblioteca e publicações'), to: '/bibliotheque', icon: FileText, from: '#14B8A6', to2: '#115E59' },
 ];
 
 /** Rubriques « La Foi » mises en avant sur l'accueil (icônes neutres, sans symbole religieux). */
@@ -159,12 +162,14 @@ export default function HomePage() {
           {/* COLONNE PRINCIPALE */}
           <div className="min-w-0 lg:col-span-8 xl:col-span-9">
             {/* ACCÈS RAPIDES */}
-            <nav aria-label={tx('Accès rapides', 'Quick access', 'Acesso rápido')} className="relative z-10 -mt-10 grid grid-cols-3 overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-lift sm:grid-cols-4 xl:grid-cols-7">
-              {QUICK.map(({ title, text, to, icon: Icon }, k) => (
-                <Link key={to} to={to} className={cn('group flex flex-col items-center gap-1.5 border-night/[0.06] px-2 py-4 sm:gap-2 sm:px-3 sm:py-5 text-center transition hover:bg-gold-50 focus-visible:bg-gold-50 focus-visible:outline-none', 'border-b border-r', k === QUICK.length - 1 && 'col-span-3 sm:col-span-1')}>
-                  <Icon className="h-7 w-7 text-night-600 sm:h-8 sm:w-8 transition group-hover:text-gold-600" strokeWidth={1.6} aria-hidden />
-                  <span className="text-[13px] font-semibold leading-tight text-night sm:text-sm">{pick(title)}</span>
-                  <span className="hidden text-xs leading-snug text-ink/55 sm:block">{pick(text)}</span>
+            <nav aria-label={tx('Accès rapides', 'Quick access', 'Acesso rápido')} className="relative z-10 -mt-10 grid grid-cols-3 overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-lift">
+              {QUICK.map(({ title, text, to, icon, from, to2 }, k) => (
+                <Link key={to} to={to} className={cn('group flex flex-col items-center gap-2 border-night/[0.06] px-2 py-4 text-center transition hover:bg-gold-50 focus-visible:bg-gold-50 focus-visible:outline-none sm:flex-row sm:gap-3.5 sm:px-4 sm:text-left', k % 3 !== 2 && 'border-r', k < 6 && 'border-b')}>
+                  <KccIcon icon={icon} from={from} to={to2} />
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-semibold leading-tight text-night sm:text-[15px] group-hover:text-gold-700">{pick(title)}</span>
+                    <span className="mt-0.5 hidden text-xs leading-snug text-ink/55 sm:block">{pick(text)}</span>
+                  </span>
                 </Link>
               ))}
             </nav>

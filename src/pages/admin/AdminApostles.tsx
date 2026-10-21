@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from '@/components/ui/States';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { CrudTable, Tabs } from '@/features/administration/CrudTable';
+import { OFFICIAL_PARISH_LIST_ID, OfficialParishList } from '@/components/common/OfficialParishList';
 import {
   apostlesRepo, approveSubmission, listPhotoSubmissions, parseApostleList, rejectSubmission, submissionPreviewUrl, uploadApostlePhoto,
 } from '@/features/apostles/apostles';
@@ -25,6 +26,7 @@ export default function AdminApostles() {
     <>
       <h1 className="mb-4 font-display text-2xl font-semibold text-night">Révérends Apôtres</h1>
       <Tabs tabs={[{ key: 'list', label: 'Liste et photos' }, { key: 'photos', label: `Propositions${pending ? ` (${pending})` : ''}` }, { key: 'import', label: 'Ajouter une liste' }]} value={tab} onChange={setTab} />
+      {tab === 'list' && <OfficialParishList />}
       {tab === 'list' && (
         <CrudTable<Apostle> entity="apostles" title="Apôtres" repo={apostlesRepo} exportName="apotres" searchFields={['fullName', 'place']} pageSize={25}
           filters={[{ key: 'status', label: 'Statut', options: STATUS }]}
@@ -40,7 +42,7 @@ export default function AdminApostles() {
             { key: 'fullName', label: 'Nom complet', type: 'text', required: true },
             { key: 'title', label: 'Titre', type: 'text', required: true, hint: 'Ex. Révérend Apôtre' },
             { key: 'status', label: 'Statut', type: 'select', required: true, options: STATUS },
-            { key: 'place', label: 'Paroisse qu’il encadre', type: 'text' },
+            { key: 'place', label: 'Paroisse qu’il encadre', type: 'text', list: OFFICIAL_PARISH_LIST_ID, hint: 'Choisissez dans la liste officielle ou tapez le nom.' },
             { key: 'consecrationDate', label: 'Date de consécration', type: 'text', hint: 'La date exacte ou seulement l’année.' },
             { key: 'birthYear', label: 'Année de naissance', type: 'number' },
             { key: 'deathYear', label: 'Année du décès', type: 'number' },

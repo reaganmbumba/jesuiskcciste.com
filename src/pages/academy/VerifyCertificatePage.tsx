@@ -24,7 +24,7 @@ export default function VerifyCertificatePage() {
   };
   return (
     <>
-      <PageHeader eyebrow={tx('Académie KCC', 'KCC Academy', 'Academia KCC')} title={tx('Vérifier un certificat', 'Verify a certificate', 'Verificar um certificado')} description={tx('Saisissez l’identifiant unique figurant sur le certificat pour en confirmer l’authenticité.', 'Enter the unique ID shown on the certificate to confirm it is genuine.', 'Introduza o identificador único que figura no certificado para confirmar a sua autenticidade.')} />
+      <PageHeader share={false} eyebrow={tx('Académie KCC', 'KCC Academy', 'Academia KCC')} title={tx('Vérifier un certificat', 'Verify a certificate', 'Verificar um certificado')} description={tx('Saisissez l’identifiant unique figurant sur le certificat pour en confirmer l’authenticité.', 'Enter the unique ID shown on the certificate to confirm it is genuine.', 'Introduza o identificador único que figura no certificado para confirmar a sua autenticidade.')} />
       <section className="container-page max-w-xl py-12">
         <DemoInline>{tx('Démonstration : seuls les certificats obtenus dans cet onglet peuvent être vérifiés.', 'Demo: only certificates obtained in this tab can be verified.', 'Demonstração: só os certificados obtidos neste separador podem ser verificados.')}</DemoInline>
         <Card><CardBody>

@@ -54,7 +54,7 @@ export default function CourseDetailPage() {
 
   return (
     <>
-      <PageHeader eyebrow={course.category} title={course.title} description={course.summary}>
+      <PageHeader image={course.coverUrl} eyebrow={course.category} title={course.title} description={course.summary}>
         <div className="flex flex-wrap gap-2"><Badge tone="gold">{levelLabel(course.level, locale)}</Badge><Badge tone={access.tone}>{access.label}</Badge><Badge>≈ {course.estimatedHours} h · {totalLessons} {tx('leçons', 'lessons', 'lições')}</Badge></div>
       </PageHeader>
       <section className="container-page grid gap-8 py-12 lg:grid-cols-3">

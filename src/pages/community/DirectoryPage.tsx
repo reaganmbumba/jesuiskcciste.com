@@ -55,7 +55,7 @@ export default function DirectoryPage() {
   if (!profile) {
     return (
       <>
-        <PageHeader eyebrow={tx('Communauté', 'Community', 'Comunidade')} title={tx('Annuaire des membres', 'Member directory', 'Diretório de membros')} />
+        <PageHeader share={false} eyebrow={tx('Communauté', 'Community', 'Comunidade')} title={tx('Annuaire des membres', 'Member directory', 'Diretório de membros')} />
         <div className="container-page py-14">
           <EmptyState icon={<Lock className="h-6 w-6" />} title={tx('Annuaire réservé aux membres', 'Directory for members only', 'Diretório reservado aos membros')} description={tx('Pour protéger la vie privée de chacun, l’annuaire n’est accessible qu’après connexion.', 'To protect everyone’s privacy, the directory is only available after logging in.', 'Para proteger a privacidade de cada um, o diretório só está acessível depois de iniciar sessão.')} action={<div className="flex gap-2"><ButtonLink to="/connexion">{tx('Se connecter', 'Log in', 'Iniciar sessão')}</ButtonLink><ButtonLink to="/inscription" variant="outline">{tx('S’inscrire', 'Sign up', 'Inscrever-se')}</ButtonLink></div>} />
         </div>
@@ -71,7 +71,7 @@ export default function DirectoryPage() {
 
   return (
     <>
-      <PageHeader eyebrow={tx('Communauté', 'Community', 'Comunidade')} title={tx('Annuaire des membres', 'Member directory', 'Diretório de membros')} description={tx('Seules les informations que chaque membre a choisi de rendre visibles sont affichées.', 'Only the information each member has chosen to make visible is shown.', 'Só são mostradas as informações que cada membro escolheu tornar visíveis.')} />
+      <PageHeader share={false} eyebrow={tx('Communauté', 'Community', 'Comunidade')} title={tx('Annuaire des membres', 'Member directory', 'Diretório de membros')} description={tx('Seules les informations que chaque membre a choisi de rendre visibles sont affichées.', 'Only the information each member has chosen to make visible is shown.', 'Só são mostradas as informações que cada membro escolheu tornar visíveis.')} />
       <section className="container-page py-10">
         <div className="mb-6 rounded-2xl border border-night/[0.06] bg-white p-4 shadow-soft">
           <div className="relative">

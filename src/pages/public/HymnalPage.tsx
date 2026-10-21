@@ -1,19 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
+import { ShareButtons } from '@/components/common/ShareButtons';
 import { hymns, type Hymn } from '@/content/cantiques';
 import { useI18n } from '@/i18n';
 
 const LANGS = ['Tous', 'Lingala', 'Kikongo'] as const;
 const PAGE = 30;
 
+/** Ancre d'un cantique, ex. #cantique-lingala-12 : sert aux liens partagés. */
+const hymnId = (h: Hymn) => `cantique-${h.lang.toLowerCase()}-${h.n}`;
+
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-function HymnCard({ h }: { h: Hymn }) {
+function HymnCard({ h, open }: { h: Hymn; open?: boolean }) {
   const { tx } = useI18n();
   return (
-    <details className="group rounded-2xl border border-night/[0.06] bg-white p-5 shadow-soft open:shadow-lift">
+    <details id={hymnId(h)} open={open} className="group scroll-mt-32 rounded-2xl border border-night/[0.06] bg-white p-5 shadow-soft open:shadow-lift">
       <summary className="cursor-pointer list-none marker:hidden">
         <span className="flex items-start justify-between gap-3">
           <span>
@@ -31,6 +35,7 @@ function HymnCard({ h }: { h: Hymn }) {
             : <p key={i}>{l}</p>;
         })}
       </div>
+      <ShareButtons size="sm" url={`/cantiques#${hymnId(h)}`} title={`${h.title} · ${h.lang} ${tx('n°', 'no.', 'n.º')} ${h.n}`} className="mt-4 border-t border-night/[0.06] pt-4" />
     </details>
   );
 }
@@ -41,6 +46,14 @@ export default function HymnalPage() {
   const [q, setQ] = useState('');
   const [lang, setLang] = useState<(typeof LANGS)[number]>('Tous');
   const [shown, setShown] = useState(PAGE);
+  // Lien partagé vers un cantique : on l'affiche, on l'ouvre et on y descend.
+  const [target] = useState(() => (typeof window !== 'undefined' ? decodeURIComponent(window.location.hash.slice(1)) : ''));
+  useEffect(() => {
+    const i = hymns.findIndex((h) => hymnId(h) === target);
+    if (i < 0) return;
+    setShown((s) => Math.max(s, Math.ceil((i + 1) / PAGE) * PAGE));
+    setTimeout(() => document.getElementById(target)?.scrollIntoView({ block: 'start' }), 60);
+  }, [target]);
 
   const results = useMemo(() => {
     const needle = fold(q.trim());
@@ -70,7 +83,7 @@ export default function HymnalPage() {
         </div>
         <p className="mt-4 text-sm text-ink/60" aria-live="polite">{results.length} {results.length > 1 ? tx('cantiques', 'hymns', 'hinos') : tx('cantique', 'hymn', 'hino')}</p>
         <div className="mt-4 grid items-start gap-3 md:grid-cols-2">
-          {results.slice(0, shown).map((h) => <HymnCard key={h.lang + h.n} h={h} />)}
+          {results.slice(0, shown).map((h) => <HymnCard key={h.lang + h.n} h={h} open={hymnId(h) === target || undefined} />)}
         </div>
         {shown < results.length && (
           <div className="mt-6 text-center">

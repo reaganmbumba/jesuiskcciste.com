@@ -27,3 +27,8 @@ export const defaultSiteSettings: SiteSettings = {
   socials: [],
   churchPresentation: '',
 };
+
+/** Groupe WhatsApp « Je suis KCCiste », rappelé dans chaque message de partage. */
+export const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/K30ogMwHp0Z7qmQwBhgKvH?mode=gi_t';
+/** Adresse publique du site, citée dans les messages de partage. */
+export const PUBLIC_SITE_URL = 'https://jesuiskcciste.com';

@@ -56,7 +56,7 @@ export default function EventDetailPage() {
 
   return (
     <>
-      <PageHeader eyebrow={eventCategoryLabel(e.category, locale)} title={e.title}>
+      <PageHeader image={e.posterUrl} eyebrow={eventCategoryLabel(e.category, locale)} title={e.title} metaDescription={e.description}>
         <div className="flex flex-wrap gap-2"><Badge tone={st.tone}>{st.label}</Badge>{e.audience !== 'public' && <Badge tone="blue">{tx('Réservé aux membres', 'Members only', 'Reservado aos membros')}</Badge>}</div>
       </PageHeader>
       <section className="container-page grid gap-8 py-12 lg:grid-cols-3">

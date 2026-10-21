@@ -1,15 +1,19 @@
-import { BookMarked, Globe2, MapPin, Quote } from 'lucide-react';
+import { BookMarked, BookOpen, Globe2, MapPin, Quote } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { ButtonLink } from '@/components/ui/Button';
 import * as fr from '@/content/mon-appel';
 import * as en from '@/content/mon-appel.en';
 import * as pt from '@/content/mon-appel.pt';
+import * as traitsFr from '@/content/caracteristiques-prophete';
+import * as traitsEn from '@/content/caracteristiques-prophete.en';
+import * as traitsPt from '@/content/caracteristiques-prophete.pt';
 import { useI18n } from '@/i18n';
 
-/** « Mon Appel », le récit de l'appel du Prophète (1955-1957), et sa note biographique (voir src/content/mon-appel.ts). */
+/** « Mon Appel », le récit de l'appel du Prophète (1955-1957), les caractéristiques qui font de lui un Prophète et sa note biographique (voir src/content/mon-appel.ts et caracteristiques-prophete.ts). */
 export default function CallingPage() {
   const { tx, pick } = useI18n();
   const { biography, callingBook, callingChapters, callingConclusion } = pick({ fr, en, pt });
+  const { prophetTraitsIntro, prophetTraitParts } = pick({ fr: traitsFr, en: traitsEn, pt: traitsPt });
 
   return (
     <>
@@ -30,8 +34,50 @@ export default function CallingPage() {
               {callingChapters.map((c, i) => (
                 <a key={c.id} href={`#${c.id}`} className="rounded-full border border-night/10 bg-white px-3 py-1 text-sm text-ink/70 transition hover:border-gold hover:text-night">{i + 1}. {c.title}</a>
               ))}
+              <a href="#caracteristiques" className="rounded-full border border-gold/40 bg-gold-50/60 px-3 py-1 text-sm text-night transition hover:border-gold">{tx('Les caractéristiques du Prophète', 'The traits of the Prophet', 'As características do Profeta')}</a>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="caracteristiques" className="scroll-mt-32 border-y border-gold/20 bg-gold-50/30 py-14">
+        <div className="container-page">
+          <SectionHeading eyebrow="Je suis KCCiste" title={prophetTraitsIntro.title} />
+          <figure className="mx-auto max-w-4xl">
+            <img src="/images/archives/prophete-trois-ages.jpg" width={1565} height={1002} loading="lazy" alt={prophetTraitsIntro.photoAlt} className="w-full rounded-3xl bg-white shadow-lift" />
+            <figcaption className="mt-3 text-center text-sm text-ink/60">{prophetTraitsIntro.photoCaption}</figcaption>
+          </figure>
+          {prophetTraitParts.map((part) => (
+            <div key={part.id} id={part.id} className="mt-12 scroll-mt-32">
+              <p className="eyebrow mb-5 text-gold-700">{part.label}</p>
+              <ol className="grid gap-6 lg:grid-cols-3">
+                {part.traits.map((trait, i) => (
+                  <li key={trait.id} id={`caracteristique-${trait.id}`} className="flex scroll-mt-32 flex-col rounded-3xl border border-night/[0.06] bg-white p-6 shadow-soft">
+                    <div className="flex items-baseline gap-3">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-night text-xs font-semibold text-gold">{i + 1}</span>
+                      <h3 className="font-display text-2xl font-semibold text-night">{trait.title} <span className="text-lg font-normal italic text-gold-700">({trait.term})</span></h3>
+                    </div>
+                    <p className="mt-4 text-[15px] leading-relaxed text-ink/80">{trait.intro}</p>
+                    <ul className="mt-3 space-y-2">
+                      {trait.bible.map((b) => (
+                        <li key={b.ref} className="flex gap-2 rounded-2xl bg-night/[0.03] px-3 py-2 text-sm text-ink/80">
+                          <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />
+                          <span>{b.who && <strong className="font-semibold text-night">{b.who}{tx(' : ', ': ', ': ')}</strong>}{b.ref}{b.quote && <span className="mt-1 block font-display italic text-night/80">{b.quote}</span>}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="prose-kcc mt-4">{trait.prophet.map((p, j) => <p key={j}>{p}</p>)}</div>
+                    {trait.signs && (
+                      <ul className="mt-3 space-y-3 border-l-2 border-gold/40 pl-4 text-[15px] leading-relaxed text-ink/80">
+                        {trait.signs.map((sgn) => <li key={sgn}>{sgn}</li>)}
+                      </ul>
+                    )}
+                    {trait.conclusion && <p className="mt-4 font-display text-lg italic text-night">{trait.conclusion}</p>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       </section>
 

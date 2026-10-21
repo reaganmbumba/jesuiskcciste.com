@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Link2, Share2 } from 'lucide-react';
 import { useOptionalToast } from '@/components/ui/Toast';
 import { useI18n } from '@/i18n';
@@ -105,6 +105,8 @@ interface ShareButtonsProps {
   title?: string;
   /** Texte d'accompagnement pour la feuille de partage du téléphone. */
   text?: string;
+  /** Photo du contenu : jointe au partage depuis un téléphone (WhatsApp, Instagram…). */
+  image?: string | null;
   /** `dark` : sur fond bleu nuit (en-têtes) ; `light` : sur fond clair (cartes). */
   tone?: 'dark' | 'light';
   size?: 'sm' | 'md';
@@ -114,13 +116,46 @@ interface ShareButtonsProps {
 }
 
 /** Boutons de partage Facebook, WhatsApp, Instagram et copie du lien. */
-export function ShareButtons({ url, title, text, tone = 'light', size = 'md', showLabel = true, className }: ShareButtonsProps) {
+export function ShareButtons({ url, title, text, image, tone = 'light', size = 'md', showLabel = true, className }: ShareButtonsProps) {
   const { tx, locale } = useI18n();
   const toast = useOptionalToast();
   const [copied, setCopied] = useState(false);
   const href = () => absoluteShareUrl(url);
 
   const message = () => shareMessage(href(), title, locale, text);
+
+  // Sur téléphone, la photo est préparée à l'avance pour être jointe au partage :
+  // la feuille de partage doit s'ouvrir tout de suite après le toucher.
+  const photo = useRef<File | null>(null);
+  useEffect(() => {
+    photo.current = null;
+    if (!image || /\.svg(\?|$)/i.test(image) || !canUseNativeShare() || typeof navigator.canShare !== 'function') return;
+    let cancelled = false;
+    fetch(absoluteShareUrl(image))
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((blob) => {
+        if (!blob || cancelled || !blob.type.startsWith('image/')) return;
+        const name = absoluteShareUrl(image).split('/').pop()?.split('?')[0] || 'photo.jpg';
+        const file = new File([blob], name, { type: blob.type });
+        if (navigator.canShare({ files: [file] })) photo.current = file;
+      })
+      .catch(() => { /* partage sans photo */ });
+    return () => { cancelled = true; };
+  }, [image]);
+
+  const nativeShare = async () => {
+    const data: ShareData = { title, text: message() };
+    if (photo.current) {
+      try {
+        await navigator.share({ ...data, files: [photo.current] });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') throw e;
+        // Application qui refuse les fichiers : on repart avec le texte seul.
+      }
+    }
+    await navigator.share(data);
+  };
   // Copie le message complet (titre, lien, nom du site et groupe WhatsApp).
   const copyLink = async (notice: string) => {
     const ok = await copyText(message());
@@ -135,7 +170,7 @@ export function ShareButtons({ url, title, text, tone = 'light', size = 'md', sh
   const shareInstagram = async () => {
     if (canUseNativeShare()) {
       try {
-        await navigator.share({ title, text: message() });
+        await nativeShare();
         return;
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') return;
@@ -150,7 +185,7 @@ export function ShareButtons({ url, title, text, tone = 'light', size = 'md', sh
 
   const shareNative = async () => {
     try {
-      await navigator.share({ title, text: message() });
+      await nativeShare();
     } catch {
       /* partage annulé */
     }

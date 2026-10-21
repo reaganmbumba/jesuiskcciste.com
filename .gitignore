@@ -10,3 +10,4 @@ coverage
 # Clés de signature Android
 *.jks
 *.keystore
+.wrangler/

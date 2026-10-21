@@ -23,7 +23,7 @@ export const defaultSiteSettings: SiteSettings = {
   secondaryMessage: 'Se connecter, apprendre, servir et faire vivre notre communauté partout dans le monde.',
   officialLogoUrl: '/images/logo-kcc.svg',
   heroImageUrl: '/images/hero-communaute.jpg',
-  contact: { email: '', phone: '', address: '' },
+  contact: { email: 'jesuiskcciste@gmail.com', phone: '+243 840 238 592', address: 'Muanda, Kongo-Central, RD Congo' },
   socials: [],
   churchPresentation: '',
 };

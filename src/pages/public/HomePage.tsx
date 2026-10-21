@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, HandHeart, MapPin, Music2, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, HandHeart, Mail, MapPin, MessageCircle, Music2, Phone, Users } from 'lucide-react';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useAsync } from '@/hooks/useAsync';
 import { listPublishedAnnouncements, listUpcomingEvents, parishesRepo } from '@/services';
 import { ButtonLink } from '@/components/ui/Button';
@@ -131,6 +132,7 @@ export default function HomePage() {
   const { profile } = useAuth();
   const signedIn = !!profile;
   const word = useWordOfDay();
+  const { contact } = useSiteSettings().settings;
 
   const anns = useAsync(() => listPublishedAnnouncements({ signedIn, limit: 3 }), [signedIn]);
   const events = useAsync(() => Promise.all([listUpcomingEvents({ signedIn, limit: 6 }), parishesRepo.all()]), [signedIn]);
@@ -246,6 +248,16 @@ export default function HomePage() {
                   </Link>
                 ))}
               </div>
+            </section>
+
+            <section className="rounded-3xl bg-night p-6 text-white shadow-lift" aria-labelledby="contact-title">
+              <h2 id="contact-title" className="font-display text-2xl font-medium">{tx('Nous contacter', 'Contact us', 'Contacte-nos')}</h2>
+              <ul className="mt-4 space-y-3 text-sm text-white/80">
+                <li className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden />{contact.address}</li>
+                <li className="flex items-start gap-3"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden /><a href={`tel:${contact.phone.replace(/\s/g, '')}`} className="hover:text-white">{contact.phone}</a></li>
+                <li className="flex items-start gap-3"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden /><a href={`mailto:${contact.email}`} className="break-all hover:text-white">{contact.email}</a></li>
+              </ul>
+              <a href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-semibold text-night transition hover:bg-gold-300"><MessageCircle className="h-4 w-4" aria-hidden />{tx('Écrire sur WhatsApp', 'Message us on WhatsApp', 'Escrever no WhatsApp')}</a>
             </section>
           </aside>
         </div>

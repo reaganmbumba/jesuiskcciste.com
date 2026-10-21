@@ -12,7 +12,12 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
     supabase.from('site_settings').select('value').eq('key', 'public').maybeSingle().then(({ data }) => {
-      if (data?.value) setSettings({ ...defaultSiteSettings, ...camelize<Partial<SiteSettings>>(data.value) });
+      if (!data?.value) return;
+      const db = camelize<Partial<SiteSettings>>(data.value);
+      // Un champ de contact laissé vide en base garde la coordonnée officielle par défaut.
+      const c = db.contact ?? defaultSiteSettings.contact;
+      const contact = { email: c.email || defaultSiteSettings.contact.email, phone: c.phone || defaultSiteSettings.contact.phone, address: c.address || defaultSiteSettings.contact.address };
+      setSettings({ ...defaultSiteSettings, ...db, contact });
     });
   }, []);
   return <Ctx.Provider value={{ settings, setSettings }}>{children}</Ctx.Provider>;

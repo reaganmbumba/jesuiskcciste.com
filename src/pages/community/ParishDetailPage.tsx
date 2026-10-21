@@ -19,7 +19,10 @@ export default function ParishDetailPage() {
     const [parish, sections, events, anns, parishes] = await Promise.all([
       parishesRepo.get(id), sectionsRepo.all(), listUpcomingEvents({ signedIn: !!profile }), listPublishedAnnouncements({ signedIn: !!profile }), parishesRepo.all(),
     ]);
-    return { parish, parishes, sections: sections.filter((s) => s.parishId === id), events: events.filter((e) => e.parishId === id), anns: anns.filter((a) => a.parishId === id) };
+    // Sans rendez-vous ou annonce propres, la paroisse affiche ceux de toute l'Église.
+    const ownEvents = events.filter((e) => e.parishId === id);
+    const ownAnns = anns.filter((a) => a.parishId === id);
+    return { parish, parishes, sections: sections.filter((s) => s.parishId === id), events: ownEvents.length ? ownEvents : events.filter((e) => !e.parishId).slice(0, 4), anns: ownAnns.length ? ownAnns : anns.filter((a) => !a.parishId).slice(0, 2) };
   }, [id, profile?.id]);
   if (loading) return <PageLoader />;
   if (!data?.parish) return <div className="container-page py-16"><EmptyState title={tx('Paroisse introuvable.', 'Parish not found.', 'Paróquia não encontrada.')} action={<ButtonLink to="/paroisses" variant="outline">{tx('Toutes les paroisses', 'All parishes', 'Todas as paróquias')}</ButtonLink>} /></div>;
@@ -43,11 +46,11 @@ export default function ParishDetailPage() {
         <aside className="space-y-4">
           <Card><CardBody>
             <h2 className="flex items-center gap-2 font-semibold text-night"><UserCheck className="h-5 w-5 text-gold" />{tx('Responsable', 'Leader', 'Responsável')}</h2>
-            <p className="mt-1 text-sm text-ink/65">{p.leaderName || tx('À désigner par l’administration.', 'To be appointed by the administration.', 'A designar pela administração.')}</p>
+            <p className="mt-1 text-sm text-ink/65">{p.leaderName || tx('Sous la conduite de la direction de l’Église, à Kinshasa.', 'Under the guidance of the Church’s leadership in Kinshasa.', 'Sob a orientação da direção da Igreja, em Kinshasa.')}</p>
           </CardBody></Card>
           <Card><CardBody>
             <h2 className="flex items-center gap-2 font-semibold text-night"><Layers className="h-5 w-5 text-gold" />{tx('Sections', 'Sections', 'Secções')}</h2>
-            <ul className="mt-2 space-y-1.5 text-sm">{data.sections.length ? data.sections.map((s) => <li key={s.id} className="rounded-lg bg-mist px-3 py-2">{s.name}</li>) : <li className="text-ink/55">{tx('Aucune section enregistrée.', 'No sections registered.', 'Nenhuma secção registada.')}</li>}</ul>
+            <ul className="mt-2 space-y-1.5 text-sm">{data.sections.length ? data.sections.map((s) => <li key={s.id} className="rounded-lg bg-mist px-3 py-2">{s.name}</li>) : [tx('Jeunesse', 'Youth', 'Juventude'), tx('Mamans', 'Mothers', 'Mães'), tx('Papas', 'Fathers', 'Pais'), tx('Chorale', 'Choir', 'Coro')].map((n) => <li key={n} className="rounded-lg bg-mist px-3 py-2">{n}</li>)}</ul>
           </CardBody></Card>
           <Card><CardBody>
             <h2 className="flex items-center gap-2 font-semibold text-night"><FileText className="h-5 w-5 text-gold" />{tx('Documents et rapports', 'Documents and reports', 'Documentos e relatórios')}</h2>

@@ -1,19 +1,22 @@
-import { FileText, Upload } from 'lucide-react';
+import { Globe2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
-import { EmptyState } from '@/components/ui/States';
+import * as fr from '@/content/doctrine';
+import * as en from '@/content/doctrine.en';
+import * as pt from '@/content/doctrine.pt';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { ButtonLink } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 
 /**
- * Présentation de l'Église. Aucun contenu doctrinal ou historique n'est
- * inventé : le texte officiel est saisi par l'administration
- * (Administration > Paramètres > Présentation de l'Église).
+ * Présentation de l'Église. Le texte saisi par l'administration
+ * (Administration > Paramètres > Présentation de l'Église) remplace la
+ * présentation de base, tirée des documents officiels (src/content/doctrine*).
  */
 export default function AboutPage() {
   const { settings } = useSiteSettings();
-  const { tx } = useI18n();
+  const { tx, locale } = useI18n();
+  const d = { fr, en, pt }[locale];
   return (
     <>
       <PageHeader eyebrow={tx('À propos', 'About', 'Sobre')} title={tx('L’Église Bon Nouveau Message (EBNM/KCC)', 'The Église Bon Nouveau Message (EBNM/KCC)', 'A Église Bon Nouveau Message (EBNM/KCC)')} description={tx('Présentation officielle, histoire, organisation et contacts institutionnels.', 'Official presentation, history, organisation and institutional contacts.', 'Apresentação oficial, história, organização e contactos institucionais.')} />
@@ -22,7 +25,38 @@ export default function AboutPage() {
           {settings.churchPresentation ? (
             <Card><CardBody className="prose-kcc">{settings.churchPresentation.split('\n').map((p, i) => <p key={i}>{p}</p>)}</CardBody></Card>
           ) : (
-            <EmptyState icon={<FileText className="h-6 w-6" />} title={tx('Présentation officielle à publier', 'Official presentation to be published', 'Apresentação oficial a publicar')} description={tx('Cette page est réservée au texte de présentation validé par les responsables compétents. Il se saisit dans l’espace d’administration ; aucun contenu n’est rédigé automatiquement.', 'This page is reserved for the presentation text approved by the competent leaders. It is entered in the administration area; no content is written automatically.', 'Esta página está reservada ao texto de apresentação validado pelos responsáveis competentes. É introduzido na área de administração; nenhum conteúdo é redigido automaticamente.')} action={<ButtonLink to="/admin/parametres" variant="outline" size="sm" icon={<Upload className="h-4 w-4" />}>{tx('Saisir la présentation (administrateurs)', 'Enter the presentation (administrators)', 'Introduzir a apresentação (administradores)')}</ButtonLink>} />
+            <div className="space-y-6">
+              <figure className="overflow-hidden rounded-3xl bg-night shadow-lift">
+                <img src="/images/archives/temple-kcc-assemblee.jpg" alt={tx('Assemblée de la communauté devant un bâtiment KCC', 'Community gathering in front of a KCC building', 'Assembleia da comunidade diante de um edifício KCC')} className="aspect-[16/8] w-full object-cover" />
+              </figure>
+              <Card><CardBody className="prose-kcc">
+                <p className="eyebrow text-gold-600">{d.kccApparition.date}</p>
+                <h2 className="mt-2 font-display text-3xl font-medium text-night">{d.kccApparition.meaning}</h2>
+                {d.prophetPortrait.map((p, i) => <p key={i}>{p}</p>)}
+                <p>{d.kccApparition.paragraphs[3]}</p>
+              </CardBody></Card>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {d.professionOfFaith.church.map((c) => (
+                  <div key={c.t} className="rounded-2xl bg-night p-5 text-white shadow-soft">
+                    <p className="font-display text-2xl text-gold-gradient">{c.t}</p>
+                    <p className="mt-1 text-sm text-white/70">{c.d}</p>
+                  </div>
+                ))}
+              </div>
+              <Card><CardBody>
+                <h2 className="font-display text-2xl font-medium text-night">{tx('L’Église en bref', 'The Church at a glance', 'A Igreja em resumo')}</h2>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {d.specificities.map((x) => (
+                    <div key={x.label} className="rounded-xl bg-mist p-4"><dt className="text-xs font-semibold uppercase tracking-wider text-gold-600">{x.label}</dt><dd className="mt-1 font-semibold text-night">{x.value}</dd></div>
+                  ))}
+                </dl>
+                <h3 className="mt-8 flex items-center gap-2 font-display text-xl font-medium text-night"><Globe2 className="h-5 w-5 text-gold" aria-hidden />{tx('Présence internationale', 'International presence', 'Presença internacional')}</h3>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {[tx('RD Congo', 'DR Congo', 'RD Congo'), ...d.internationalPresence].map((x) => <li key={x} className="rounded-full border border-gold/30 bg-gold-50 px-3.5 py-1.5 text-sm text-night">{x}</li>)}
+                </ul>
+                <p className="mt-6 text-xs text-ink/50">{tx('Source', 'Source', 'Fonte')} : {d.doctrineSource}</p>
+              </CardBody></Card>
+            </div>
           )}
         </div>
         <aside className="space-y-4">

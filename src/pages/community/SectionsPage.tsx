@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Layers } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
-import { EmptyState } from '@/components/ui/States';
 import { Skeleton } from '@/components/ui/Spinner';
 import { useAsync } from '@/hooks/useAsync';
 import { parishesRepo, sectionsRepo } from '@/services';
@@ -30,7 +29,21 @@ export default function SectionsPage() {
             </div>
           </div>
         ))}
-        {!loading && !sections.length && <EmptyState title={tx('Aucune section enregistrée.', 'No sections registered.', 'Nenhuma secção registada.')} />}
+        {!loading && !sections.length && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { img: '/images/accueil/jeunesse.jpg', t: tx('Jeunesse', 'Youth', 'Juventude'), d: tx('Les jeunes de la paroisse : rencontres, formation et activités.', 'The parish’s young people: meetings, learning and activities.', 'Os jovens da paróquia: encontros, formação e atividades.') },
+              { img: '/images/archives/temple-kcc-assemblee.jpg', t: tx('Mamans', 'Mothers', 'Mães'), d: tx('Entraide, accueil et vie de famille au sein de la paroisse.', 'Mutual aid, welcome and family life within the parish.', 'Entreajuda, acolhimento e vida familiar na paróquia.') },
+              { img: '/images/archives/archive-assemblee-noir-et-blanc.jpg', t: tx('Papas', 'Fathers', 'Pais'), d: tx('Service, organisation et soutien des activités de la communauté.', 'Service, organisation and support for community activities.', 'Serviço, organização e apoio às atividades da comunidade.') },
+              { img: '/images/accueil/musique.svg', t: tx('Chorales', 'Choirs', 'Coros'), d: tx('Les cantiques d’ensemble et les chorales qui animent le culte.', 'The congregational hymns and the choirs that lead worship.', 'Os hinos de conjunto e os coros que animam o culto.') },
+            ].map((x) => (
+              <div key={x.t} className="overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-soft">
+                <img src={x.img} alt="" loading="lazy" className="h-40 w-full object-cover" />
+                <div className="p-5"><h2 className="font-display text-xl font-medium text-night">{x.t}</h2><p className="mt-1 text-sm text-ink/60">{x.d}</p></div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </>
   );

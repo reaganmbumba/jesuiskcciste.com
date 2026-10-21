@@ -5,7 +5,8 @@
 import { isDemoMode } from '@/config/env';
 import { supabase } from '@/lib/supabase';
 import { camelize } from '@/utils/case';
-import { repository } from './repository';
+import { repository, withEditorial } from './repository';
+import { editorialAlbums, editorialAnnouncements, editorialArtists, editorialCourses, editorialEvents, editorialMedia, editorialParishes, editorialTracks } from '@/content/editorial';
 import * as demo from './demo/data';
 import type {
   Announcement, AppNotification, Certificate, CommunityStats, Contribution, Course, Enrollment, KccEvent,
@@ -14,17 +15,17 @@ import type {
 import { gradeAnswers, generateCertificateCode } from '@/features/academy/grading';
 import { isListable, toDirectoryEntry, type DirectoryEntry } from '@/features/community/privacy';
 
-export const parishesRepo = repository('parishes', demo.demoParishes, 'par');
+export const parishesRepo = withEditorial(repository('parishes', demo.demoParishes, 'par'), editorialParishes);
 export const sectionsRepo = repository('sections', demo.demoSections, 'sec');
 export const unitsRepo = repository('organizational_units', demo.demoUnits, 'unit');
 export const membersRepo = repository('profiles', demo.demoMembers, 'mem', '*', ['roles', 'email', 'status', 'createdAt']);
-export const announcementsRepo = repository('announcements', demo.demoAnnouncements, 'ann');
-export const eventsRepo = repository('events', demo.demoEvents, 'evt');
-export const coursesRepo = repository('courses', demo.demoCourses, 'crs', '*, modules:course_modules(*, lessons(*))', ['modules', 'quizId']);
-export const artistsRepo = repository('artists', demo.demoArtists, 'art');
-export const albumsRepo = repository('albums', demo.demoAlbums, 'alb');
-export const tracksRepo = repository('tracks', demo.demoTracks, 'trk');
-export const mediaRepo = repository('media_items', demo.demoMedia, 'med');
+export const announcementsRepo = withEditorial(repository('announcements', demo.demoAnnouncements, 'ann'), editorialAnnouncements);
+export const eventsRepo = withEditorial(repository('events', demo.demoEvents, 'evt'), editorialEvents);
+export const coursesRepo = withEditorial(repository('courses', demo.demoCourses, 'crs', '*, modules:course_modules(*, lessons(*))', ['modules', 'quizId']), editorialCourses);
+export const artistsRepo = withEditorial(repository('artists', demo.demoArtists, 'art'), editorialArtists);
+export const albumsRepo = withEditorial(repository('albums', demo.demoAlbums, 'alb'), editorialAlbums);
+export const tracksRepo = withEditorial(repository('tracks', demo.demoTracks, 'trk'), editorialTracks);
+export const mediaRepo = withEditorial(repository('media_items', demo.demoMedia, 'med'), editorialMedia);
 export const projectsRepo = repository('projects', demo.demoProjects, 'prj', '*', ['confirmedAmount', 'declaredAmount']);
 export const contributionsRepo = repository('contributions', demo.demoContributions, 'ctb');
 export const expensesRepo = repository('expenses', demo.demoExpenses, 'exp');
@@ -76,7 +77,7 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
   if (isDemoMode) return (await coursesRepo.all()).find((c) => c.slug === slug) ?? null;
   const { data, error } = await supabase!.from('courses').select('*, modules:course_modules(*, lessons(*)), quiz:quizzes(id)').eq('slug', slug).maybeSingle();
   if (error) throw error;
-  if (!data) return null;
+  if (!data) return editorialCourses().find((c) => c.slug === slug) ?? null;
   const c = camelize<Course & { quiz?: { id: string }[] }>(data);
   return { ...c, quizId: c.quiz?.[0]?.id ?? null };
 }

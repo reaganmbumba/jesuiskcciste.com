@@ -46,7 +46,7 @@ export default function CommunityPage() {
               <li key={x.l} className="relative rounded-xl bg-mist p-4">
                 <span className="text-xs font-semibold text-gold-600">{tx('Niveau', 'Level', 'Nível')} {i + 1}</span>
                 <p className="font-semibold text-night">{x.l}</p>
-                <p className="text-sm text-ink/55">{x.n} {x.n > 1 ? tx('enregistrés', 'registered', 'registados') : tx('enregistré', 'registered', 'registado')}</p>
+                {x.n > 0 && <p className="text-sm text-ink/55">{x.n} {x.n > 1 ? tx('enregistrés', 'registered', 'registados') : tx('enregistré', 'registered', 'registado')}</p>}
               </li>
             ))}
           </ol>

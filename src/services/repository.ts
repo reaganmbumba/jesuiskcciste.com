@@ -157,3 +157,32 @@ export function createSupabaseRepository<T extends { id: string }>(table: string
 export function repository<T extends { id: string }>(table: string, seed: T[], prefix: string, select?: string, readonlyKeys?: string[]): Repository<T> {
   return isDemoMode ? createDemoRepository(seed, prefix) : createSupabaseRepository<T>(table, select, readonlyKeys);
 }
+
+/** Pages où seules les vraies données de la base doivent apparaître (gestion, inscription, profil). */
+const RAW_DATA_PATHS = /^\/(admin|inscription|espace)(\/|$)/;
+const wantsRawData = () => typeof window === 'undefined' || RAW_DATA_PATHS.test(window.location.pathname);
+
+/**
+ * Ajoute le contenu éditorial de base à un dépôt Supabase : tant que la table
+ * est vide, les pages publiques affichent ce contenu au lieu d'une page vide.
+ * L'administration, l'inscription et l'espace membre voient toujours la base seule.
+ */
+export function withEditorial<T extends { id: string }>(repo: Repository<T>, fallback: () => T[]): Repository<T> {
+  if (isDemoMode) return repo;
+  return {
+    ...repo,
+    async list(params) {
+      const page = await repo.list(params);
+      if (page.total > 0 || wantsRawData()) return page;
+      return applyListParams(fallback(), params);
+    },
+    async all() {
+      const rows = await repo.all();
+      return rows.length || wantsRawData() ? rows : fallback();
+    },
+    async get(id) {
+      const row = await repo.get(id).catch((e) => (fallback().some((r) => r.id === id) ? null : Promise.reject(e)));
+      return row ?? fallback().find((r) => r.id === id) ?? null;
+    },
+  };
+}

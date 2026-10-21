@@ -30,7 +30,7 @@ export function Footer() {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-fade-b" aria-hidden />
       <div className="container-page relative grid gap-10 py-16 sm:grid-cols-2 lg:grid-cols-12 lg:py-20">
         <div className="lg:col-span-4">
-          <Logo light />
+          <Logo light large />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/65">{t('footer.about')}</p>
           <p className="mt-6 font-display text-2xl italic leading-snug text-gold-gradient">« {t('hero.title')} »</p>
         </div>

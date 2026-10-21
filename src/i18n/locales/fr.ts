@@ -1,6 +1,7 @@
 const fr = {
   'nav.home': 'Accueil',
   'nav.community': 'Communauté',
+  'nav.faith': 'La Foi',
   'nav.trainings': 'Formations',
   'nav.activities': 'Activités',
   'nav.media': 'Médias',

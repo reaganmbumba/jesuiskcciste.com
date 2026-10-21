@@ -16,6 +16,11 @@ const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const TeachingsPage = lazy(() => import('@/pages/public/TeachingsPage'));
 const DoctrinePage = lazy(() => import('@/pages/public/DoctrinePage'));
 const HymnalPage = lazy(() => import('@/pages/public/HymnalPage'));
+const CatechismPage = lazy(() => import('@/pages/public/CatechismPage'));
+const LiturgyPage = lazy(() => import('@/pages/public/LiturgyPage'));
+const CallingPage = lazy(() => import('@/pages/public/CallingPage'));
+const SermonsPage = lazy(() => import('@/pages/public/SermonsPage'));
+const GalleryPage = lazy(() => import('@/pages/public/GalleryPage'));
 const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
@@ -108,6 +113,11 @@ export function AppRoutes() {
         <Route path="enseignements" element={<TeachingsPage />} />
         <Route path="doctrine" element={<DoctrinePage />} />
         <Route path="cantiques" element={<HymnalPage />} />
+        <Route path="catechisme" element={<CatechismPage />} />
+        <Route path="liturgie" element={<LiturgyPage />} />
+        <Route path="appel-du-prophete" element={<CallingPage />} />
+        <Route path="predications" element={<SermonsPage />} />
+        <Route path="galerie" element={<GalleryPage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />

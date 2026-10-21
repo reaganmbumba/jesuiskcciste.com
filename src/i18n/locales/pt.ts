@@ -1,6 +1,6 @@
 import type { Dictionary } from './fr';
 const pt: Partial<Dictionary> = {
-  'nav.home': 'Início', 'nav.community': 'Comunidade', 'nav.trainings': 'Formações', 'nav.activities': 'Atividades',
+  'nav.home': 'Início', 'nav.community': 'Comunidade', 'nav.faith': 'Fé', 'nav.trainings': 'Formações', 'nav.activities': 'Atividades',
   'nav.media': 'Média', 'nav.solidarity': 'Solidariedade', 'nav.search': 'Pesquisar', 'nav.login': 'Entrar', 'nav.signup': 'Inscrever-se',
   'nav.mySpace': 'O meu espaço', 'nav.admin': 'Administração', 'nav.logout': 'Sair',
   'hero.title': 'Um só povo. Uma mesma comunidade.',

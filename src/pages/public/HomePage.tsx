@@ -79,16 +79,16 @@ function HeroSlider() {
       ))}
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night-950/95 via-night-900/75 to-night-900/10" aria-hidden />
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night-950/70 via-transparent to-transparent" aria-hidden />
-      <div className="container-page flex min-h-[17rem] items-center pb-12 pt-8 sm:min-h-[20rem] lg:min-h-[21rem] lg:pr-[22rem]">
+      <div className="container-page flex min-h-[14rem] items-center pb-11 pt-5 sm:min-h-[15rem] lg:min-h-[16rem] lg:pr-[22rem]">
         <div className="max-w-2xl" aria-live="polite">
           <div key={i} className="animate-fade-up">
-          <h1 className="font-display text-[2rem] font-medium leading-[1.05] tracking-[-0.02em] sm:text-[2.6rem] lg:text-[3.1rem]">
+          <h1 className="font-display text-[1.75rem] font-medium leading-[1.05] tracking-[-0.02em] sm:text-[2.3rem] lg:text-[2.6rem]">
             {pick(SLIDES[i].title)}<br /><span className="italic text-gold-gradient">{pick(SLIDES[i].accent)}</span>
           </h1>
-          <p className="mt-3 max-w-xl text-base leading-relaxed text-white/75">{pick(SLIDES[i].text)}</p>
-          <ButtonLink to={SLIDES[i].to} variant="gold" className="mt-5">{pick(SLIDES[i].cta)} <ArrowRight className="h-5 w-5" /></ButtonLink>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/75 sm:text-base">{pick(SLIDES[i].text)}</p>
+          <ButtonLink to={SLIDES[i].to} variant="gold" size="sm" className="mt-4">{pick(SLIDES[i].cta)} <ArrowRight className="h-5 w-5" /></ButtonLink>
           </div>
-          <div className="mt-5 flex gap-2.5">
+          <div className="mt-4 flex gap-2.5">
             {SLIDES.map((_, k) => (
               <button key={k} type="button" onClick={() => go(k)} className={cn('h-3 rounded-full transition-all', k === i ? 'w-8 bg-gold' : 'w-3 bg-white/60 hover:bg-white')} aria-label={`${tx('Diapositive', 'Slide', 'Diapositivo')} ${k + 1}`} aria-current={k === i} />
             ))}
@@ -187,7 +187,7 @@ export default function HomePage() {
           </div>
 
           {/* COLONNE LATÉRALE */}
-          <aside className="space-y-8 lg:col-span-4 lg:-mt-28 xl:col-span-3" aria-label={tx('Informations', 'Information', 'Informações')}>
+          <aside className="space-y-8 lg:col-span-4 lg:-mt-20 xl:col-span-3" aria-label={tx('Informations', 'Information', 'Informações')}>
             <figure className="relative z-10 rounded-3xl border border-night/[0.06] bg-white p-5 shadow-lift">
               <div className="flex items-center gap-4">
                 <img src="/images/logo-kcc.svg" alt="" className="h-16 w-16 shrink-0" />

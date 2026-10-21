@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/Spinner';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { YouTubeIcon, YouTubeSubscribeButton } from '@/components/common/YouTubeChannel';
 import { YOUTUBE_VIDEOS, youtubeWatchUrl } from '@/config/youtube';
+import { ShareButtons } from '@/components/common/ShareButtons';
 import * as fr from '@/content/doctrine';
 import * as en from '@/content/doctrine.en';
 import * as pt from '@/content/doctrine.pt';
@@ -325,6 +326,12 @@ export default function HomePage() {
                 <li className="flex items-start gap-3"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-gold" aria-hidden /><a href={`mailto:${contact.email}`} className="break-all hover:text-white">{contact.email}</a></li>
               </ul>
               <a href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-semibold text-night transition hover:bg-gold-300"><MessageCircle className="h-4 w-4" aria-hidden />{tx('Écrire sur WhatsApp', 'Message us on WhatsApp', 'Escrever no WhatsApp')}</a>
+            </section>
+
+            <section className="rounded-3xl border border-gold/25 bg-gold-50 p-6 shadow-soft" aria-labelledby="share-title">
+              <h2 id="share-title" className="font-display text-2xl font-medium text-night">{tx('Partager le site', 'Share the website', 'Partilhar o site')}</h2>
+              <p className="mt-2 text-sm text-ink/70">{tx('Faites connaître JE SUIS KCCiste autour de vous, sur Facebook, WhatsApp et Instagram.', 'Tell others about JE SUIS KCCiste on Facebook, WhatsApp and Instagram.', 'Dê a conhecer o JE SUIS KCCiste à sua volta, no Facebook, WhatsApp e Instagram.')}</p>
+              <ShareButtons url="/" title={tx('JE SUIS KCCiste — La communauté KCCiste', 'JE SUIS KCCiste — The KCCiste community', 'JE SUIS KCCiste — A comunidade KCCiste')} text={tx('Un seul peuple. Une même communauté.', 'One people. One community.', 'Um só povo. Uma mesma comunidade.')} showLabel={false} className="mt-4" />
             </section>
           </aside>
         </div>

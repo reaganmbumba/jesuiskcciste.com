@@ -28,11 +28,11 @@ export function Footer() {
       <div className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[30rem] w-[30rem] rounded-full bg-gold/10 blur-[120px]" aria-hidden />
       <div className="pointer-events-none absolute -bottom-40 -left-20 -z-10 h-96 w-96 rounded-full bg-night-500/40 blur-[110px]" aria-hidden />
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 mask-fade-b" aria-hidden />
-      <div className="container-page relative grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-12 lg:py-12">
+      <div className="container-page relative grid gap-8 py-9 sm:grid-cols-2 lg:grid-cols-12 lg:py-10">
         <div className="lg:col-span-4">
           <Logo light large />
           <p className="mt-3 max-w-sm text-[13px] leading-relaxed text-white/65">{t('footer.about')}</p>
-          <p className="mt-4 font-display text-xl italic leading-snug text-gold-gradient">« {t('hero.title')} »</p>
+          <p className="mt-3 font-display text-lg italic leading-snug text-gold-gradient">« {t('hero.title')} »</p>
         </div>
         <div className="lg:col-span-2">
           <p className={col}>{t('footer.navigation')}</p>
@@ -44,9 +44,9 @@ export function Footer() {
             <li><Link className={link} to="/actualites">{tx('Actualités', 'News', 'Notícias')}</Link></li>
           </ul>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
           <p className={col}>{t('footer.services')}</p>
-          <ul className="space-y-1.5">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-1.5">
             <li><Link className={link} to="/academie">{tx('Académie KCC', 'KCC Academy', 'Academia KCC')}</Link></li>
             <li><Link className={link} to="/agenda">{tx('Agenda', 'Calendar', 'Agenda')}</Link></li>
             <li><Link className={link} to="/musique">KCC Music</Link></li>
@@ -58,27 +58,28 @@ export function Footer() {
             <li><a className={link} href="/app/android.apk">{tx('Application Android', 'Android app', 'Aplicação Android')}</a></li>
           </ul>
         </div>
-        <div className="lg:col-span-4">
+        <div className="sm:col-span-2 lg:col-span-3">
           <p className={col}>{t('footer.contact')}</p>
           <ul className="space-y-2.5 text-[13px] text-white/65">
             <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address}</li>
             {settings.contact.email && <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a></li>}
             {settings.contact.phone && <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`tel:${settings.contact.phone.replace(/\s/g, '')}`}>{settings.contact.phone}</a> · <a className={link} href={`https://wa.me/${settings.contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>}
           </ul>
-          <a href={youtubeSubscribeUrl()} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-white/85 transition hover:border-[#FF0000] hover:bg-[#FF0000]/15 hover:text-white">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <a href={youtubeSubscribeUrl()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-[13px] text-white/85 transition hover:border-[#FF0000] hover:bg-[#FF0000]/15 hover:text-white">
             <YouTubeIcon className="h-4 w-6" />
-            <span>{tx('S’abonner sur YouTube', 'Subscribe on YouTube', 'Subscrever no YouTube')} · <strong>{YOUTUBE_CHANNEL_NAME}</strong></span>
+            <span>{tx('S’abonner', 'Subscribe', 'Subscrever')} · <strong>{YOUTUBE_CHANNEL_NAME}</strong></span>
           </a>
-          <p className={`${col} mt-7`}>{tx('Suivez-nous', 'Follow us', 'Siga-nos')}</p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2" aria-label={tx('Suivez-nous', 'Follow us', 'Siga-nos')}>
             {[{ label: 'YouTube', url: youtubeChannelUrl() }, ...settings.socials.filter((x) => !/youtube/i.test(x.label))].map((x) => {
               const Icon = socialIcon(x.label);
               return (
-                <a key={x.url} href={x.url} target="_blank" rel="noopener noreferrer" aria-label={x.label} title={x.label} className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-white/80 transition hover:border-gold hover:bg-gold hover:text-night">
+                <a key={x.url} href={x.url} target="_blank" rel="noopener noreferrer" aria-label={x.label} title={x.label} className="grid h-9 w-9 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-white/80 transition hover:border-gold hover:bg-gold hover:text-night">
                   <Icon className="h-[18px] w-[18px]" aria-hidden />
                 </a>
               );
             })}
+          </div>
           </div>
         </div>
       </div>

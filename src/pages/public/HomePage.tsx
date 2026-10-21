@@ -276,7 +276,7 @@ export default function HomePage() {
       </section>
 
       {/* CHAÎNE YOUTUBE */}
-      <YouTubeChannelSection showPageLink />
+      <YouTubeChannelSection showPageLink limit={3} />
 
       {/* SOLIDARITÉ */}
       <section className="relative isolate overflow-hidden bg-night-950 py-20 text-white sm:py-28" aria-labelledby="sol-title">

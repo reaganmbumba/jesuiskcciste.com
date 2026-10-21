@@ -66,7 +66,7 @@ export function YouTubeEmbed({ video, className }: { video: YouTubeVideo; classN
 }
 
 /** Bandeau complet de la chaîne : présentation, bouton d'abonnement et vidéos. */
-export function YouTubeChannelSection({ showPageLink = false }: { showPageLink?: boolean }) {
+export function YouTubeChannelSection({ showPageLink = false, limit }: { showPageLink?: boolean; limit?: number }) {
   const { tx } = useI18n();
   return (
     <section className="relative isolate overflow-hidden bg-night-950 py-20 text-white sm:py-24" aria-labelledby="yt-title">
@@ -86,8 +86,8 @@ export function YouTubeChannelSection({ showPageLink = false }: { showPageLink?:
             </a>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {YOUTUBE_VIDEOS.map((v) => <YouTubeEmbed key={v.id} video={v} />)}
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {YOUTUBE_VIDEOS.slice(0, limit).map((v) => <YouTubeEmbed key={v.id} video={v} />)}
         </div>
         {showPageLink && (
           <p className="mt-8 text-center">

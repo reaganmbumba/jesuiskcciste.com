@@ -6,14 +6,19 @@ import type { Tri } from '@/i18n';
  * Tant qu'elle est vide, les boutons ouvrent une recherche YouTube du nom de la chaîne.
  */
 export const YOUTUBE_CHANNEL_NAME = 'Je suis KCCiste';
-export const YOUTUBE_CHANNEL_URL: string = '';
+export const YOUTUBE_CHANNEL_URL: string = 'https://www.youtube.com/@Jesuiskcciste';
 
 export interface YouTubeVideo { id: string; title: Tri }
 
 /** Vidéos de la chaîne mises en avant sur le site (identifiant YouTube à 11 caractères). */
 export const YOUTUBE_VIDEOS: YouTubeVideo[] = [
+  { id: 'iy940YMSrgE', title: { fr: "Hommage au peuple Yombe – Volume 2 : Tuidi vava, beto", en: "Hommage au peuple Yombe – Volume 2 : Tuidi vava, beto", pt: "Hommage au peuple Yombe – Volume 2 : Tuidi vava, beto" } },
+  { id: 'sOCX5I-HSDY', title: { fr: "Hommage au peuple Yombe : Tuidi vava, beto ba Yombe", en: "Hommage au peuple Yombe : Tuidi vava, beto ba Yombe", pt: "Hommage au peuple Yombe : Tuidi vava, beto ba Yombe" } },
+  { id: '9LAkuBVqYJU', title: { fr: "Viens inscrire ta vérité", en: "Viens inscrire ta vérité", pt: "Viens inscrire ta vérité" } },
+  { id: '4pMd9Hm3AY0', title: { fr: "Nous te rendons grâce, Yahweh", en: "Nous te rendons grâce, Yahweh", pt: "Nous te rendons grâce, Yahweh" } },
+  { id: 'YB1brJFQeVs', title: { fr: "Sunga ngai Yawhé na kueya te", en: "Sunga ngai Yawhé na kueya te", pt: "Sunga ngai Yawhé na kueya te" } },
+  { id: 'gu3hBNiSxKA', title: { fr: "Tout savoir", en: "Tout savoir", pt: "Tout savoir" } },
   { id: 'wzIzeujWbfU', title: { fr: 'La vidéo la plus regardée de la chaîne', en: 'The channel’s most-watched video', pt: 'O vídeo mais visto do canal' } },
-  { id: '12-_2B0HpdA', title: { fr: 'À découvrir sur la chaîne', en: 'Discover it on the channel', pt: 'Para descobrir no canal' } },
 ];
 
 const SEARCH_URL = `https://www.youtube.com/results?search_query=${encodeURIComponent(`"${YOUTUBE_CHANNEL_NAME}"`)}`;

@@ -379,7 +379,8 @@ export interface CommunityStats {
 }
 
 // ——— Révérends Apôtres ———
-export type ApostleStatus = 'living' | 'deceased';
+/** `unknown` : la liste officielle ne précise pas si l'apôtre est en vie. */
+export type ApostleStatus = 'living' | 'deceased' | 'unknown';
 
 export interface Apostle {
   id: UUID;
@@ -391,13 +392,23 @@ export interface Apostle {
   birthYear?: number | null;
   deathYear?: number | null;
   bio?: string | null;
+  /** Texte libre : une date exacte ou seulement l'année. */
+  consecrationDate?: string | null;
+  /** Date exacte du décès quand on la connaît (texte libre). */
+  deathDate?: string | null;
   sortOrder: number;
 }
 
 export interface ApostlePhotoSubmission {
   id: UUID;
   apostleId: UUID;
-  photoPath: string;
+  /** Vide quand la proposition ne porte que sur des informations. */
+  photoPath?: string | null;
+  proposedPlace?: string | null;
+  proposedConsecration?: string | null;
+  proposedBirthYear?: number | null;
+  proposedDeathYear?: number | null;
+  proposedBio?: string | null;
   submitterName: string;
   submitterContact?: string | null;
   note?: string | null;

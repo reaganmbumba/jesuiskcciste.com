@@ -22,6 +22,7 @@ const CallingPage = lazy(() => import('@/pages/public/CallingPage'));
 const SermonsPage = lazy(() => import('@/pages/public/SermonsPage'));
 const GalleryPage = lazy(() => import('@/pages/public/GalleryPage'));
 const ApostlesPage = lazy(() => import('@/pages/public/ApostlesPage'));
+const ApostleProfilePage = lazy(() => import('@/pages/public/ApostleProfilePage'));
 const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
@@ -122,6 +123,7 @@ export function AppRoutes() {
         <Route path="predications" element={<SermonsPage />} />
         <Route path="galerie" element={<GalleryPage />} />
         <Route path="apotres" element={<ApostlesPage />} />
+        <Route path="apotres/:id" element={<ApostleProfilePage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />

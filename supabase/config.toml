@@ -1,0 +1,7 @@
+# Configuration minimale pour la CLI Supabase (supabase functions deploy).
+project_id = "anawpwprqvzxgzcpqqwu"
+
+# FlexPay appelle le webhook sans jeton Supabase : la fonction vérifie
+# elle-même la session de l'acheteur pour les autres actions.
+[functions.boutique-musique]
+verify_jwt = false

@@ -136,15 +136,15 @@ export const demoArtists: Artist[] = [
 ];
 
 export const demoAlbums: Album[] = [
-  { id: 'alb-cantiques-5', title: 'Sélection cantiques d’ensemble – Volume 5', artistId: 'art-ebnm', year: null, coverUrl: '/images/logo-kcc.png' },
+  { id: 'alb-cantiques-5', title: 'Sélection cantiques d’ensemble – Volume 5', artistId: 'art-ebnm', year: null, coverUrl: '/images/logo-kcc.png', priceAmount: 3, priceCurrency: 'USD' },
   { id: 'alb-1', title: 'Album de démonstration', artistId: 'art-1', year: 2026 },
   { id: 'alb-2', title: 'Enregistrements exemple', artistId: 'art-3', year: 2025 },
 ];
 
 export const demoTracks: Track[] = [
   { id: 'trk-cantiques-5', title: 'Sélection cantiques d’ensemble – Volume 5', author: 'EBNM / KCC', artistId: 'art-ebnm', albumId: 'alb-cantiques-5', category: 'Cantiques', durationSeconds: 618, audioUrl: '/audio/cantiques-ensemble-volume-5.mp3', broadcastRights: 'authorized', lyrics: null },
-  { id: 'trk-masina', title: 'Masina', author: 'EBNM / KCC', artistId: 'art-ebnm', albumId: null, category: 'Chants', durationSeconds: 332, audioUrl: '/audio/masina-ebnm-kcc.mp3', broadcastRights: 'authorized', lyrics: null },
-  { id: 'trk-merci-maman', title: 'Merci Maman', author: 'Patrick Beckham', artistId: 'art-patrick-beckham', albumId: null, category: 'Chants', durationSeconds: 231, audioUrl: '/audio/merci-maman-patrick-beckham.mp3', broadcastRights: 'authorized', lyrics: null },
+  { id: 'trk-masina', title: 'Masina', author: 'EBNM / KCC', artistId: 'art-ebnm', albumId: null, category: 'Chants', durationSeconds: 332, audioUrl: '/audio/masina-ebnm-kcc.mp3', broadcastRights: 'authorized', lyrics: null, priceAmount: 1, priceCurrency: 'USD' },
+  { id: 'trk-merci-maman', title: 'Merci Maman', author: 'Patrick Beckham', artistId: 'art-patrick-beckham', albumId: null, category: 'Chants', durationSeconds: 231, audioUrl: '/audio/merci-maman-patrick-beckham.mp3', broadcastRights: 'authorized', lyrics: null, priceAmount: 2500, priceCurrency: 'CDF' },
   { id: 'trk-seigneur-gueris', title: 'Seigneur, guéris ce qu’ils ont détruit en moi', author: 'Auteur à préciser', artistId: 'art-ebnm', albumId: null, category: 'Prière', durationSeconds: 61, audioUrl: '/audio/seigneur-gueris-ce-quils-ont-detruit-en-moi.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: 'trk-1', title: 'Titre de démonstration 1', author: 'Auteur à renseigner', artistId: 'art-1', albumId: 'alb-1', category: 'Louange', durationSeconds: 8, audioUrl: '/audio/demo-tone.wav', broadcastRights: 'authorized', lyrics: null },
   { id: 'trk-2', title: 'Titre de démonstration 2', author: 'Auteur à renseigner', artistId: 'art-1', albumId: 'alb-1', category: 'Adoration', durationSeconds: 8, audioUrl: '/audio/demo-tone.wav', broadcastRights: 'authorized', lyrics: null },

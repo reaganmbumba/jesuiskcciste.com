@@ -1,26 +1,32 @@
 import { useState } from 'react';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/States';
+import { listAllOrders, MOBILE_PROVIDERS, priceLabel } from '@/features/music/shop';
 import { CrudTable, Tabs } from '@/features/administration/CrudTable';
 import { Badge } from '@/components/ui/Badge';
 import { useAsync } from '@/hooks/useAsync';
 import { albumsRepo, artistsRepo, mediaRepo, parishesRepo, tracksRepo } from '@/services';
 import { formatDuration } from '@/utils/format';
 import type { Album, Artist, MediaItem, Track } from '@/types';
+import { formatDate } from '@/utils/format';
 
 const RIGHTS = [{ value: 'authorized', label: 'Diffusion autorisée' }, { value: 'pending', label: 'Autorisation en attente' }, { value: 'restricted', label: 'Diffusion restreinte' }];
+const CURRENCIES = [{ value: 'USD', label: 'Dollar (USD)' }, { value: 'CDF', label: 'Franc congolais (CDF)' }];
+const PRICE_HINT = 'Laisser vide = pas en vente. Payé par M-Pesa, Orange Money ou Airtel Money.';
 const AUD = [{ value: 'public', label: 'Public' }, { value: 'members', label: 'Membres' }, { value: 'leaders', label: 'Responsables' }];
 
 export default function AdminMedia() {
-  const [tab, setTab] = useState<'tracks' | 'artists' | 'albums' | 'media'>('tracks');
+  const [tab, setTab] = useState<'tracks' | 'artists' | 'albums' | 'media' | 'sales'>('tracks');
   const { data } = useAsync(() => Promise.all([artistsRepo.all(), albumsRepo.all(), parishesRepo.all()]), [tab]);
   const [artists = [], albums = [], parishes = []] = data ?? [];
   return (
     <>
       <h1 className="mb-4 font-display text-2xl font-semibold text-night">KCC Music et médias</h1>
-      <Tabs tabs={[{ key: 'tracks', label: 'Titres' }, { key: 'artists', label: 'Artistes et chorales' }, { key: 'albums', label: 'Albums' }, { key: 'media', label: 'Bibliothèque' }]} value={tab} onChange={setTab} />
+      <Tabs tabs={[{ key: 'tracks', label: 'Titres' }, { key: 'artists', label: 'Artistes et chorales' }, { key: 'albums', label: 'Albums' }, { key: 'media', label: 'Bibliothèque' }, { key: 'sales', label: 'Ventes' }]} value={tab} onChange={setTab} />
       {tab === 'tracks' && (
         <CrudTable<Track> entity="tracks" title="Titres" repo={tracksRepo} exportName="titres" searchFields={['title', 'author', 'category']}
           filters={[{ key: 'broadcastRights', label: 'Droits', options: RIGHTS }]}
-          columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste / chorale', render: (t) => artists.find((a) => a.id === t.artistId)?.name ?? '—' }, { key: 'category', label: 'Catégorie' }, { key: 'durationSeconds', label: 'Durée', render: (t) => formatDuration(t.durationSeconds) }, { key: 'broadcastRights', label: 'Droits', render: (t) => <Badge tone={t.broadcastRights === 'authorized' ? 'green' : t.broadcastRights === 'pending' ? 'amber' : 'red'}>{RIGHTS.find((r) => r.value === t.broadcastRights)?.label}</Badge> }]}
+          columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste / chorale', render: (t) => artists.find((a) => a.id === t.artistId)?.name ?? '—' }, { key: 'category', label: 'Catégorie' }, { key: 'durationSeconds', label: 'Durée', render: (t) => formatDuration(t.durationSeconds) }, { key: 'priceAmount', label: 'Prix', render: (t) => (t.priceAmount && t.priceCurrency ? priceLabel(t.priceAmount, t.priceCurrency) : '—') }, { key: 'broadcastRights', label: 'Droits', render: (t) => <Badge tone={t.broadcastRights === 'authorized' ? 'green' : t.broadcastRights === 'pending' ? 'amber' : 'red'}>{RIGHTS.find((r) => r.value === t.broadcastRights)?.label}</Badge> }]}
           formFields={[
             { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'author', label: 'Auteur / compositeur', type: 'text', required: true },
             { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) },
@@ -28,6 +34,8 @@ export default function AdminMedia() {
             { key: 'category', label: 'Catégorie', type: 'text', required: true }, { key: 'durationSeconds', label: 'Durée (secondes)', type: 'number', required: true },
             { key: 'audioUrl', label: 'Fichier audio (URL du stockage)', type: 'text' }, { key: 'videoUrl', label: 'Vidéo (URL)', type: 'url' },
             { key: 'broadcastRights', label: 'Autorisation de diffusion', type: 'select', required: true, options: RIGHTS, hint: 'La lecture publique n’est possible qu’avec une autorisation des ayants droit.' },
+            { key: 'priceAmount', label: 'Prix de vente', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES },
+            { key: 'saleFilePath', label: 'Fichier vendu (chemin dans le stockage privé « music »)', type: 'text', hint: 'Facultatif : sinon l’acheteur reçoit le fichier d’écoute.' },
             { key: 'lyrics', label: 'Paroles (si autorisées)', type: 'textarea' },
           ]}
           defaults={{ broadcastRights: 'pending', durationSeconds: 0 }}
@@ -42,8 +50,8 @@ export default function AdminMedia() {
       )}
       {tab === 'albums' && (
         <CrudTable<Album> entity="albums" title="Albums" repo={albumsRepo} searchFields={['title']}
-          columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste', render: (a) => artists.find((x) => x.id === a.artistId)?.name ?? '—' }, { key: 'year', label: 'Année' }]}
-          formFields={[{ key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) }, { key: 'year', label: 'Année', type: 'number' }, { key: 'coverUrl', label: 'Pochette (URL)', type: 'url' }]}
+          columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste', render: (a) => artists.find((x) => x.id === a.artistId)?.name ?? '—' }, { key: 'year', label: 'Année' }, { key: 'priceAmount', label: 'Prix', render: (a) => (a.priceAmount && a.priceCurrency ? priceLabel(a.priceAmount, a.priceCurrency) : '—') }]}
+          formFields={[{ key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) }, { key: 'year', label: 'Année', type: 'number' }, { key: 'coverUrl', label: 'Pochette (URL)', type: 'url' }, { key: 'priceAmount', label: 'Prix de l’album complet', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES }]}
         />
       )}
       {tab === 'media' && (
@@ -54,6 +62,25 @@ export default function AdminMedia() {
           defaults={{ audience: 'members', kind: 'pdf', description: '', publishedAt: new Date().toISOString() }}
         />
       )}
+      {tab === 'sales' && <Sales />}
     </>
+  );
+}
+
+const SALE_STATUS = { pending: ['En attente', 'amber'], paid: ['Payé', 'green'], failed: ['Échoué', 'red'], cancelled: ['Annulé', 'neutral'] } as const;
+
+/** Ventes de la boutique (lecture seule : seul l'opérateur confirme un paiement). */
+function Sales() {
+  const { data = [], loading } = useAsync(() => listAllOrders(), []);
+  const totals = data.filter((o) => o.status === 'paid').reduce<Record<string, number>>((acc, o) => ({ ...acc, [o.currency]: (acc[o.currency] ?? 0) + Number(o.amount) }), {});
+  if (loading) return null;
+  if (!data.length) return <EmptyState title="Aucune vente pour le moment." description="Fixez un prix sur un titre ou un album pour afficher le bouton « Acheter »." />;
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-ink/70">Total encaissé : <strong>{Object.entries(totals).map(([c, v]) => priceLabel(v, c)).join(' + ') || '—'}</strong> · {data.filter((o) => o.status === 'paid').length} vente(s) payée(s)</p>
+      <Card className="overflow-x-auto"><table className="table-kcc"><thead><tr><th>Date</th><th>Article</th><th>Opérateur</th><th>Téléphone</th><th className="text-right">Montant</th><th>Statut</th><th>Réf. opérateur</th></tr></thead>
+        <tbody>{data.map((o) => <tr key={o.id}><td>{formatDate(o.createdAt, 'fr', { dateStyle: 'short', timeStyle: 'short' })}</td><td>{o.itemTitle}</td><td>{MOBILE_PROVIDERS.find((p) => p.key === o.provider)?.label}</td><td className="tabular-nums">+{o.phone}</td><td className="text-right tabular-nums">{priceLabel(o.amount, o.currency)}</td><td><Badge tone={SALE_STATUS[o.status][1]}>{SALE_STATUS[o.status][0]}</Badge></td><td className="text-xs">{o.providerReference ?? o.gatewayOrderNumber ?? '—'}</td></tr>)}</tbody>
+      </table></Card>
+    </div>
   );
 }

@@ -33,6 +33,8 @@ const MemberProfilePage = lazy(() => import('@/pages/community/MemberProfilePage
 const ParishesPage = lazy(() => import('@/pages/community/ParishesPage'));
 const ParishDetailPage = lazy(() => import('@/pages/community/ParishDetailPage'));
 const SectionsPage = lazy(() => import('@/pages/community/SectionsPage'));
+const ForumPage = lazy(() => import('@/pages/community/ForumPage'));
+const ForumTopicPage = lazy(() => import('@/pages/community/ForumTopicPage'));
 const NewsPage = lazy(() => import('@/pages/events/NewsPage'));
 const NewsDetailPage = lazy(() => import('@/pages/events/NewsDetailPage'));
 const AgendaPage = lazy(() => import('@/pages/events/AgendaPage'));
@@ -131,6 +133,8 @@ export function AppRoutes() {
         <Route path="paroisses" element={<ParishesPage />} />
         <Route path="paroisses/:id" element={<ParishDetailPage />} />
         <Route path="sections" element={<SectionsPage />} />
+        <Route path="forum" element={<ForumPage />} />
+        <Route path="forum/:id" element={<ForumTopicPage />} />
         <Route path="actualites" element={<NewsPage />} />
         <Route path="actualites/:id" element={<NewsDetailPage />} />
         <Route path="agenda" element={<AgendaPage />} />

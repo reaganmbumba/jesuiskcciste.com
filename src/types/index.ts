@@ -416,3 +416,30 @@ export interface ApostlePhotoSubmission {
   createdAt: string;
   reviewedAt?: string | null;
 }
+
+// ——— Forum de discussion ———
+export interface ForumTopic {
+  id: UUID;
+  title: string;
+  body: string;
+  isPinned: boolean;
+  /** Commentaires fermés. */
+  isLocked: boolean;
+  /** Masqué au public (visible seulement par la modération). */
+  isHidden: boolean;
+  commentCount: number;
+  lastCommentAt?: string | null;
+  createdAt: string;
+}
+
+/** Un commentaire n'affiche que le nom du membre et sa paroisse. */
+export interface ForumComment {
+  id: UUID;
+  topicId: UUID;
+  authorId?: UUID | null;
+  authorName: string;
+  parishName?: string | null;
+  body: string;
+  isHidden: boolean;
+  createdAt: string;
+}

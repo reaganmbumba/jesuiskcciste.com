@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
-  LayoutDashboard, Megaphone, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
+  LayoutDashboard, Megaphone, Medal, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -21,6 +21,7 @@ const LiturgyPage = lazy(() => import('@/pages/public/LiturgyPage'));
 const CallingPage = lazy(() => import('@/pages/public/CallingPage'));
 const SermonsPage = lazy(() => import('@/pages/public/SermonsPage'));
 const GalleryPage = lazy(() => import('@/pages/public/GalleryPage'));
+const ApostlesPage = lazy(() => import('@/pages/public/ApostlesPage'));
 const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
@@ -68,6 +69,7 @@ const AdminCourses = lazy(() => import('@/pages/admin/AdminCourses'));
 const AdminCertificates = lazy(() => import('@/pages/admin/AdminCertificates'));
 const AdminMedia = lazy(() => import('@/pages/admin/AdminMedia'));
 const AdminProjects = lazy(() => import('@/pages/admin/AdminProjects'));
+const AdminApostles = lazy(() => import('@/pages/admin/AdminApostles'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 
@@ -94,6 +96,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/certificats', label: 'Certificats', icon: Award, permission: 'certificates.manage' },
   { to: '/admin/medias', label: 'KCC Music et médias', icon: Music2, permission: 'music.manage' },
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
+  { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
 ];
@@ -118,6 +121,7 @@ export function AppRoutes() {
         <Route path="appel-du-prophete" element={<CallingPage />} />
         <Route path="predications" element={<SermonsPage />} />
         <Route path="galerie" element={<GalleryPage />} />
+        <Route path="apotres" element={<ApostlesPage />} />
         <Route path="videos" element={<VideosPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />
@@ -178,6 +182,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="certificates.manage" />}><Route path="certificats" element={<AdminCertificates />} /></Route>
           <Route element={<RequirePermission permission="music.manage" />}><Route path="medias" element={<AdminMedia />} /></Route>
           <Route element={<RequirePermission permission="projects.manage" />}><Route path="projets" element={<AdminProjects />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="apotres" element={<AdminApostles />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="parametres" element={<AdminSettings />} /></Route>
         </Route>

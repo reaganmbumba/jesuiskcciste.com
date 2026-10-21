@@ -119,7 +119,7 @@ function NewsCard({ a, fallback }: { a: Announcement; fallback: string }) {
       <div className="flex flex-1 flex-col p-4">
         <span className="w-fit rounded-md bg-gold-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{a.category}</span>
         <time dateTime={a.publishedAt} className="mt-2 text-xs text-ink/50">{formatDate(a.publishedAt, locale)}</time>
-        <h3 className="mt-1 font-display text-lg font-medium leading-snug text-night group-hover:text-gold-700">{a.title}</h3>
+        <h3 className="mt-1 line-clamp-3 font-display text-lg font-medium leading-snug text-night group-hover:text-gold-700">{a.title}</h3>
         <p className="mt-1.5 line-clamp-3 text-sm text-ink/60">{a.summary}</p>
         <span className="mt-auto inline-flex items-center gap-1.5 pt-3 text-sm font-semibold text-gold-600">{tx('Lire la suite', 'Read more', 'Ler mais')} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
       </div>

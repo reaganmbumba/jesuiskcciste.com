@@ -10,6 +10,7 @@
  */
 import type { Album, Announcement, Artist, Course, KccEvent, MediaItem, Parish, Track } from '@/types';
 import type { Locale } from '@/i18n';
+import { OFFICIAL_PARISHES, parishCountryLabel } from './paroisses';
 import * as fr from './doctrine';
 import * as en from './doctrine.en';
 import * as pt from './doctrine.pt';
@@ -113,17 +114,6 @@ const FEASTS: { id: string; month: number; day: number; title: L; text: L }[] = 
   { id: 'reconnaissance', month: 4, day: 30, title: L('Anniversaire de la reconnaissance juridique', 'Anniversary of legal recognition', 'Aniversário do reconhecimento jurídico'), text: L('Personnalité civile accordée par l’Ordonnance n° 128-80 du 30 avril 1980.', 'Legal personality granted by Ordinance No. 128-80 of 30 April 1980.', 'Personalidade civil concedida pela Ordenança n.º 128-80 de 30 de abril de 1980.') },
 ];
 
-const PARISHES: { id: string; name: string; country: L; city: string; text: L }[] = [
-  { id: 'kinshasa', name: 'Kinshasa — Siège', city: 'Kinshasa', country: L('RD Congo', 'DR Congo', 'RD Congo'), text: L('Siège et direction de l’Église Bon Nouveau Message (KCC).', 'Head office of the Église Bon Nouveau Message (KCC).', 'Sede e direção da Église Bon Nouveau Message (KCC).') },
-  { id: 'matadi', name: 'Matadi', city: 'Matadi', country: L('RD Congo', 'DR Congo', 'RD Congo'), text: L('Paroisse historique du Kongo-Central.', 'Historic parish in Kongo-Central.', 'Paróquia histórica do Kongo-Central.') },
-  { id: 'boma', name: 'Boma', city: 'Boma', country: L('RD Congo', 'DR Congo', 'RD Congo'), text: L('Ville de l’apparition des signes KCC, le 12 avril 1958.', 'The town where the KCC signs appeared on 12 April 1958.', 'Cidade da aparição dos sinais KCC, a 12 de abril de 1958.') },
-  { id: 'luanda', name: 'Luanda', city: 'Luanda', country: L('Angola', 'Angola', 'Angola'), text: L('Présence de l’Église en Angola.', 'The Church’s presence in Angola.', 'Presença da Igreja em Angola.') },
-  { id: 'cabinda', name: 'Cabinda', city: 'Cabinda', country: L('Angola', 'Angola', 'Angola'), text: L('Présence de l’Église en Angola.', 'The Church’s presence in Angola.', 'Presença da Igreja em Angola.') },
-  { id: 'soyo', name: 'Soyo', city: 'Soyo', country: L('Angola', 'Angola', 'Angola'), text: L('Présence de l’Église en Angola.', 'The Church’s presence in Angola.', 'Presença da Igreja em Angola.') },
-  { id: 'brazzaville', name: 'Brazzaville', city: 'Brazzaville', country: L('Congo-Brazzaville', 'Congo-Brazzaville', 'Congo-Brazzaville'), text: L('Présence de l’Église au Congo-Brazzaville.', 'The Church’s presence in Congo-Brazzaville.', 'Presença da Igreja no Congo-Brazzaville.') },
-  { id: 'pointe-noire', name: 'Pointe-Noire', city: 'Pointe-Noire', country: L('Congo-Brazzaville', 'Congo-Brazzaville', 'Congo-Brazzaville'), text: L('Présence de l’Église au Congo-Brazzaville.', 'The Church’s presence in Congo-Brazzaville.', 'Presença da Igreja no Congo-Brazzaville.') },
-];
-
 const id = (k: string) => `${EDITORIAL_PREFIX}${k}`;
 
 export function editorialAnnouncements(locale = currentLocale()): Announcement[] {
@@ -151,7 +141,7 @@ export function editorialEvents(locale = currentLocale(), now = new Date()): Kcc
 }
 
 export function editorialParishes(locale = currentLocale()): Parish[] {
-  return PARISHES.map((p) => ({ id: id(`par-${p.id}`), name: p.name, description: p.text[locale], country: p.country[locale], city: p.city, address: null, unitId: null, leaderName: null }));
+  return OFFICIAL_PARISHES.map((p) => ({ id: id(`par-${p.n}`), name: p.name, description: '', country: parishCountryLabel(p.country, locale), city: p.region?.[locale] ?? parishCountryLabel(p.country, locale), address: null, unitId: null, leaderName: null }));
 }
 
 export const editorialArtists = (): Artist[] => [

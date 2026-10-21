@@ -20,7 +20,7 @@ export function Logo({ light, large, className }: { light?: boolean; large?: boo
         <span className={cn('block font-display font-semibold', large ? 'whitespace-nowrap text-[22px] sm:text-[26px]' : 'text-[18px]', 'tracking-[0.02em]', light ? 'text-white' : 'text-night')}>
           JE SUIS <span className="text-gold">KCCiste</span>
         </span>
-        <span className={cn('block whitespace-nowrap uppercase tracking-[0.2em]', large ? 'mt-1 text-[10px] sm:text-[11px]' : 'text-[10px]', light ? 'text-white/55' : 'text-ink/50')}>Bon Nouveau Message</span>
+        <span className={cn('block whitespace-nowrap uppercase', large ? 'mt-1 text-[10px] tracking-[0.02em]' : 'text-[10px] tracking-[0.06em]', light ? 'text-white/55' : 'text-ink/50')}>Église Bon Nouveau Message (KCC)</span>
       </span>
     </Link>
   );

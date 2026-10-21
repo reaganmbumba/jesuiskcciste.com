@@ -33,7 +33,12 @@ export default function SignupPage() {
   const [parishes = [], sections = []] = data ?? [];
   const { register, handleSubmit, trigger, watch, formState: { errors, isSubmitting } } = useForm<SignupValues>({
     mode: 'onTouched',
-    resolver: (values, ctx, opts) => zodResolver(STEPS[step].schema)(values, ctx, opts as never),
+    // Valide l'étape courante mais conserve toutes les valeurs : zod retirerait sinon
+    // les champs des étapes précédentes (prénom, nom…) avant l'envoi.
+    resolver: async (values, ctx, opts) => {
+      const r = await zodResolver(STEPS[step].schema)(values, ctx, opts as never);
+      return Object.keys(r.errors).length ? r : { values, errors: {} };
+    },
     defaultValues: { country: 'RD Congo', consent: false as unknown as boolean },
   });
   const parishId = watch('parishId');

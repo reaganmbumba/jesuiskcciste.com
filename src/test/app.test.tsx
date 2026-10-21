@@ -117,3 +117,22 @@ describe('Case à cocher reliée au formulaire', () => {
     await waitFor(() => expect(value).toBe(true));
   });
 });
+
+describe('Inscription en trois étapes', () => {
+  beforeEach(() => sessionStorage.clear());
+  it('garde le prénom et le nom saisis à la première étape', async () => {
+    const { default: SignupPage } = await import('@/pages/auth/SignupPage');
+    render(<AuthProvider><MemoryRouter><SignupPage /></MemoryRouter></AuthProvider>);
+    fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Reagan' } });
+    fireEvent.change(screen.getByLabelText(/^Nom/), { target: { value: 'Mbumba' } });
+    fireEvent.click(screen.getByRole('button', { name: /Continuer|Suivant/ }));
+    fireEvent.change(await screen.findByLabelText(/Ville/), { target: { value: 'Kinshasa' } });
+    fireEvent.click(screen.getByRole('button', { name: /Continuer|Suivant/ }));
+    fireEvent.change(await screen.findByLabelText(/Adresse e-mail/), { target: { value: 'a@b.cd' } });
+    fireEvent.change(screen.getByLabelText(/^Mot de passe/), { target: { value: 'MotDePasse123' } });
+    fireEvent.change(screen.getByLabelText(/Confirmer le mot de passe/), { target: { value: 'MotDePasse123' } });
+    fireEvent.click(screen.getByLabelText(/J’accepte/));
+    fireEvent.click(screen.getByRole('button', { name: /Créer mon compte/ }));
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem('kcc.demo.session') ?? '{}')).toMatchObject({ firstName: 'Reagan', lastName: 'Mbumba', city: 'Kinshasa' }));
+  });
+});

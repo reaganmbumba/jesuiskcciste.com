@@ -191,7 +191,8 @@ export const demoAuditLogs: AuditLog[] = [
 
 // Exemples fictifs : la vraie liste des Révérends Apôtres est saisie dans /admin/apotres.
 export const demoApostles: Apostle[] = [
-  { id: 'apo-1', fullName: 'Apôtre exemple A', title: 'Révérend Apôtre', status: 'living', photoUrl: null, place: 'Kinshasa', sortOrder: 1 },
-  { id: 'apo-2', fullName: 'Apôtre exemple B', title: 'Révérend Apôtre', status: 'deceased', photoUrl: null, place: 'Matadi', deathYear: 2010, sortOrder: 2 },
+  { id: 'apo-1', fullName: 'Apôtre exemple A', title: 'Révérend Apôtre', status: 'living', photoUrl: null, place: 'Paroisse de Kinshasa', consecrationDate: '1984', birthYear: 1950, bio: 'Texte d’exemple : la présentation de l’apôtre apparaît ici.', sortOrder: 1 },
+  { id: 'apo-3', fullName: 'Apôtre exemple C', title: 'Révérend Apôtre', status: 'unknown', photoUrl: null, sortOrder: 3 },
+  { id: 'apo-2', fullName: 'Apôtre exemple B', title: 'Révérend Apôtre', status: 'deceased', photoUrl: null, place: 'Paroisse de Matadi', deathYear: 2010, sortOrder: 2 },
 ];
 export const demoApostleSubmissions: ApostlePhotoSubmission[] = [];

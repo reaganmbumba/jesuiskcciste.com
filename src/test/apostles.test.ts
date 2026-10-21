@@ -3,11 +3,11 @@ import { parseApostleList, sortApostles } from '@/features/apostles/apostles';
 
 describe('Liste des apôtres', () => {
   it('lit une liste collée : numéros, titre et décès', () => {
-    const rows = parseApostleList('1. Révérend Apôtre NZUZI Paul\n2) MBAKI Jean (décédé)\n\n- Apôtre LUTETE Marc', 10);
+    const rows = parseApostleList('1. Révérend Apôtre NZUZI Paul (en vie)\n2) MBAKI Jean (+)\n\n- Apôtre LUTETE Marc', 10);
     expect(rows.map((r) => [r.fullName, r.status, r.sortOrder])).toEqual([
       ['NZUZI Paul', 'living', 11],
       ['MBAKI Jean', 'deceased', 12],
-      ['LUTETE Marc', 'living', 13],
+      ['LUTETE Marc', 'unknown', 13],
     ]);
   });
 

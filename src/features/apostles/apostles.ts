@@ -2,7 +2,7 @@ import { isDemoMode } from '@/config/env';
 import { supabase } from '@/lib/supabase';
 import { repository } from '@/services/repository';
 import * as demo from '@/services/demo/data';
-import { camelize } from '@/utils/case';
+import { camelize, snakify } from '@/utils/case';
 import type { Apostle, ApostlePhotoSubmission } from '@/types';
 
 /** Liste des Révérends Apôtres (table `apostles`, lecture publique). */
@@ -19,6 +19,12 @@ const demoBlobs = new Map<string, string>();
 
 export function sortApostles(list: Apostle[]): Apostle[] {
   return [...list].sort((a, b) => a.sortOrder - b.sortOrder || a.fullName.localeCompare(b.fullName, 'fr'));
+}
+
+/** « 1930 – 2010 », « … – 2010 », « 1950 – » ou null. */
+export function yearsLabel(a: Pick<Apostle, 'birthYear' | 'deathYear' | 'status'>): string | null {
+  if (!a.birthYear && !a.deathYear) return null;
+  return `${a.birthYear ?? '…'} – ${a.deathYear ?? (a.status === 'deceased' ? '…' : '')}`.trim();
 }
 
 /**
@@ -46,23 +52,37 @@ export async function prepareImage(file: File): Promise<Blob> {
 const extOf = (b: Blob) => (b.type === 'image/png' ? 'png' : b.type === 'image/webp' ? 'webp' : 'jpg');
 const randomId = () => (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`).replace(/-/g, '');
 
-export interface PhotoProposal { name: string; contact?: string; note?: string }
+export interface Proposer { name: string; contact?: string; note?: string }
 
-/** Proposition d'une photo par un visiteur : elle reste invisible jusqu'à l'approbation. */
-export async function submitApostlePhoto(apostleId: string, file: File, who: PhotoProposal): Promise<void> {
-  const blob = await prepareImage(file);
-  const photoPath = `${apostleId}/${randomId()}.${extOf(blob)}`;
-  const row = { submitterName: who.name.trim(), submitterContact: who.contact?.trim() || null, note: who.note?.trim() || null };
+/** Informations qu'un visiteur peut proposer pour compléter un profil. */
+export interface InfoProposal { place?: string; consecration?: string; birthYear?: number | null; deathYear?: number | null; bio?: string }
+
+const clean = (v?: string) => v?.trim() || null;
+
+/**
+ * Proposition d'un visiteur (photo et/ou informations) : elle reste
+ * invisible jusqu'à la validation par l'administration.
+ */
+export async function submitApostleProposal(apostleId: string, who: Proposer, input: { file?: File | null; info?: InfoProposal }): Promise<void> {
+  const info = input.info ?? {};
+  const fields = {
+    proposedPlace: clean(info.place), proposedConsecration: clean(info.consecration),
+    proposedBirthYear: info.birthYear || null, proposedDeathYear: info.deathYear || null, proposedBio: clean(info.bio),
+  };
+  if (!input.file && !Object.values(fields).some((v) => v !== null)) throw new Error('empty');
+  const blob = input.file ? await prepareImage(input.file) : null;
+  const photoPath = blob ? `${apostleId}/${randomId()}.${extOf(blob)}` : null;
+  const row = { submitterName: who.name.trim(), submitterContact: clean(who.contact), note: clean(who.note), ...fields };
   if (isDemoMode) {
-    demoBlobs.set(photoPath, URL.createObjectURL(blob));
+    if (blob && photoPath) demoBlobs.set(photoPath, URL.createObjectURL(blob));
     demoSubmissions = [{ id: `sub-${Date.now()}`, apostleId, photoPath, ...row, status: 'pending', createdAt: new Date().toISOString() }, ...demoSubmissions];
     return;
   }
-  const up = await supabase!.storage.from(SUBMISSIONS_BUCKET).upload(photoPath, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
-  if (up.error) throw up.error;
-  const { error } = await supabase!.from('apostle_photo_submissions').insert({
-    apostle_id: apostleId, photo_path: photoPath, submitter_name: row.submitterName, submitter_contact: row.submitterContact, note: row.note,
-  });
+  if (blob && photoPath) {
+    const up = await supabase!.storage.from(SUBMISSIONS_BUCKET).upload(photoPath, blob, { contentType: blob.type || 'image/jpeg', upsert: false });
+    if (up.error) throw up.error;
+  }
+  const { error } = await supabase!.from('apostle_photo_submissions').insert(snakify({ apostleId, photoPath, ...row }));
   if (error) throw error;
 }
 
@@ -112,18 +132,33 @@ async function setSubmissionStatus(s: ApostlePhotoSubmission, status: 'approved'
   const { error } = await supabase!.from('apostle_photo_submissions').update({ status, reviewed_at: reviewedAt }).eq('id', s.id);
   if (error) throw error;
   // Le fichier proposé n'est plus utile : la photo approuvée a été copiée dans le stockage public.
-  await supabase!.storage.from(SUBMISSIONS_BUCKET).remove([s.photoPath]);
+  if (s.photoPath) await supabase!.storage.from(SUBMISSIONS_BUCKET).remove([s.photoPath]);
+}
+
+/** Les informations proposées, prêtes à être enregistrées sur le profil (champs vides ignorés). */
+export function proposedPatch(s: ApostlePhotoSubmission): Partial<Apostle> {
+  const patch: Partial<Apostle> = {};
+  if (s.proposedPlace) patch.place = s.proposedPlace;
+  if (s.proposedConsecration) patch.consecrationDate = s.proposedConsecration;
+  if (s.proposedBirthYear) patch.birthYear = s.proposedBirthYear;
+  if (s.proposedDeathYear) { patch.deathYear = s.proposedDeathYear; patch.status = 'deceased'; }
+  if (s.proposedBio) patch.bio = s.proposedBio;
+  return patch;
 }
 
 export async function approveSubmission(s: ApostlePhotoSubmission): Promise<void> {
-  let blob: Blob;
-  if (isDemoMode) blob = await (await fetch(demoBlobs.get(s.photoPath)!)).blob();
-  else {
-    const { data, error } = await supabase!.storage.from(SUBMISSIONS_BUCKET).download(s.photoPath);
-    if (error) throw error;
-    blob = data;
+  if (s.photoPath) {
+    let blob: Blob;
+    if (isDemoMode) blob = await (await fetch(demoBlobs.get(s.photoPath)!)).blob();
+    else {
+      const { data, error } = await supabase!.storage.from(SUBMISSIONS_BUCKET).download(s.photoPath);
+      if (error) throw error;
+      blob = data;
+    }
+    await publishPhoto(s.apostleId, blob);
   }
-  await publishPhoto(s.apostleId, blob);
+  const patch = proposedPatch(s);
+  if (Object.keys(patch).length) await apostlesRepo.update(s.apostleId, patch);
   await setSubmissionStatus(s, 'approved');
 }
 
@@ -131,16 +166,19 @@ export const rejectSubmission = (s: ApostlePhotoSubmission) => setSubmissionStat
 
 /**
  * Ajout en lot depuis une liste collée (un nom par ligne, numérotation ignorée).
- * « (décédé) » à la fin d'une ligne marque un apôtre décédé.
+ * « (décédé) » ou « (+) » en fin de ligne : décédé ; « (en vie) » : en vie ;
+ * sinon le statut reste « non précisé ».
  */
 export function parseApostleList(text: string, startOrder = 0): Omit<Apostle, 'id'>[] {
+  const DECEASED = /\((\+|d[ée]c[ée]d[ée]e?|deceased|falecido)\)\s*$/i;
+  const LIVING = /\((en vie|vivant|living|vivo)\)\s*$/i;
   return text
     .split(/\r?\n/)
     .map((l) => l.replace(/^\s*(\d+[.)-]?|[-*•])\s*/, '').trim())
     .filter((l) => l.length >= 2)
     .map((line, i) => {
-      const deceased = /\((d[ée]c[ée]d[ée]e?|deceased|falecido)\)\s*$/i.test(line);
-      const name = line.replace(/\s*\((d[ée]c[ée]d[ée]e?|deceased|falecido|en vie|vivant)\)\s*$/i, '').replace(/^(R[ée]v[ée]rend\s+)?Ap[ôo]tre\s+/i, '').trim();
-      return { fullName: name, title: 'Révérend Apôtre', status: deceased ? 'deceased' : 'living', photoUrl: null, place: null, bio: null, sortOrder: startOrder + i + 1 };
+      const status = DECEASED.test(line) ? 'deceased' : LIVING.test(line) ? 'living' : 'unknown';
+      const name = line.replace(DECEASED, '').replace(LIVING, '').replace(/^(R[ée]v[ée]rend\s+)?Ap[ôo]tre\s+/i, '').trim();
+      return { fullName: name, title: 'Révérend Apôtre', status, photoUrl: null, place: null, bio: null, sortOrder: startOrder + i + 1 };
     });
 }

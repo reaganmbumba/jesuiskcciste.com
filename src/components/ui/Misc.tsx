@@ -56,7 +56,7 @@ export function PageHeader({ eyebrow, title, description, children, image, metaD
         <h1 className="font-display text-[2.2rem] font-medium leading-[1.08] sm:text-6xl">{title}</h1>
         {description && <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-white/70 sm:text-lg">{description}</p>}
         {children && <div className="mt-6">{children}</div>}
-        {share && <ShareButtons tone="dark" title={title} text={summary} className="mt-7" />}
+        {share && <ShareButtons tone="dark" title={title} text={summary} image={image} className="mt-7" />}
       </div>
     </header>
   );

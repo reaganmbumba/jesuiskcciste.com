@@ -2,6 +2,9 @@
   // Déploiement Cloudflare Workers (site statique Vite).
   // `npx wrangler deploy` construit d'abord le site (build.command) puis publie dist.
   "name": "jesuiskcciste-com",
+  // Petit Worker (worker/index.ts) : ajoute la photo et le titre des contenus Supabase
+  // dans l'aperçu des liens partagés. Les visiteurs reçoivent les fichiers de dist/ directement.
+  "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
   "routes": [
@@ -13,6 +16,12 @@
   },
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
+  },
+  // Valeurs publiques (déjà dans .env.production) : la clé publishable est protégée par RLS.
+  "vars": {
+    "SUPABASE_URL": "https://anawpwprqvzxgzcpqqwu.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_hnpwDEfVVCC0BhYkxOgdwQ_E745c7rK"
   }
 }

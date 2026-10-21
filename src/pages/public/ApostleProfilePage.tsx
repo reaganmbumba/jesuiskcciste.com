@@ -58,7 +58,7 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
   const facts: { icon: typeof MapPin; label: string; value: React.ReactNode }[] = [
     { icon: MapPin, label: tx('Paroisse qu’il encadre', 'Parish he oversees', 'Paróquia que dirige'), value: a.place || unknown },
     { icon: CalendarDays, label: tx('Date de consécration', 'Consecration date', 'Data de consagração'), value: a.consecrationDate || unknown },
-    { icon: Hourglass, label: deceased ? tx('Naissance et décès', 'Birth and death', 'Nascimento e falecimento') : tx('Année de naissance', 'Year of birth', 'Ano de nascimento'), value: years || unknown },
+    { icon: Hourglass, label: deceased ? tx('Naissance et décès', 'Birth and death', 'Nascimento e falecimento') : tx('Année de naissance', 'Year of birth', 'Ano de nascimento'), value: deceased && a.deathDate ? `${a.birthYear ? `${a.birthYear} – ` : ''}${tx('décédé le', 'died on', 'falecido a')} ${a.deathDate}` : years || unknown },
   ];
   const incomplete = !a.place || !a.consecrationDate || !years || !a.bio;
 

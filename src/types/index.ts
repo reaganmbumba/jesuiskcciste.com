@@ -394,6 +394,8 @@ export interface Apostle {
   bio?: string | null;
   /** Texte libre : une date exacte ou seulement l'année. */
   consecrationDate?: string | null;
+  /** Date exacte du décès quand on la connaît (texte libre). */
+  deathDate?: string | null;
   sortOrder: number;
 }
 

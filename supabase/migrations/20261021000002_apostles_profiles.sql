@@ -2,7 +2,7 @@
 -- Révérends Apôtres, suite :
 --  * statut « non précisé » (la liste officielle 1958-2024 ne dit pas
 --    toujours si un apôtre est en vie) ;
---  * date de consécration, pour la page de profil de chaque apôtre ;
+--  * date de consécration et date exacte du décès, pour la page de profil de chaque apôtre ;
 --  * les visiteurs peuvent proposer des informations (paroisse, date de
 --    consécration, années, présentation), pas seulement une photo. Tout
 --    reste invisible jusqu'à la validation par l'administration.
@@ -12,6 +12,7 @@ alter table public.apostles drop constraint if exists apostles_status_check;
 alter table public.apostles add constraint apostles_status_check check (status in ('living', 'deceased', 'unknown'));
 alter table public.apostles alter column status set default 'unknown';
 alter table public.apostles add column if not exists consecration_date text check (char_length(consecration_date) <= 60);
+alter table public.apostles add column if not exists death_date text check (char_length(death_date) <= 60);
 
 alter table public.apostle_photo_submissions alter column photo_path drop not null;
 alter table public.apostle_photo_submissions add column if not exists proposed_place text check (char_length(proposed_place) <= 160);

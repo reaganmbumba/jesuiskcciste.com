@@ -69,8 +69,9 @@ end $$;
 \i supabase/seed_apostles.sql
 \i supabase/seed_apostles.sql
 do $$ begin
-  assert (select count(*) from public.apostles where title like '%Apôtre%' and id::text not like '77777777%') = 128, 'liste officielle chargée une seule fois';
+  assert (select count(*) from public.apostles where title like '%Apôtre%' and id::text not like '77777777%') = 132, 'liste officielle chargée une seule fois';
   assert (select status from public.apostles where full_name = 'LUSILAWO MFUMUANGANI Jean') = 'deceased', '(+) = décédé';
+  assert (select death_year from public.apostles where full_name = 'FERREIRA Paulo') = 2011, 'année du décès tirée de la date';
 end $$;
 
 select 'TESTS APÔTRES PASSÉS' as resultat;

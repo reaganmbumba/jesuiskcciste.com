@@ -44,6 +44,7 @@ export default function AdminApostles() {
             { key: 'consecrationDate', label: 'Date de consécration', type: 'text', hint: 'La date exacte ou seulement l’année.' },
             { key: 'birthYear', label: 'Année de naissance', type: 'number' },
             { key: 'deathYear', label: 'Année du décès', type: 'number' },
+            { key: 'deathDate', label: 'Date exacte du décès', type: 'text', hint: 'Ex. 27/02/2011. Remplissez aussi l’année ci-dessus.' },
             { key: 'sortOrder', label: 'Ordre d’affichage', type: 'number', hint: 'Les plus petits nombres apparaissent en premier.' },
             { key: 'photoUrl', label: 'Photo (adresse)', type: 'url', hint: 'Plus simple : utilisez le bouton appareil photo dans la liste pour déposer une image.' },
             { key: 'bio', label: 'Présentation (facultatif)', type: 'textarea', full: true },

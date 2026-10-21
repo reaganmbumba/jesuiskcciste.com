@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, HandHeart, Mail, MapPin, MessageCircle, Music2, Phone, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, MessageCircle, Mic, Music2, Phone, ScrollText, Sparkles, Users } from 'lucide-react';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -35,6 +35,16 @@ const QUICK: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
   { title: T('Solidarité', 'Solidarity', 'Solidariedade'), text: T('Projets et entraide', 'Projects and mutual aid', 'Projetos e entreajuda'), to: '/solidarite', icon: HandHeart },
   { title: T('Documents', 'Documents', 'Documentos'), text: T('Bibliothèque et publications', 'Library and publications', 'Biblioteca e publicações'), to: '/bibliotheque', icon: FileText },
   { title: T('Musique', 'Music', 'Música'), text: T('Cantiques, chorales et albums', 'Hymns, choirs and albums', 'Hinos, coros e álbuns'), to: '/musique', icon: Music2 },
+];
+
+/** Rubriques « La Foi » mises en avant sur l'accueil (icônes neutres, sans symbole religieux). */
+const FAITH: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
+  { title: T('Catéchisme', 'Catechism', 'Catecismo'), text: T('Les bases de notre foi, question par question', 'The basics of our faith, question by question', 'As bases da nossa fé, pergunta a pergunta'), to: '/catechisme', icon: BookOpen },
+  { title: T('Liturgie et rites', 'Liturgy and rites', 'Liturgia e ritos'), text: T('Le déroulement des cultes et des cérémonies', 'How services and ceremonies unfold', 'O desenrolar dos cultos e cerimónias'), to: '/liturgie', icon: ScrollText },
+  { title: T('L’appel du Prophète', 'The Prophet’s calling', 'O chamado do Profeta'), text: T('Les origines du Bon Nouveau Message', 'The origins of the Bon Nouveau Message', 'As origens do Bon Nouveau Message'), to: '/appel-du-prophete', icon: Sparkles },
+  { title: T('Prédications', 'Sermons', 'Pregações'), text: T('Enseignements et messages à réécouter', 'Teachings and messages to revisit', 'Ensinamentos e mensagens para rever'), to: '/predications', icon: Mic },
+  { title: T('Cantiques', 'Hymns', 'Hinos'), text: T('Les chants de l’assemblée, en plusieurs langues', 'The assembly’s songs, in several languages', 'Os cânticos da assembleia, em várias línguas'), to: '/cantiques', icon: Music2 },
+  { title: T('Galerie', 'Gallery', 'Galeria'), text: T('Photos d’hier et d’aujourd’hui', 'Photos from yesterday and today', 'Fotos de ontem e de hoje'), to: '/galerie', icon: Images },
 ];
 
 const TILES: { img: string; title: Tri; text: Tri; to: string }[] = [
@@ -184,6 +194,63 @@ export default function HomePage() {
                 </div>
               </aside>
             </section>
+
+            {/* LA FOI */}
+            <section className="mt-12" aria-labelledby="faith-title">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600">{tx('Découvrir', 'Discover', 'Descobrir')}</p>
+                  <h2 id="faith-title" className="font-display text-3xl font-medium text-night">{tx('La Foi', 'Our Faith', 'A Fé')}</h2>
+                </div>
+                <Link to="/doctrine" className="inline-flex items-center gap-1 text-sm font-semibold text-night-500 hover:text-gold-700">{tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história')} <ArrowRight className="h-4 w-4" /></Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {FAITH.map(({ title, text, to, icon: Icon }) => (
+                  <Link key={to} to={to} className="group flex items-start gap-4 rounded-2xl border border-night/[0.06] bg-white p-4 shadow-soft transition hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><Icon className="h-5 w-5" strokeWidth={1.7} aria-hidden /></span>
+                    <span className="min-w-0">
+                      <span className="block font-display text-lg font-medium leading-tight text-night group-hover:text-gold-700">{pick(title)}</span>
+                      <span className="mt-0.5 block text-sm leading-snug text-ink/60">{pick(text)}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* HISTOIRE + MUSIQUE */}
+            <section className="mt-12 grid gap-4 md:grid-cols-2" aria-label={tx('À la découverte', 'Explore', 'Explorar')}>
+              <Link to="/doctrine#archives" className="group relative isolate flex min-h-[17rem] flex-col justify-end overflow-hidden rounded-3xl bg-night p-6 text-white shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                <img src="/images/archives/archive-assemblee-noir-et-blanc.jpg" alt="" loading="lazy" className="absolute inset-0 -z-20 h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                <span className="absolute inset-0 -z-10 bg-gradient-to-t from-night-950/95 via-night-950/50 to-night-950/10" aria-hidden />
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">{tx('Archives', 'Archives', 'Arquivos')}</span>
+                <span className="mt-1 font-display text-2xl font-medium leading-tight">{tx('Notre histoire en images', 'Our history in pictures', 'A nossa história em imagens')}</span>
+                <span className="mt-1 text-sm text-white/75">{tx('Les grandes dates, les assemblées et les bâtisseurs de la communauté.', 'Key dates, assemblies and the builders of the community.', 'As grandes datas, as assembleias e os construtores da comunidade.')}</span>
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">{tx('Voir les archives', 'See the archives', 'Ver os arquivos')} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </Link>
+              <div className="relative isolate flex min-h-[17rem] flex-col justify-between overflow-hidden rounded-3xl bg-night p-6 text-white shadow-lift">
+                <img src="/images/accueil/musique.svg" alt="" aria-hidden className="absolute inset-0 -z-20 h-full w-full object-cover opacity-60" loading="lazy" />
+                <span className="absolute inset-0 -z-10 bg-gradient-to-br from-night-950/90 via-night-900/70 to-night-900/30" aria-hidden />
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">KCC Music</span>
+                  <h3 className="mt-1 font-display text-2xl font-medium leading-tight">{tx('Chorales, cantiques et albums', 'Choirs, hymns and albums', 'Coros, hinos e álbuns')}</h3>
+                  <p className="mt-1 text-sm text-white/75">{tx('Écoutez les chorales de la communauté et soutenez nos artistes.', 'Listen to the community’s choirs and support our artists.', 'Ouça os coros da comunidade e apoie os nossos artistas.')}</p>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2.5">
+                  <ButtonLink to="/musique" variant="gold" size="sm">{tx('Écouter', 'Listen', 'Ouvir')} <ArrowRight className="h-4 w-4" /></ButtonLink>
+                  <Link to="/cantiques" className="inline-flex items-center gap-1.5 rounded-full border border-white/25 px-4 py-2 text-sm font-semibold text-white transition hover:border-gold hover:text-gold">{tx('Recueil de cantiques', 'Hymn book', 'Hinário')}</Link>
+                </div>
+              </div>
+            </section>
+
+            {/* ACADÉMIE */}
+            <section className="mt-12 flex flex-col gap-5 rounded-3xl border border-gold/25 bg-gold-50 p-6 shadow-soft sm:flex-row sm:items-center" aria-labelledby="academy-title">
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-night text-gold"><GraduationCap className="h-8 w-8" strokeWidth={1.6} aria-hidden /></span>
+              <div className="min-w-0 flex-1">
+                <h2 id="academy-title" className="font-display text-2xl font-medium text-night">{tx('Académie KCC', 'KCC Academy', 'Academia KCC')}</h2>
+                <p className="mt-1 text-sm text-ink/65">{tx('Des formations sur la doctrine, l’histoire et la vie de la communauté, à suivre à votre rythme.', 'Courses on doctrine, history and community life, at your own pace.', 'Formações sobre a doutrina, a história e a vida da comunidade, ao seu ritmo.')}</p>
+              </div>
+              <ButtonLink to="/academie" variant="primary" size="sm" className="shrink-0">{tx('Voir les formations', 'See the courses', 'Ver as formações')} <ArrowRight className="h-4 w-4" /></ButtonLink>
+            </section>
           </div>
 
           {/* COLONNE LATÉRALE */}
@@ -239,11 +306,11 @@ export default function HomePage() {
             </section>
 
             <section aria-labelledby="gal-title">
-              <SideTitle title={tx('Galerie photos', 'Photo gallery', 'Galeria de fotos')} to="/doctrine#archives" link={tx('Voir la galerie', 'See the gallery', 'Ver a galeria')} />
+              <SideTitle title={tx('Galerie photos', 'Photo gallery', 'Galeria de fotos')} to="/galerie" link={tx('Voir la galerie', 'See the gallery', 'Ver a galeria')} />
               <h2 id="gal-title" className="sr-only">{tx('Galerie photos', 'Photo gallery', 'Galeria de fotos')}</h2>
               <div className="grid grid-cols-4 gap-2 lg:grid-cols-2">
                 {GALLERY.map((src) => (
-                  <Link key={src} to="/doctrine#archives" className="block overflow-hidden rounded-xl">
+                  <Link key={src} to="/galerie" className="block overflow-hidden rounded-xl">
                     <img src={src} alt="" loading="lazy" className="aspect-square w-full object-cover transition duration-500 hover:scale-105" />
                   </Link>
                 ))}

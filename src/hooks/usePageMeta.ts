@@ -38,7 +38,8 @@ const absolute = (u: string) => new URL(u, window.location.origin).toString();
 function apply({ title, description, image }: PageMeta, path: string) {
   const fullTitle = title ? `${title} — ${SITE_NAME}` : DEFAULT_TITLE;
   const desc = (description || DEFAULT_DESCRIPTION).replace(/\s+/g, ' ').trim().slice(0, 300);
-  const img = absolute(image || DEFAULT_SHARE_IMAGE);
+  // Facebook et WhatsApp n'affichent pas les SVG : on garde alors l'image du site.
+  const img = absolute(image && !/\.svg(\?|$)/i.test(image) ? image : DEFAULT_SHARE_IMAGE);
   const url = absolute(path);
   document.title = fullTitle;
   setMeta('name', 'description', desc);

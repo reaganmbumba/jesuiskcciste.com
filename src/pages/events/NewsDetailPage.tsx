@@ -35,7 +35,7 @@ export default function NewsDetailPage() {
       <article className="container-page max-w-3xl py-12">
         {data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
         <Card><CardBody className="prose-kcc">{data.content.split('\n').map((p, i) => (isHeading(p) ? <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3> : <p key={i}>{p}</p>))}</CardBody></Card>
-        <ShareButtons title={data.title} text={data.summary} className="mt-6" />
+        <ShareButtons title={data.title} text={data.summary} image={data.imageUrl} className="mt-6" />
         <ButtonLink to="/actualites" variant="ghost" className="mt-6" icon={<ArrowLeft className="h-4 w-4" />}>{tx('Toutes les annonces', 'All announcements', 'Todos os anúncios')}</ButtonLink>
       </article>
     </>

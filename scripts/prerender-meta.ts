@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Aperçus de partage par page (Facebook, WhatsApp, Instagram, X).
  *
@@ -7,19 +6,23 @@
  * par rubrique (ex. dist/doctrine.html, dist/academie/formations.html) avec son
  * propre titre, sa description et son adresse. Cloudflare sert /doctrine depuis
  * doctrine.html ; React prend ensuite le relais comme d'habitude.
- * Les pages dynamiques (une annonce, un événement…) gardent l'aperçu général.
+ * Les articles, événements et formations du contenu de base (src/content/editorial.ts)
+ * ont aussi leur page, avec leur photo en image d'aperçu. Ceux publiés plus tard
+ * dans Supabase sont traités à la volée par worker/index.ts.
  *
+ * Lancé par `npm run build` via vite-node (alias @/ disponibles).
  * Quand une rubrique est ajoutée ou renommée, mettre à jour PAGES ci-dessous.
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/content/editorial';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
 const DIST = 'dist';
 
 /** chemin → [titre, description] (en français, langue par défaut du site). */
-const PAGES = {
+const PAGES: Record<string, [string, string]> = {
   '/a-propos': ['L’Église Bon Nouveau Message (EBNM/KCC)', 'Présentation officielle, histoire, organisation et contacts institutionnels.'],
   '/enseignements': ['Enseignements et histoire', 'La parole du Prophète, les récits de son appel, la vision de la musique et les textes de la solidarité KCCiste.'],
   '/doctrine': ['Doctrine et histoire de l’Église', 'Le message du KCC, la profession de foi, les Paroles de l’Alliance, la liturgie et les grandes dates de l’Église Bon Nouveau Message.'],
@@ -45,31 +48,61 @@ const PAGES = {
   '/confidentialite': ['Confidentialité et conditions d’utilisation', 'Comment JE SUIS KCCiste protège vos données.'],
 };
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 /** Remplace l'attribut content de la balise meta identifiée par attr="key". */
-function setMeta(html, attr, key, value) {
+function setMeta(html: string, attr: string, key: string, value: string) {
   const re = new RegExp(`(<meta ${attr}="${key}" content=")[^"]*(")`);
   if (!re.test(html)) throw new Error(`Balise ${attr}="${key}" absente de index.html`);
   return html.replace(re, `$1${esc(value)}$2`);
 }
 
 const base = readFileSync(join(DIST, 'index.html'), 'utf8');
-let count = 0;
-for (const [path, [title, description]] of Object.entries(PAGES)) {
+
+interface Meta { title: string; description: string; image?: string | null }
+
+function render(path: string, { title, description, image }: Meta) {
   const url = SITE + path;
+  const desc = description.replace(/\s+/g, ' ').trim().slice(0, 300);
   let html = base
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(`${title} — ${NAME}`)}</title>`)
     .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`);
-  html = setMeta(html, 'name', 'description', description);
+  html = setMeta(html, 'name', 'description', desc);
   html = setMeta(html, 'property', 'og:title', title);
-  html = setMeta(html, 'property', 'og:description', description);
+  html = setMeta(html, 'property', 'og:description', desc);
   html = setMeta(html, 'property', 'og:url', url);
   html = setMeta(html, 'name', 'twitter:title', title);
-  html = setMeta(html, 'name', 'twitter:description', description);
+  html = setMeta(html, 'name', 'twitter:description', desc);
+  // Les réseaux sociaux n'affichent pas les SVG : on garde alors l'image du site.
+  if (image && !/\.svg(\?|$)/i.test(image)) {
+    // Photo propre au contenu : ses dimensions ne sont pas celles de l'image par défaut.
+    const img = new URL(image, SITE).toString();
+    html = setMeta(html, 'property', 'og:image', img);
+    html = setMeta(html, 'name', 'twitter:image', img);
+    html = setMeta(html, 'property', 'og:image:alt', title);
+    html = html.replace(/\s*<meta property="og:image:(width|height)" content="[^"]*" \/>/g, '');
+    html = html.replace(/(<meta property="og:type" content=")[^"]*(")/, '$1article$2');
+  }
   const file = join(DIST, `${path.slice(1)}.html`);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, html);
+}
+
+let count = 0;
+for (const [path, [title, description]] of Object.entries(PAGES)) {
+  render(path, { title, description });
+  count += 1;
+}
+for (const a of editorialAnnouncements('fr')) {
+  render(`/actualites/${a.id}`, { title: a.title, description: a.summary, image: a.imageUrl });
+  count += 1;
+}
+for (const e of editorialEvents('fr')) {
+  render(`/agenda/${e.id}`, { title: e.title, description: e.description, image: e.posterUrl });
+  count += 1;
+}
+for (const c of editorialCourses('fr')) {
+  render(`/academie/formations/${c.slug}`, { title: c.title, description: c.summary, image: c.coverUrl });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

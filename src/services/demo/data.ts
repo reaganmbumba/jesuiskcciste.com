@@ -8,7 +8,7 @@
  * vides jusqu'à leur saisie par l'administration.
  */
 import type {
-  Album, Announcement, AppNotification, Artist, AuditLog, Certificate, Contribution, Course, Enrollment,
+  Album, Apostle, ApostlePhotoSubmission, Announcement, AppNotification, Artist, AuditLog, Certificate, Contribution, Course, Enrollment,
   Expense, KccEvent, MediaItem, OrganizationalUnit, Parish, Profile, Section, SolidarityProject, Track,
 } from '@/types';
 
@@ -188,3 +188,10 @@ export const demoAuditLogs: AuditLog[] = [
   { id: 'log-2', actor: 'Compte démo', action: 'member.validate', entity: 'profiles', entityId: 'mem-3', createdAt: inDays(-3), details: 'Exemple de journal' },
   { id: 'log-3', actor: 'Compte démo', action: 'contribution.confirm', entity: 'contributions', entityId: 'ctb-2', createdAt: inDays(-12), details: 'Exemple de journal' },
 ];
+
+// Exemples fictifs : la vraie liste des Révérends Apôtres est saisie dans /admin/apotres.
+export const demoApostles: Apostle[] = [
+  { id: 'apo-1', fullName: 'Apôtre exemple A', title: 'Révérend Apôtre', status: 'living', photoUrl: null, place: 'Kinshasa', sortOrder: 1 },
+  { id: 'apo-2', fullName: 'Apôtre exemple B', title: 'Révérend Apôtre', status: 'deceased', photoUrl: null, place: 'Matadi', deathYear: 2010, sortOrder: 2 },
+];
+export const demoApostleSubmissions: ApostlePhotoSubmission[] = [];

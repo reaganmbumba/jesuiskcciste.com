@@ -377,3 +377,31 @@ export interface CommunityStats {
   courses: number;
   events: number;
 }
+
+// ——— Révérends Apôtres ———
+export type ApostleStatus = 'living' | 'deceased';
+
+export interface Apostle {
+  id: UUID;
+  fullName: string;
+  title: string;
+  status: ApostleStatus;
+  photoUrl?: string | null;
+  place?: string | null;
+  birthYear?: number | null;
+  deathYear?: number | null;
+  bio?: string | null;
+  sortOrder: number;
+}
+
+export interface ApostlePhotoSubmission {
+  id: UUID;
+  apostleId: UUID;
+  photoPath: string;
+  submitterName: string;
+  submitterContact?: string | null;
+  note?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  reviewedAt?: string | null;
+}

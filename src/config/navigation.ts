@@ -24,6 +24,7 @@ export const MAIN_NAV: NavGroup[] = [
       { label: l('L’appel du Prophète', 'The Prophet’s calling', 'O chamamento do Profeta'), to: '/appel-du-prophete', description: l('Le livre « Mon Appel » et sa biographie', 'The book “Mon Appel” and his biography', 'O livro «Mon Appel» e a sua biografia') },
       { label: l('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários'), to: '/predications', description: l('L’enseignement du Chef Spirituel', 'The Spiritual Leader’s teaching', 'O ensino do Chefe Espiritual') },
       { label: l('Enseignements et histoire', 'Teachings and history', 'Ensinamentos e história'), to: '/enseignements', description: l('Parole du Prophète et récits de son appel', 'The Prophet’s word and the story of his calling', 'Palavra do Profeta e relatos do seu chamamento') },
+      { label: l('Les Révérends Apôtres', 'The Reverend Apostles', 'Os Reverendos Apóstolos'), to: '/apotres', description: l('En vie et décédés, avec leur photo', 'Living and deceased, with their photo', 'Vivos e falecidos, com a sua foto') },
       { label: l('Galerie photo', 'Photo gallery', 'Galeria de fotos'), to: '/galerie', description: l('Cultes, mamans, temples et archives', 'Services, mothers, temples and archives', 'Cultos, mamãs, templos e arquivos') },
     ],
   },

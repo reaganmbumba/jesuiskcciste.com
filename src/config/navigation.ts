@@ -14,8 +14,17 @@ export const MAIN_NAV: NavGroup[] = [
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('Les paroisses enregistrées', 'Registered parishes', 'As paróquias registadas') },
       { label: l('Sections', 'Sections', 'Secções'), to: '/sections', description: l('Les sections rattachées', 'Affiliated sections', 'As secções associadas') },
       { label: l('À propos de l’Église', 'About the Church', 'Sobre a Igreja'), to: '/a-propos', description: l('Présentation officielle', 'Official presentation', 'Apresentação oficial') },
+    ],
+  },
+  {
+    key: 'nav.faith', to: '/doctrine', children: [
       { label: l('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), to: '/doctrine', description: l('Le KCC, la profession de foi, l’Alliance et le Prophète', 'The KCC, the profession of faith, the Covenant and the Prophet', 'O KCC, a profissão de fé, a Aliança e o Profeta') },
+      { label: l('Catéchisme', 'Catechism', 'Catecismo'), to: '/catechisme', description: l('Questions et réponses de la foi KCCiste', 'Questions and answers of the KCCist faith', 'Perguntas e respostas da fé KCCista') },
+      { label: l('Rites et célébrations', 'Rites and celebrations', 'Ritos e celebrações'), to: '/liturgie', description: l('Sabbat, onction, Alliance, mariage, deuil…', 'Sabbath, anointing, Covenant, marriage, mourning…', 'Sábado, unção, Aliança, casamento, luto…') },
+      { label: l('L’appel du Prophète', 'The Prophet’s calling', 'O chamamento do Profeta'), to: '/appel-du-prophete', description: l('Le livre « Mon Appel » et sa biographie', 'The book “Mon Appel” and his biography', 'O livro «Mon Appel» e a sua biografia') },
+      { label: l('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários'), to: '/predications', description: l('L’enseignement du Chef Spirituel', 'The Spiritual Leader’s teaching', 'O ensino do Chefe Espiritual') },
       { label: l('Enseignements et histoire', 'Teachings and history', 'Ensinamentos e história'), to: '/enseignements', description: l('Parole du Prophète et récits de son appel', 'The Prophet’s word and the story of his calling', 'Palavra do Profeta e relatos do seu chamamento') },
+      { label: l('Galerie photo', 'Photo gallery', 'Galeria de fotos'), to: '/galerie', description: l('Cultes, mamans, temples et archives', 'Services, mothers, temples and archives', 'Cultos, mamãs, templos e arquivos') },
     ],
   },
   {

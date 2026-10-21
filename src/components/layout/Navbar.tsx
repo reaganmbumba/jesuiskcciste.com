@@ -43,7 +43,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
   }, []);
 
   const solid = !transparent || scrolled || open;
-  const linkBase = cn('relative flex items-center gap-1 rounded-full px-2.5 py-2 text-[14px] 2xl:px-3.5 font-medium transition-colors', solid ? 'text-ink/75 hover:text-night hover:bg-night/[0.05]' : 'text-white/80 hover:text-white hover:bg-white/10');
+  const linkBase = cn('relative flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-2 text-[14px] 2xl:px-3.5 font-medium transition-colors', solid ? 'text-ink/75 hover:text-night hover:bg-night/[0.05]' : 'text-white/80 hover:text-white hover:bg-white/10');
   const active = solid ? 'text-night bg-night/[0.05]' : 'text-white bg-white/10';
 
   return (
@@ -60,7 +60,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
               g.children ? (
                 <div key={g.key} className="group relative">
                   <NavLink to={g.to} className={({ isActive }) => cn(linkBase, isActive && active)} aria-haspopup="true">
-                    {t(g.key)} <ChevronDown className="h-3.5 w-3.5 opacity-60 transition group-hover:rotate-180" aria-hidden />
+                    {t(g.key)} <ChevronDown className="hidden h-3.5 w-3.5 opacity-60 transition group-hover:rotate-180 2xl:block" aria-hidden />
                   </NavLink>
                   <div className="invisible absolute left-1/2 top-full z-50 w-80 -translate-x-1/2 pt-3 opacity-0 transition-all duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
                     <div className="rounded-3xl border border-night/[0.06] bg-white/95 p-2 shadow-lift backdrop-blur-xl">

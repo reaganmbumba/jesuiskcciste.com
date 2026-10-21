@@ -13,11 +13,9 @@ export function ScrollToTop() {
 }
 
 export function PublicLayout() {
-  const { pathname } = useLocation();
-  const isHome = pathname === '/';
   return (
     <div className="flex min-h-screen flex-col pb-24 lg:pb-0">
-      <Navbar transparent={isHome} />
+      <Navbar />
       <main id="contenu" className="flex-1">
         <Suspense fallback={<PageLoader />}>
           <Outlet />

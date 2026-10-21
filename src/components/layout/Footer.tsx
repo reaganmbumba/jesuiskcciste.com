@@ -1,11 +1,21 @@
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Phone } from 'lucide-react';
+import { ChevronUp, Facebook, Globe, Instagram, Mail, MapPin, Phone, Twitter, Youtube } from 'lucide-react';
+import { youtubeChannelUrl } from '@/config/youtube';
 import { Logo } from '@/components/common/Logo';
 import { useI18n } from '@/i18n';
 import { LanguageSwitch } from './LanguagePicker';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { YouTubeIcon } from '@/components/common/YouTubeChannel';
 import { YOUTUBE_CHANNEL_NAME, youtubeSubscribeUrl } from '@/config/youtube';
+
+const socialIcon = (label: string) => {
+  const l = label.toLowerCase();
+  if (l.includes('face')) return Facebook;
+  if (l.includes('insta')) return Instagram;
+  if (l.includes('you')) return Youtube;
+  if (l.includes('twit') || l === 'x') return Twitter;
+  return Globe;
+};
 
 export function Footer() {
   const { t, tx } = useI18n();
@@ -60,10 +70,16 @@ export function Footer() {
             <YouTubeIcon className="h-4 w-6" />
             <span>{tx('S’abonner sur YouTube', 'Subscribe on YouTube', 'Subscrever no YouTube')} · <strong>{YOUTUBE_CHANNEL_NAME}</strong></span>
           </a>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {settings.socials.length ? settings.socials.map((s) => (
-              <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-1.5 text-xs text-white/75 transition hover:border-gold hover:bg-gold/10 hover:text-white">{s.label}</a>
-            )) : <p className="text-xs text-white/40">{tx('Réseaux sociaux officiels', 'Official social media', 'Redes sociais oficiais')} : {t('footer.notConfigured').toLowerCase()}</p>}
+          <p className={`${col} mt-7`}>{tx('Suivez-nous', 'Follow us', 'Siga-nos')}</p>
+          <div className="flex flex-wrap gap-2.5">
+            {[{ label: 'YouTube', url: youtubeChannelUrl() }, ...settings.socials.filter((x) => !/youtube/i.test(x.label))].map((x) => {
+              const Icon = socialIcon(x.label);
+              return (
+                <a key={x.url} href={x.url} target="_blank" rel="noopener noreferrer" aria-label={x.label} title={x.label} className="grid h-10 w-10 place-items-center rounded-full border border-white/15 bg-white/[0.06] text-white/80 transition hover:border-gold hover:bg-gold hover:text-night">
+                  <Icon className="h-[18px] w-[18px]" aria-hidden />
+                </a>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -74,6 +90,7 @@ export function Footer() {
             <Link to="/confidentialite" className="hover:text-white">{t('footer.privacy')}</Link>
             <Link to="/confidentialite#conditions" className="hover:text-white">{t('footer.legal')}</Link>
             <LanguageSwitch light />
+            <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-gold hover:text-night" aria-label={tx('Revenir en haut', 'Back to top', 'Voltar ao topo')}><ChevronUp className="h-4 w-4" /></button>
           </div>
         </div>
       </div>

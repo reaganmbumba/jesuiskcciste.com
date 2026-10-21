@@ -12,6 +12,7 @@ import { DemoInline } from '@/components/common/DemoNotice';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/features/auth/AuthContext';
 import { enroll, getCourseBySlug, listMyEnrollments, markLessonDone } from '@/services';
+import { isEditorial } from '@/content/editorial';
 import { accessLabel, levelLabel } from '@/features/academy/labels';
 import type { Enrollment, Lesson } from '@/types';
 import { cn } from '@/utils/format';
@@ -38,6 +39,7 @@ export default function CourseDetailPage() {
   const access = accessLabel(course.access, locale);
   const totalLessons = course.modules.reduce((s, m) => s + m.lessons.length, 0);
   const setEnrollment = (e: Enrollment) => setData({ course, enrollment: e });
+  const free = isEditorial(course.id);
   const canEnroll = course.access === 'open' || (course.access === 'members' && profile?.status === 'active');
 
   const doEnroll = async () => {
@@ -69,18 +71,18 @@ export default function CourseDetailPage() {
                   const isOpen = openLesson === l.id;
                   return (
                     <li key={l.id} className="border-b border-night/[0.04] last:border-0">
-                      <button disabled={!enrollment} onClick={() => setOpenLesson(isOpen ? null : l.id)} className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-mist/60 disabled:cursor-default disabled:hover:bg-transparent" aria-expanded={isOpen}>
-                        {isDone ? <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-label={tx('Terminée', 'Completed', 'Concluída')} /> : enrollment ? <Circle className="h-5 w-5 text-ink/30" /> : <Lock className="h-4 w-4 text-ink/30" aria-label={tx('Verrouillée', 'Locked', 'Bloqueada')} />}
+                      <button disabled={!enrollment && !free} onClick={() => setOpenLesson(isOpen ? null : l.id)} className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-mist/60 disabled:cursor-default disabled:hover:bg-transparent" aria-expanded={isOpen}>
+                        {isDone ? <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-label={tx('Terminée', 'Completed', 'Concluída')} /> : enrollment || free ? <Circle className="h-5 w-5 text-ink/30" /> : <Lock className="h-4 w-4 text-ink/30" aria-label={tx('Verrouillée', 'Locked', 'Bloqueada')} />}
                         <Icon className="h-4 w-4 text-gold" aria-hidden />
                         <span className="flex-1 text-sm font-medium text-night">{l.title}</span>
                         <span className="text-xs text-ink/50">{l.durationMinutes} min</span>
-                        {enrollment && <ChevronDown className={cn('h-4 w-4 text-ink/40 transition', isOpen && 'rotate-180')} />}
+                        {(enrollment || free) && <ChevronDown className={cn('h-4 w-4 text-ink/40 transition', isOpen && 'rotate-180')} />}
                       </button>
                       {isOpen && (
                         <div className="bg-mist/50 px-5 pb-4 pt-1 text-sm text-ink/80">
-                          <p>{l.body}</p>
+                          <p className="whitespace-pre-line leading-relaxed">{l.body}</p>
                           {l.resourceUrl ? <a href={l.resourceUrl} target="_blank" rel="noopener noreferrer" className="link-gold mt-2 inline-block">{tx('Ouvrir le support', 'Open the material', 'Abrir o material')}</a> : l.kind !== 'text' && <p className="mt-2 italic text-ink/50">{tx('Support à importer par le formateur.', 'Material to be uploaded by the trainer.', 'Material a importar pelo formador.')}</p>}
-                          {!isDone && <Button size="sm" className="mt-3" onClick={() => done(l)}>{tx('Marquer comme terminée', 'Mark as completed', 'Marcar como concluída')}</Button>}
+                          {enrollment && !isDone && <Button size="sm" className="mt-3" onClick={() => done(l)}>{tx('Marquer comme terminée', 'Mark as completed', 'Marcar como concluída')}</Button>}
                         </div>
                       )}
                     </li>
@@ -93,7 +95,9 @@ export default function CourseDetailPage() {
         <aside className="space-y-4">
           <Card className="lg:sticky lg:top-24"><CardBody>
             <DemoInline>{tx('Démonstration : la progression est conservée dans cet onglet uniquement.', 'Demo: progress is kept in this tab only.', 'Demonstração: o progresso é guardado apenas neste separador.')}</DemoInline>
-            {enrollment ? (
+            {free ? (
+              <><p className="text-sm font-semibold text-night">{tx('Formation en accès libre', 'Free-access course', 'Formação em acesso livre')}</p><p className="mt-2 text-sm text-ink/70">{tx('Ouvrez chaque leçon pour la lire, sans inscription.', 'Open each lesson to read it, no sign-up needed.', 'Abra cada lição para a ler, sem inscrição.')}</p><ButtonLink to="/doctrine" variant="gold" className="mt-4 w-full">{tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história')}</ButtonLink></>
+            ) : enrollment ? (
               <>
                 <p className="text-sm font-semibold text-night">{tx('Votre progression', 'Your progress', 'O seu progresso')}</p>
                 <div className="mt-2"><ProgressBar value={enrollment.progress} /></div>
@@ -110,7 +114,7 @@ export default function CourseDetailPage() {
             ) : (
               <p className="text-sm text-ink/70">{course.access === 'on_request' ? tx('L’accès à cette formation se fait sur demande auprès du formateur ou de votre responsable.', 'Access to this course is on request from the trainer or your leader.', 'O acesso a esta formação faz-se mediante pedido ao formador ou ao seu responsável.') : course.access === 'closed' ? tx('Les inscriptions sont fermées.', 'Enrolment is closed.', 'As inscrições estão fechadas.') : tx('Votre adhésion doit être validée pour accéder à cette formation.', 'Your membership must be approved to access this course.', 'A sua adesão tem de ser validada para aceder a esta formação.')}</p>
             )}
-            <p className="mt-5 border-t border-night/10 pt-4 text-xs text-ink/55">{tx('Formateur', 'Trainer', 'Formador')} : {course.trainerName || tx('à désigner', 'to be appointed', 'a designar')}</p>
+            <p className="mt-5 border-t border-night/10 pt-4 text-xs text-ink/55">{tx('Formateur', 'Trainer', 'Formador')} : {course.trainerName || (free ? tx('Textes officiels de l’EBNM/KCC', 'Official texts of the EBNM/KCC', 'Textos oficiais da EBNM/KCC') : tx('à désigner', 'to be appointed', 'a designar'))}</p>
           </CardBody></Card>
         </aside>
       </section>

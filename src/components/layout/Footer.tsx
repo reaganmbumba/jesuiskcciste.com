@@ -22,7 +22,6 @@ export function Footer() {
   const { settings } = useSiteSettings();
   const col = 'mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-gold';
   const link = 'text-sm text-white/65 transition hover:text-white';
-  const missing = <span className="italic text-white/40">{t('footer.notConfigured')}</span>;
   return (
     <footer className="relative isolate overflow-hidden bg-night-950 text-white">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" aria-hidden />
@@ -62,9 +61,9 @@ export function Footer() {
         <div className="lg:col-span-4">
           <p className={col}>{t('footer.contact')}</p>
           <ul className="space-y-3 text-sm text-white/65">
-            <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.email ? <a className={link} href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a> : missing}</li>
-            <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.phone || missing}</li>
-            <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address || missing}</li>
+            <li className="flex gap-2"><MapPin className="h-4 w-4 shrink-0 text-gold" aria-hidden />{settings.contact.address || tx('Siège : Kinshasa, République démocratique du Congo', 'Head office: Kinshasa, Democratic Republic of the Congo', 'Sede: Kinshasa, República Democrática do Congo')}</li>
+            {settings.contact.email && <li className="flex gap-2"><Mail className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`mailto:${settings.contact.email}`}>{settings.contact.email}</a></li>}
+            {settings.contact.phone && <li className="flex gap-2"><Phone className="h-4 w-4 shrink-0 text-gold" aria-hidden /><a className={link} href={`tel:${settings.contact.phone.replace(/\s/g, '')}`}>{settings.contact.phone}</a></li>}
           </ul>
           <a href={youtubeSubscribeUrl()} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-white/85 transition hover:border-[#FF0000] hover:bg-[#FF0000]/15 hover:text-white">
             <YouTubeIcon className="h-4 w-6" />

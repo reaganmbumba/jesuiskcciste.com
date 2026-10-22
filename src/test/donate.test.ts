@@ -20,12 +20,12 @@ describe('dons Solidarité', () => {
 describe('listes publiques des contributions', () => {
   it('contient les 73 contributeurs de Luanika', () => {
     expect(CONTRIBUTIONS.luanika).toHaveLength(73);
-    expect(CONTRIBUTIONS.ngidinga).toHaveLength(38);
+    expect(CONTRIBUTIONS.ngidinga).toHaveLength(40);
   });
   it('affiche des totaux égaux à la somme des lignes', () => {
     const sum = (l: { amount: string }[], cur: string) => l.filter((c) => c.amount.endsWith(cur)).reduce((t, c) => t + Number(c.amount.replace(cur, '').replace(/\s/g, '').replace(',', '.')), 0);
     expect([sum(CONTRIBUTIONS.luanika, '$'), sum(CONTRIBUTIONS.luanika, 'FC')]).toEqual([1326.6, 584000]);
-    expect([sum(CONTRIBUTIONS.ngidinga, '$'), sum(CONTRIBUTIONS.ngidinga, 'FC')]).toEqual([942, 316000]);
+    expect([sum(CONTRIBUTIONS.ngidinga, '$'), sum(CONTRIBUTIONS.ngidinga, 'FC')]).toEqual([979, 316000]);
   });
   it('ne publie aucun numéro de téléphone', () => {
     for (const c of [...CONTRIBUTIONS.luanika, ...CONTRIBUTIONS.ngidinga]) expect(`${c.name} ${c.amount}`).not.toMatch(/\d{8,}|\+\d/);

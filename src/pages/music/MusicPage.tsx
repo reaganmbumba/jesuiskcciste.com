@@ -14,7 +14,8 @@ import { CoverArt } from '@/components/cards/Cards';
 import { useI18n } from '@/i18n';
 import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
-import { isForSale } from '@/features/music/shop';
+import { getFullAudio, isForSale } from '@/features/music/shop';
+import { useAuth } from '@/features/auth/AuthContext';
 import { ShareButtons } from '@/components/common/ShareButtons';
 
 const RIGHTS = {
@@ -35,6 +36,22 @@ export default function MusicPage() {
   useEffect(() => { const t = params.get('titre'); if (t) setCurrentId(t); }, [params]);
   const list = useMemo(() => tracks.filter((t) => (!cat || t.category === cat) && (!q || `${t.title} ${t.author} ${artists.find((a) => a.id === t.artistId)?.name}`.toLowerCase().includes(q.toLowerCase()))), [tracks, artists, q, cat]);
   const current = tracks.find((t) => t.id === currentId) ?? null;
+  // Chant entier pour un acheteur ou un responsable musique ; sinon l'extrait public.
+  const { profile } = useAuth();
+  const [full, setFull] = useState<{ id: string; url: string | null } | null>(null);
+  const [purchases, setPurchases] = useState(0);
+  useEffect(() => {
+    setFull(null);
+    if (!current?.saleFilePath || !profile) return;
+    let live = true;
+    getFullAudio(current.id).then((url) => { if (live) setFull({ id: current.id, url }); });
+    return () => { live = false; };
+  }, [current?.id, current?.saleFilePath, profile?.id, purchases]);
+  const fullUrl = full?.id === current?.id ? full?.url : null;
+  const playing = current && fullUrl ? { ...current, audioUrl: fullUrl } : current;
+  const currentArtist = artists.find((a) => a.id === current?.artistId)?.name;
+  const currentSale: SaleItem | null = current && isForSale(current) && current.broadcastRights === 'authorized'
+    ? { type: 'track', id: current.id, title: current.title, subtitle: currentArtist, amount: current.priceAmount!, currency: current.priceCurrency! } : null;
   const idx = list.findIndex((t) => t.id === currentId);
   const forSale = tracks.some((t) => isForSale(t) && t.broadcastRights === 'authorized') || albums.some(isForSale);
   const cats = Array.from(new Set(tracks.map((t) => t.category)));
@@ -102,8 +119,8 @@ export default function MusicPage() {
         </aside>
       </section>
       <div className="container-page pb-12"><YouTubeMoreVideos /></div>
-      <PurchaseDialog item={buying} onClose={() => setBuying(null)} />
-      <AudioPlayer track={current} artistName={artists.find((a) => a.id === current?.artistId)?.name} onPrev={() => idx > 0 && setCurrentId(list[idx - 1].id)} onNext={() => idx >= 0 && idx < list.length - 1 && setCurrentId(list[idx + 1].id)} />
+      <PurchaseDialog item={buying} onClose={() => { setBuying(null); setPurchases((n) => n + 1); }} />
+      <AudioPlayer track={playing} artistName={currentArtist} preview={current?.saleFilePath && !fullUrl ? { onBuy: currentSale ? () => setBuying(currentSale) : undefined } : undefined} onPrev={() => idx > 0 && setCurrentId(list[idx - 1].id)} onNext={() => idx >= 0 && idx < list.length - 1 && setCurrentId(list[idx + 1].id)} />
     </div>
   );
 }

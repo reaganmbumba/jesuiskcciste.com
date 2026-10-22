@@ -30,3 +30,18 @@ fonction écrit) ; le prix n'est jamais reçu du navigateur ; aucun PIN ni secre
 4. Fixer des prix dans l'admin.
 
 Tests : `supabase/tests/20_music_shop_tests.sql` (RLS), `src/test/shop.test.ts` (numéros, prix).
+
+## Extraits : écouter la moitié, acheter pour la suite
+
+Les chants marqués d'un « fichier vendu » (`sale_file_path`) ne sont lus qu'en extrait sur le site :
+`audio_url` pointe vers `/audio/extraits/…`, la première moitié du chant. À la fin de l'extrait,
+le lecteur propose l'achat. Le chant entier est rangé dans le bucket **privé** `music` (dossier `chants/`).
+L'Edge Function (action `ecoute`) en donne un lien signé de 3 h aux acheteurs du titre ou de son album,
+et aux responsables musique (`music.manage`, donc aussi l'administrateur central).
+
+Mise en place (une seule fois) :
+1. SQL Editor : coller `supabase/migrations/20261022000001_music_previews.sql` (relançable sans risque).
+2. Storage > `music` : créer le dossier `chants` et y déposer les 27 MP3 entiers (même nom de fichier).
+3. Edge Functions > `boutique-musique` : coller le nouveau code de `supabase/functions/boutique-musique/index.ts`.
+
+Pour fabriquer un extrait d'un nouveau chant : `ffmpeg -i chant.mp3 -t <moitié en secondes> -af "afade=t=out:st=<moitié-3>:d=3" -b:a 128k extrait.mp3`.

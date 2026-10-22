@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Pause, Play, ShoppingBag, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import type { Track } from '@/types';
 import { formatDuration } from '@/utils/format';
 import { useI18n } from '@/i18n';
 
-/** Lecteur audio accessible (contrôles clavier natifs + boutons étiquetés). */
-export function AudioPlayer({ track, artistName, onPrev, onNext }: { track: Track | null; artistName?: string; onPrev?: () => void; onNext?: () => void }) {
+/**
+ * Lecteur audio accessible (contrôles clavier natifs + boutons étiquetés).
+ * `preview` : seul l'extrait (la moitié du chant) est lu ; à la fin, on propose l'achat.
+ */
+export function AudioPlayer({ track, artistName, onPrev, onNext, preview }: { track: Track | null; artistName?: string; onPrev?: () => void; onNext?: () => void; preview?: { onBuy?: () => void } }) {
   const { tx } = useI18n();
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -31,7 +34,7 @@ export function AudioPlayer({ track, artistName, onPrev, onNext }: { track: Trac
 
   return (
     <div className="fixed inset-x-0 bottom-16 z-40 border-t border-white/10 bg-night/95 text-white backdrop-blur lg:bottom-0" role="region" aria-label="Lecteur audio">
-      {playable && <audio ref={ref} src={track.audioUrl!} muted={muted} onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)} onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)} onEnded={() => { setPlaying(false); onNext?.(); }} preload="metadata" />}
+      {playable && <audio ref={ref} src={track.audioUrl!} muted={muted} onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)} onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)} onEnded={() => { setPlaying(false); if (preview?.onBuy) preview.onBuy(); else onNext?.(); }} preload="metadata" />}
       <div className="container-page flex items-center gap-3 py-3">
         <div className="hidden h-11 w-11 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-gold-300 to-gold-600 text-night sm:grid"><Play className="h-5 w-5" /></div>
         <div className="min-w-0 flex-1 sm:flex-none sm:w-56">
@@ -50,6 +53,14 @@ export function AudioPlayer({ track, artistName, onPrev, onNext }: { track: Trac
         </div>
         <button onClick={() => setMuted((m) => !m)} className="hidden h-9 w-9 place-items-center rounded-full hover:bg-white/10 sm:grid" aria-label={muted ? tx('Activer le son', 'Unmute', 'Ativar o som') : tx('Couper le son', 'Mute', 'Cortar o som')}>{muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button>
       </div>
+      {playable && preview && (
+        <div className="container-page flex flex-wrap items-center gap-x-3 gap-y-2 pb-2.5 text-xs text-gold-200">
+          <span>{preview.onBuy
+            ? tx('Extrait : vous écoutez la moitié du chant. Achetez-le pour l’écouter en entier.', 'Preview: you are hearing half of the song. Buy it to hear it in full.', 'Excerto: está a ouvir metade do cântico. Compre-o para o ouvir por inteiro.')
+            : tx('Extrait : vous écoutez la moitié du chant.', 'Preview: you are hearing half of the song.', 'Excerto: está a ouvir metade do cântico.')}</span>
+          {preview.onBuy && <button onClick={preview.onBuy} className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 font-semibold text-night hover:bg-gold-300"><ShoppingBag className="h-3.5 w-3.5" />{tx('Acheter', 'Buy', 'Comprar')}</button>}
+        </div>
+      )}
       {!playable && <p className="container-page pb-2 text-xs text-amber-200">{tx('Lecture indisponible', 'Playback unavailable', 'Reprodução indisponível')} : {track.broadcastRights !== 'authorized' ? tx('autorisation de diffusion en attente ou restreinte.', 'broadcast permission pending or restricted.', 'autorização de difusão pendente ou restrita.') : tx('fichier audio non importé.', 'audio file not uploaded.', 'ficheiro áudio não importado.')}</p>}
     </div>
   );

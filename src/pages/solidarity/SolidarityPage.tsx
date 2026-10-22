@@ -7,6 +7,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { projectsRepo } from '@/services';
 import { useI18n } from '@/i18n';
 import { SolidarityHighlights } from '@/components/common/SolidarityHighlights';
+import { SolidarityOperations } from '@/components/common/SolidarityOperations';
 
 export default function SolidarityPage() {
   const { tx } = useI18n();
@@ -25,6 +26,10 @@ export default function SolidarityPage() {
       <section className="container-page py-14">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {pillars.map(({ icon: Icon, t, d }) => <div key={t} className="rounded-2xl border border-night/[0.06] bg-white p-5 shadow-soft"><Icon className="h-7 w-7 text-gold" /><h2 className="mt-3 font-semibold text-night">{t}</h2><p className="mt-1 text-sm text-ink/60">{d}</p></div>)}
+        </div>
+        <div className="mt-14">
+          <SectionHeading eyebrow={tx('Nos opérations', 'Our operations', 'As nossas operações')} title={tx('Des chaises pour nos paroisses', 'Chairs for our parishes', 'Cadeiras para as nossas paróquias')} />
+          <SolidarityOperations />
         </div>
         <div className="mt-14">
           <SectionHeading eyebrow={tx('Projets', 'Projects', 'Projetos')} title={data.some((p) => p.status === 'active') ? tx('Projets en cours', 'Current projects', 'Projetos em curso') : tx('Nos œuvres de solidarité', 'Our solidarity work', 'As nossas obras de solidariedade')} />

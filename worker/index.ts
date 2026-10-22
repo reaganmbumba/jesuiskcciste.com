@@ -1,8 +1,8 @@
 /**
  * Worker Cloudflare du site : sert les fichiers de dist/ et, pour les robots des
  * réseaux sociaux, ajoute l'aperçu (titre, résumé, photo) des contenus publiés
- * dans Supabase : annonces, événements, projets, formations, prédications audio
- * et profils des Révérends Apôtres. Sans photo, l'image habituelle du site reste.
+ * dans Supabase : annonces, événements, projets, formations, prédications audio,
+ * profils des Révérends Apôtres et photos de la galerie. Sans photo, l'image habituelle du site reste.
  *
  * Les navigateurs ne passent pas par ici : en mode « single-page-application »,
  * Cloudflare leur sert index.html directement. Le Worker n'est appelé que pour
@@ -31,7 +31,7 @@ interface Meta { title: string; description: string; image: string | null }
 type Row = Record<string, string | null>;
 
 /** Rubrique → table Supabase, colonne de recherche, colonnes lues et aperçu construit à partir de la ligne. */
-const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; select: string; filter: string; meta: (r: Row) => Meta | null }[] = [
+const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; select: string; filter: string; meta: (r: Row) => Meta | null; where?: (value: string) => string }[] = [
   { re: /^\/actualites\/([^/]+)$/, table: 'announcements', key: 'id', select: 'title,summary,image_url', filter: '&status=eq.published&audience=eq.public', meta: (r) => simple(r.title, r.summary, r.image_url) },
   { re: /^\/agenda\/([^/]+)$/, table: 'events', key: 'id', select: 'title,description,poster_url', filter: '&audience=eq.public', meta: (r) => simple(r.title, r.description, r.poster_url) },
   { re: /^\/solidarite\/projets\/([^/]+)$/, table: 'projects', key: 'slug', select: 'name,summary,image_url', filter: '', meta: (r) => simple(r.name, r.summary, r.image_url) },
@@ -41,6 +41,10 @@ const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; select: string; f
     meta: (r) => simple(r.title, [[r.preacher_title, r.preacher_name].filter(Boolean).join(' '), r.parish, r.bible_text].filter(Boolean).join(' · '), r.preacher_photo_url) },
   { re: /^\/apotres\/([^/]+)$/, table: 'apostles', key: 'id', select: 'title,full_name,place,bio,photo_url', filter: '',
     meta: (r) => simple(r.full_name && `${r.title ?? ''} ${r.full_name}`.trim(), [r.place, r.bio].filter(Boolean).join(' · '), r.photo_url) },
+  // Photo de la galerie (table site_content) retrouvée par le nom de son fichier : /galerie/photo/<clé>.
+  { re: /^\/galerie\/photo\/([^/]+)$/, table: 'site_content', key: 'slug', select: 'src:data->>src,caption:data->caption->>fr', filter: '&collection=eq.gallery&published=eq.true',
+    where: (v) => `data->>src=ilike.*/${v}.*`,
+    meta: (r) => simple(r.caption || 'Galerie photo de l’Église', 'Cultes, mamans, temples et archives anciennes de l’Église Bon Nouveau Message.', r.src) },
 ];
 
 function simple(title: string | null | undefined, description: string | null | undefined, image: string | null | undefined): Meta | null {
@@ -57,7 +61,7 @@ async function findMeta(url: URL, env: Env): Promise<Meta | null> {
     if (!m) continue;
     const value = decodeURIComponent(m[1]);
     if (!(r.key === 'id' ? UUID : SLUG).test(value)) return null;
-    const api = `${env.SUPABASE_URL}/rest/v1/${r.table}?select=${r.select}&${r.key}=eq.${encodeURIComponent(value)}${r.filter}&limit=1`;
+    const api = `${env.SUPABASE_URL}/rest/v1/${r.table}?select=${r.select}&${r.where ? r.where(value) : `${r.key}=eq.${encodeURIComponent(value)}`}${r.filter}&limit=1`;
     const res = await fetch(api, {
       headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}` },
       signal: AbortSignal.timeout(3000),

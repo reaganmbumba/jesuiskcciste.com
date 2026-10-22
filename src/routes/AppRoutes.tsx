@@ -142,6 +142,7 @@ export function AppRoutes() {
         <Route path="predications" element={<SermonsPage />} />
         <Route path="predications/audio/:id" element={<SermonsPage />} />
         <Route path="galerie" element={<GalleryPage />} />
+        <Route path="galerie/photo/:key" element={<GalleryPage />} />
         <Route path="apotres" element={<ApostlesPage />} />
         <Route path="apotres/:id" element={<ApostleProfilePage />} />
         <Route path="videos" element={<VideosPage />} />

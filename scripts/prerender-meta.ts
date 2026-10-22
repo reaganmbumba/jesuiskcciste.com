@@ -17,6 +17,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/content/editorial';
 import { demoAudioSermons } from '@/services/demo/data';
+import { galleryPhotos, photoKey } from '@/content/galerie';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
@@ -115,6 +116,11 @@ for (const c of editorialCourses('fr')) {
 // Prédications audio livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
 for (const s of demoAudioSermons) {
   render(`/predications/audio/${s.id}`, { title: s.title, description: sermonSummary(s), image: s.preacherPhotoUrl });
+  count += 1;
+}
+// Photos de la galerie livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
+for (const p of galleryPhotos) {
+  render(`/galerie/photo/${photoKey(p.src)}`, { title: p.caption.fr, description: PAGES['/galerie'][1], image: p.src });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

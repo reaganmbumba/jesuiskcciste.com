@@ -67,7 +67,7 @@ export function YouTubeEmbed({ video, className }: { video: YouTubeVideo; classN
             YouTube <ExternalLink className="h-3.5 w-3.5" aria-hidden />
           </a>
         </div>
-        <ShareButtons tone="dark" size="sm" showLabel={false} url={youtubeWatchUrl(video.id)} title={title} className="mt-3" />
+        <ShareButtons tone="dark" size="sm" showLabel={false} url={youtubeWatchUrl(video.id)} title={title} image={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`} className="mt-3" />
       </figcaption>
     </figure>
   );

@@ -1,7 +1,8 @@
 /**
  * Worker Cloudflare du site : sert les fichiers de dist/ et, pour les robots des
  * réseaux sociaux, ajoute l'aperçu (titre, résumé, photo) des contenus publiés
- * dans Supabase : annonces, événements, projets et formations.
+ * dans Supabase : annonces, événements, projets, formations, prédications audio
+ * et profils des Révérends Apôtres. Sans photo, l'image habituelle du site reste.
  *
  * Les navigateurs ne passent pas par ici : en mode « single-page-application »,
  * Cloudflare leur sert index.html directement. Le Worker n'est appelé que pour
@@ -27,13 +28,24 @@ const NAME = 'JE SUIS KCCiste';
 
 interface Meta { title: string; description: string; image: string | null }
 
-/** Rubrique → table Supabase, colonne de recherche et colonnes de l'aperçu. */
-const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; title: string; description: string; image: string; filter: string }[] = [
-  { re: /^\/actualites\/([^/]+)$/, table: 'announcements', key: 'id', title: 'title', description: 'summary', image: 'image_url', filter: '&status=eq.published&audience=eq.public' },
-  { re: /^\/agenda\/([^/]+)$/, table: 'events', key: 'id', title: 'title', description: 'description', image: 'poster_url', filter: '&audience=eq.public' },
-  { re: /^\/solidarite\/projets\/([^/]+)$/, table: 'projects', key: 'slug', title: 'name', description: 'summary', image: 'image_url', filter: '' },
-  { re: /^\/academie\/formations\/([^/]+)$/, table: 'courses', key: 'slug', title: 'title', description: 'summary', image: 'cover_url', filter: '&status=eq.published' },
+type Row = Record<string, string | null>;
+
+/** Rubrique → table Supabase, colonne de recherche, colonnes lues et aperçu construit à partir de la ligne. */
+const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; select: string; filter: string; meta: (r: Row) => Meta | null }[] = [
+  { re: /^\/actualites\/([^/]+)$/, table: 'announcements', key: 'id', select: 'title,summary,image_url', filter: '&status=eq.published&audience=eq.public', meta: (r) => simple(r.title, r.summary, r.image_url) },
+  { re: /^\/agenda\/([^/]+)$/, table: 'events', key: 'id', select: 'title,description,poster_url', filter: '&audience=eq.public', meta: (r) => simple(r.title, r.description, r.poster_url) },
+  { re: /^\/solidarite\/projets\/([^/]+)$/, table: 'projects', key: 'slug', select: 'name,summary,image_url', filter: '', meta: (r) => simple(r.name, r.summary, r.image_url) },
+  { re: /^\/academie\/formations\/([^/]+)$/, table: 'courses', key: 'slug', select: 'title,summary,cover_url', filter: '&status=eq.published', meta: (r) => simple(r.title, r.summary, r.cover_url) },
+  // Prédication audio : photo du prédicateur, son titre, sa paroisse et le passage lu.
+  { re: /^\/predications\/audio\/([^/]+)$/, table: 'audio_sermons', key: 'id', select: 'title,preacher_name,preacher_title,parish,bible_text,preacher_photo_url', filter: '&published=eq.true',
+    meta: (r) => simple(r.title, [[r.preacher_title, r.preacher_name].filter(Boolean).join(' '), r.parish, r.bible_text].filter(Boolean).join(' · '), r.preacher_photo_url) },
+  { re: /^\/apotres\/([^/]+)$/, table: 'apostles', key: 'id', select: 'title,full_name,place,bio,photo_url', filter: '',
+    meta: (r) => simple(r.full_name && `${r.title ?? ''} ${r.full_name}`.trim(), [r.place, r.bio].filter(Boolean).join(' · '), r.photo_url) },
 ];
+
+function simple(title: string | null | undefined, description: string | null | undefined, image: string | null | undefined): Meta | null {
+  return title ? { title, description: description ?? '', image: image ?? null } : null;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9][a-z0-9-]{0,120}$/;
@@ -45,16 +57,14 @@ async function findMeta(url: URL, env: Env): Promise<Meta | null> {
     if (!m) continue;
     const value = decodeURIComponent(m[1]);
     if (!(r.key === 'id' ? UUID : SLUG).test(value)) return null;
-    const api = `${env.SUPABASE_URL}/rest/v1/${r.table}?select=${r.title},${r.description},${r.image}&${r.key}=eq.${encodeURIComponent(value)}${r.filter}&limit=1`;
+    const api = `${env.SUPABASE_URL}/rest/v1/${r.table}?select=${r.select}&${r.key}=eq.${encodeURIComponent(value)}${r.filter}&limit=1`;
     const res = await fetch(api, {
       headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${env.SUPABASE_ANON_KEY}` },
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;
-    const rows = (await res.json()) as Record<string, string | null>[];
-    const row = rows[0];
-    if (!row?.[r.title]) return null;
-    return { title: row[r.title]!, description: row[r.description] ?? '', image: row[r.image] ?? null };
+    const rows = (await res.json()) as Row[];
+    return rows[0] ? r.meta(rows[0]) : null;
   }
   return null;
 }

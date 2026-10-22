@@ -140,6 +140,7 @@ export function AppRoutes() {
         <Route path="liturgie" element={<LiturgyPage />} />
         <Route path="appel-du-prophete" element={<CallingPage />} />
         <Route path="predications" element={<SermonsPage />} />
+        <Route path="predications/audio/:id" element={<SermonsPage />} />
         <Route path="galerie" element={<GalleryPage />} />
         <Route path="apotres" element={<ApostlesPage />} />
         <Route path="apotres/:id" element={<ApostleProfilePage />} />

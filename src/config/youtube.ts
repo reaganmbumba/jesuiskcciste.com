@@ -7,6 +7,8 @@ import type { Tri } from '@/i18n';
  */
 export const YOUTUBE_CHANNEL_NAME = 'Je suis KCCiste';
 export const YOUTUBE_CHANNEL_URL: string = 'https://www.youtube.com/@Jesuiskcciste';
+/** Identifiant technique de la chaîne (UC…), utilisé pour afficher son direct en cours. */
+export const YOUTUBE_CHANNEL_ID = 'UCg4Hdo9XEX8OI7MQH64iX2g';
 
 export interface YouTubeVideo { id: string; title: Tri }
 

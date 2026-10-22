@@ -42,10 +42,10 @@ export function SolidarityOperations() {
       ),
       facts: [
         tx('Objectif : 100 chaises', 'Goal: 100 chairs', 'Objetivo: 100 cadeiras'),
-        tx('38 contributions', '38 contributions', '38 contribuições'),
-        tx('942 $ + 316 000 FC collectés', '$942 + 316,000 FC raised', '942 $ + 316 000 FC recolhidos'),
+        tx('40 contributions', '40 contributions', '40 contribuições'),
+        tx('979 $ + 316 000 FC collectés', '$979 + 316,000 FC raised', '979 $ + 316 000 FC recolhidos'),
       ],
-      date: tx('Liste arrêtée au 19 octobre 2026 · achat et remise des chaises en préparation', 'List as of 19 October 2026 · purchase and handover of the chairs being prepared', 'Lista de 19 de outubro de 2026 · compra e entrega das cadeiras em preparação'),
+      date: tx('Liste à jour au 22 octobre 2026 · achat et remise des chaises en préparation', 'List as of 22 October 2026 · purchase and handover of the chairs being prepared', 'Lista de 22 de outubro de 2026 · compra e entrega das cadeiras em preparação'),
     },
   ];
   return (

@@ -43,7 +43,7 @@ export default function AdminAnnouncements() {
         { key: 'content', label: 'Contenu', type: 'textarea', required: true }, { key: 'category', label: 'Catégorie', type: 'text', required: true },
         { key: 'author', label: 'Auteur', type: 'text', required: true }, { key: 'audience', label: 'Audience autorisée', type: 'select', required: true, options: AUD },
         { key: 'parishId', label: 'Paroisse concernée', type: 'select', options: parishes.filter((p) => central || moderator || myParishes.includes(p.id)).map((p) => ({ value: p.id, label: p.name })) },
-        { key: 'imageUrl', label: 'Image (URL)', type: 'url' },
+        { key: 'imageUrl', label: 'Photo', type: 'image' },
         { key: 'status', label: 'Statut', type: 'select', required: true, hint: moderator ? undefined : 'Sans droit de modération, la publication passe par « En attente ».', options: moderator ? Object.entries(STATUS).map(([v, [l]]) => ({ value: v, label: l })) : [{ value: 'draft', label: 'Brouillon' }, { value: 'pending', label: 'Soumettre pour validation' }] },
       ]}
       defaults={{ status: moderator ? 'draft' : 'pending', audience: 'public', pinned: false, author: actor, publishedAt: new Date().toISOString() }}

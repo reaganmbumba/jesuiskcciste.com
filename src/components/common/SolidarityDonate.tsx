@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Copy, HandHeart, MessageCircle, Smartphone } from 'lucide-react';
 import { Field, Input, Select } from '@/components/ui/Form';
 import { MOBILE_PROVIDERS, type MobileProvider } from '@/features/music/shop';
@@ -7,6 +7,7 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { DONATION_ACCOUNTS, DONATION_OPERATIONS, ONLINE_DONATIONS_OPEN } from '@/content/solidarite';
 import { OnlineDonate } from './OnlineDonate';
+import { toDonationAccount, useSiteContent } from '@/features/content/siteContent';
 
 /** Message WhatsApp qui confirme un don envoyé par Mobile Money. */
 export function donationMessage(d: { operation: string; provider: string; amount: string; currency: string; name: string; reference: string }) {
@@ -28,8 +29,12 @@ export function SolidarityDonate({ online = ONLINE_DONATIONS_OPEN }: { online?: 
   const { pick, tx } = useI18n();
   const { settings } = useSiteSettings();
   const whatsapp = settings.contact.phone.replace(/\D/g, '');
-  const providers = MOBILE_PROVIDERS.filter((p) => DONATION_ACCOUNTS.some((a) => a.provider === p.key));
-  const [provider, setProvider] = useState<MobileProvider | null>(providers[0]?.key ?? null);
+  // Numéros gérés dans l'administration (« Contenu du site »).
+  const donationAccounts = useSiteContent('donation_accounts', toDonationAccount, DONATION_ACCOUNTS) ?? [];
+  const providers = MOBILE_PROVIDERS.filter((p) => donationAccounts.some((a) => a.provider === p.key));
+  const [provider, setProvider] = useState<MobileProvider | null>(null);
+  const firstProvider = providers[0]?.key ?? null;
+  useEffect(() => { if (!provider && firstProvider) setProvider(firstProvider); }, [provider, firstProvider]);
   const [operation, setOperation] = useState<string>(DONATION_OPERATIONS[0].key);
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
@@ -39,7 +44,7 @@ export function SolidarityDonate({ online = ONLINE_DONATIONS_OPEN }: { online?: 
   const [error, setError] = useState('');
   const [mode, setMode] = useState<'online' | 'manual'>(online ? 'online' : 'manual');
 
-  const accounts = DONATION_ACCOUNTS.filter((a) => a.provider === provider);
+  const accounts = donationAccounts.filter((a) => a.provider === provider);
   const providerLabel = MOBILE_PROVIDERS.find((p) => p.key === provider)?.label ?? '';
   const opLabel = pick(DONATION_OPERATIONS.find((o) => o.key === operation)!.label);
 

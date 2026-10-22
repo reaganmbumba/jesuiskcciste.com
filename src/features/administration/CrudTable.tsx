@@ -15,9 +15,10 @@ import { writeAudit } from '@/services';
 import type { Repository } from '@/services/repository';
 import { downloadCsv } from '@/utils/csv';
 import { isDemoMode } from '@/config/env';
+import { ImageUpload } from '@/features/content/ImageUpload';
 
 export interface Column<T> { key: string; label: string; render?: (row: T) => ReactNode; className?: string; csv?: (row: T) => unknown }
-export interface FormFieldDef { key: string; label: string; type: 'text' | 'textarea' | 'number' | 'select' | 'date' | 'datetime' | 'checkbox' | 'email' | 'url'; options?: { value: string; label: string }[]; required?: boolean; hint?: string; full?: boolean; /** Id d'un <datalist> de suggestions (champ texte). */ list?: string }
+export interface FormFieldDef { key: string; label: string; type: 'text' | 'textarea' | 'number' | 'select' | 'date' | 'datetime' | 'checkbox' | 'email' | 'url' | 'image'; options?: { value: string; label: string }[]; required?: boolean; hint?: string; full?: boolean; /** Id d'un <datalist> de suggestions (champ texte). */ list?: string }
 export interface FilterDef { key: string; label: string; options: { value: string; label: string }[] }
 
 interface Props<T extends { id: string }> {
@@ -177,12 +178,13 @@ export function CrudTable<T extends { id: string }>({ entity, title, repo, colum
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? `Ajouter — ${title}` : `Modifier — ${title}`} size="lg">
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2" noValidate>
           {formFields.map((f) => (
-            <div key={f.key} className={f.full || f.type === 'textarea' || f.type === 'checkbox' ? 'sm:col-span-2' : ''}>
+            <div key={f.key} className={f.full || f.type === 'textarea' || f.type === 'checkbox' || f.type === 'image' ? 'sm:col-span-2' : ''}>
               {f.type === 'checkbox' ? (
                 <Checkbox label={f.label} description={f.hint} checked={Boolean(values[f.key])} onChange={(e) => setValues({ ...values, [f.key]: e.target.checked })} />
               ) : (
                 <Field label={f.label} required={f.required} hint={f.hint} error={errors[f.key]}>
                   {(p) => f.type === 'textarea' ? <Textarea {...p} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />
+                    : f.type === 'image' ? <ImageUpload id={p.id} folder={entity} value={String(values[f.key] ?? '')} onChange={(url) => setValues((v) => ({ ...v, [f.key]: url }))} />
                     : f.type === 'select' ? <Select {...p} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}><option value="">—</option>{f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</Select>
                     : <Input {...p} type={f.type === 'datetime' ? 'datetime-local' : f.type} list={f.list} value={String(values[f.key] ?? '')} onChange={(e) => setValues({ ...values, [f.key]: e.target.value })} />}
                 </Field>

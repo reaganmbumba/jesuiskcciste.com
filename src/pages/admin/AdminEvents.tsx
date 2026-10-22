@@ -43,7 +43,7 @@ export default function AdminEvents() {
         { key: 'timezone', label: 'Fuseau horaire', type: 'select', required: true, options: TZ.map((t) => ({ value: t, label: t })) }, { key: 'location', label: 'Lieu', type: 'text', required: true },
         { key: 'parishId', label: 'Paroisse organisatrice', type: 'select', options: parishes.filter((p) => central || scoped.includes(p.id)).map((p) => ({ value: p.id, label: p.name })) },
         { key: 'category', label: 'Catégorie', type: 'select', required: true, options: Object.entries(EVENT_CATEGORY_LABELS).map(([v, l]) => ({ value: v, label: l })) },
-        { key: 'organizer', label: 'Responsable', type: 'text' }, { key: 'posterUrl', label: 'Affiche (URL)', type: 'url' },
+        { key: 'organizer', label: 'Responsable', type: 'text' }, { key: 'posterUrl', label: 'Affiche', type: 'image' },
         { key: 'audience', label: 'Visibilité', type: 'select', required: true, options: [{ value: 'public', label: 'Public' }, { value: 'members', label: 'Membres' }] },
         { key: 'status', label: 'Statut', type: 'select', required: true, options: Object.entries(EVENT_STATUS).map(([v, s]) => ({ value: v, label: s.label })) },
         { key: 'participation', label: 'Modalités de participation', type: 'textarea' }, { key: 'registrationEnabled', label: 'Activer le formulaire d’inscription', type: 'checkbox' },

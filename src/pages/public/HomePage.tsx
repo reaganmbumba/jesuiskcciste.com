@@ -10,8 +10,8 @@ import { listPublishedAnnouncements, listUpcomingEvents, parishesRepo } from '@/
 import { ButtonLink } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Spinner';
 import { EmptyState, ErrorState } from '@/components/ui/States';
-import { YouTubeIcon, YouTubeSubscribeButton } from '@/components/common/YouTubeChannel';
-import { YOUTUBE_VIDEOS, youtubeWatchUrl } from '@/config/youtube';
+import { YouTubeIcon, YouTubeSubscribeButton, useYouTubeVideos } from '@/components/common/YouTubeChannel';
+import { youtubeWatchUrl } from '@/config/youtube';
 import { ShareButtons } from '@/components/common/ShareButtons';
 import * as fr from '@/content/doctrine';
 import * as en from '@/content/doctrine.en';
@@ -143,6 +143,7 @@ function SideTitle({ title, to, link, external }: { title: string; to: string; l
 
 export default function HomePage() {
   const { tx, pick, locale } = useI18n();
+  const videos = useYouTubeVideos();
   const { profile } = useAuth();
   const signedIn = !!profile;
   const word = useWordOfDay();
@@ -296,7 +297,7 @@ export default function HomePage() {
               <SideTitle title={tx('Vidéos', 'Videos', 'Vídeos')} to="/videos" link={tx('Toutes les vidéos', 'All videos', 'Todos os vídeos')} />
               <h2 id="vid-title" className="sr-only">{tx('Vidéos', 'Videos', 'Vídeos')}</h2>
               <ul className="grid grid-cols-3 gap-2">
-                {YOUTUBE_VIDEOS.slice(0, 3).map((v) => (
+                {videos.slice(0, 3).map((v) => (
                   <li key={v.id}>
                     <a href={youtubeWatchUrl(v.id)} target="_blank" rel="noopener noreferrer" className="group block">
                       <span className="relative block aspect-video overflow-hidden rounded-xl bg-night">

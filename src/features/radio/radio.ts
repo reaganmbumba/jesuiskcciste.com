@@ -1,4 +1,6 @@
 import { artistsRepo, tracksRepo } from '@/services';
+import { supabase } from '@/lib/supabase';
+import { camelize } from '@/utils/case';
 import { listPublicSermons } from '@/features/sermons/sermons';
 import type { SiteSettings } from '@/config/site';
 import type { AudioSermon, Track } from '@/types';
@@ -12,13 +14,18 @@ import type { AudioSermon, Track } from '@/types';
  * en vente, c'est l'extrait public) et les prédications publiées. L'administration
  * peut couper les chants ou les prédications et retirer des titres
  * (réglage `radio` de `site_settings`, clé « public » : aucun SQL à coller).
+ *
+ * Émissions en direct : l'animateur diffuse depuis son téléphone ou son
+ * ordinateur vers un flux audio gratuit (Zeno.fm, Icecast…), puis appuie sur
+ * « Passer en direct » dans l'administration. La radio de chaque auditeur
+ * bascule alors sur ce flux, et revient aux chants quand le direct s'arrête.
  */
 
 export type RadioMode = 'all' | 'songs' | 'sermons';
-export type RadioKind = 'song' | 'sermon';
+export type RadioKind = 'song' | 'sermon' | 'live';
 
 export interface RadioItem {
-  /** « song:<id> » ou « sermon:<id> ». */
+  /** « song:<id> », « sermon:<id> » ou « live ». */
   key: string;
   kind: RadioKind;
   title: string;
@@ -29,23 +36,102 @@ export interface RadioItem {
   imageUrl: string | null;
 }
 
+export interface RadioLive {
+  /** Adresse https du flux audio (ex. https://stream.zeno.fm/abc123). */
+  url: string;
+  /** Nom de l'émission affiché aux auditeurs. */
+  title: string;
+  onAir: boolean;
+  /** Début du direct (ISO), pour l'arrêt automatique en cas d'oubli. */
+  startedAt: string | null;
+  /** Lien « Appeler l'émission » (salle Jitsi, WhatsApp…). Vide = pas d'appels. */
+  callUrl: string;
+}
+
 export interface RadioSettings {
   songs: boolean;
   sermons: boolean;
   /** Clés des titres retirés de l'antenne. */
   excluded: string[];
+  live: RadioLive;
 }
 
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, excluded: [] };
+export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '' };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, excluded: [], live: defaultRadioLive };
+
+/** Un direct oublié s'arrête seul au bout de 6 h. */
+export const LIVE_MAX_HOURS = 6;
+/** Les auditeurs vérifient toutes les minutes si un direct commence ou s'arrête. */
+export const LIVE_POLL_MS = 60_000;
+export const LIVE_KEY = 'live';
+
+/** Adresse de flux acceptée : https uniquement (le site est en https). Vide = null. */
+export function parseStreamUrl(raw: string | null | undefined): string | null {
+  const v = (raw ?? '').trim();
+  if (!v) return null;
+  let u: URL;
+  try { u = new URL(v); } catch { throw new Error('stream'); }
+  if (u.protocol !== 'https:') throw new Error('stream');
+  return u.toString();
+}
+
+/**
+ * Lien d'appel des auditeurs : un lien https (salle Jitsi, Zoom…) ou un numéro
+ * de téléphone, transformé en lien WhatsApp. Vide = null. Sinon erreur « call ».
+ */
+export function parseCallUrl(raw: string | null | undefined): string | null {
+  const v = (raw ?? '').trim();
+  if (!v) return null;
+  const digits = v.replace(/[\s().-]/g, '');
+  if (/^\+?\d{8,15}$/.test(digits)) return `https://wa.me/${digits.replace(/^\+/, '')}`;
+  let u: URL;
+  try { u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`); } catch { throw new Error('call'); }
+  if (u.protocol !== 'https:' || !u.hostname.includes('.')) throw new Error('call');
+  return u.toString();
+}
+
+/** Nouvelle salle Jitsi pour les appels (nom difficile à deviner). */
+export function newCallRoomUrl(domain = 'meet.jit.si', random: () => number = Math.random): string {
+  const token = Array.from({ length: 8 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[Math.floor(random() * 31)]).join('');
+  return `https://${domain}/RadioJeSuisKCCiste-${token}#config.startWithVideoMuted=true`;
+}
+
+/** Le direct est-il à l'antenne en ce moment ? */
+export function isLiveOn(live: RadioLive, now = new Date()): boolean {
+  if (!live.onAir || !live.url) return false;
+  if (!live.startedAt) return true;
+  const started = new Date(live.startedAt).getTime();
+  return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
+}
+
+export function liveItem(live: RadioLive): RadioItem {
+  return { key: LIVE_KEY, kind: 'live', title: live.title || 'Émission en direct', subtitle: 'Radio Je suis KCCiste', url: live.url, durationSeconds: null, imageUrl: null };
+}
 
 /** Réglage lu en base, complété (une ancienne valeur peut être partielle ou absente). */
 export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | undefined): RadioSettings {
   const r = settings?.radio as Partial<RadioSettings> | undefined;
+  const l = (r?.live ?? {}) as Partial<RadioLive>;
   return {
     songs: r?.songs !== false,
     sermons: r?.sermons !== false,
     excluded: Array.isArray(r?.excluded) ? r!.excluded.filter((k) => typeof k === 'string') : [],
+    live: {
+      url: typeof l.url === 'string' ? l.url : '',
+      title: typeof l.title === 'string' ? l.title : '',
+      onAir: l.onAir === true,
+      startedAt: typeof l.startedAt === 'string' ? l.startedAt : null,
+      callUrl: typeof l.callUrl === 'string' ? l.callUrl : '',
+    },
   };
+}
+
+/** Relit le réglage en base (les auditeurs déjà à l'écoute voient le direct commencer). */
+export async function fetchRadioSettings(): Promise<RadioSettings | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'public').maybeSingle();
+  if (error || !data?.value) return null;
+  return radioSettingsOf(camelize<Pick<SiteSettings, 'radio'>>(data.value));
 }
 
 /** Après combien de chants passe une prédication, en mode « Tout ». */

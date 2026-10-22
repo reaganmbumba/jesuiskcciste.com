@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PageHeader } from '@/components/ui/Misc';
 import { ProjectCard } from '@/components/cards/Cards';
 import { EmptyState } from '@/components/ui/States';
-import { SolidarityHighlights } from '@/components/common/SolidarityHighlights';
+import { SolidarityOperations } from '@/components/common/SolidarityOperations';
 import { Skeleton } from '@/components/ui/Spinner';
 import { useAsync } from '@/hooks/useAsync';
 import { projectsRepo } from '@/services';
@@ -23,7 +23,7 @@ export default function ProjectsPage() {
             <button key={v} aria-pressed={status === v} onClick={() => setStatus(v)} className={cn('rounded-full px-4 py-1.5 text-sm font-medium', status === v ? 'bg-night text-white' : 'bg-white text-ink/70 ring-1 ring-night/10')}>{l}</button>
           ))}
         </div>
-        {loading ? <Skeleton className="h-64" /> : list.length ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{list.map((p) => <ProjectCard key={p.id} p={p} />)}</div> : data.length ? <EmptyState title={tx('Aucun projet.', 'No projects.', 'Nenhum projeto.')} /> : <SolidarityHighlights />}
+        {loading ? <Skeleton className="h-64" /> : list.length ? <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{list.map((p) => <ProjectCard key={p.id} p={p} />)}</div> : data.length ? <EmptyState title={tx('Aucun projet.', 'No projects.', 'Nenhum projeto.')} /> : <SolidarityOperations />}
       </section>
     </>
   );

@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
-  LayoutGrid,
+  LayoutGrid, FileText,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -82,6 +82,7 @@ const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
+const AdminPageTexts = lazy(() => import('@/pages/admin/AdminPageTexts'));
 
 const MEMBER_MENU: SideItem[] = [
   { to: '/espace', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
@@ -100,13 +101,14 @@ const MEMBER_MENU: SideItem[] = [
 const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin', label: 'Vue d’ensemble', icon: BarChart3, end: true, permission: 'admin.access' },
   { to: '/admin/contenu', label: 'Contenu du site', icon: LayoutGrid, permission: 'settings.manage' },
+  { to: '/admin/textes', label: 'Textes des pages', icon: FileText, permission: 'settings.manage' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
   { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
   { to: '/admin/evenements', label: 'Événements', icon: CalendarDays, permission: 'events.manage' },
   { to: '/admin/formations', label: 'Formations et examens', icon: BookOpenCheck, permission: 'courses.manage_own' },
   { to: '/admin/certificats', label: 'Certificats', icon: Award, permission: 'certificates.manage' },
-  { to: '/admin/medias', label: 'KCC Music et médias', icon: Music2, permission: 'music.manage' },
+  { to: '/admin/medias', label: 'Musique : chants et albums', icon: Music2, permission: 'music.manage' },
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
   { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
@@ -212,6 +214,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="apotres" element={<AdminApostles />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="contenu" element={<AdminSiteContent />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="textes" element={<AdminPageTexts />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="parametres" element={<AdminSettings />} /></Route>
         </Route>

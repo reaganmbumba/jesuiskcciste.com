@@ -6,6 +6,7 @@ import * as en from '@/content/catechisme.en';
 import * as pt from '@/content/catechisme.pt';
 import type { CatechismItem } from '@/content/catechisme';
 import { useI18n } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 function Answer({ item }: { item: CatechismItem }) {
   return (
@@ -53,8 +54,8 @@ function Quiz({ items }: { items: CatechismItem[] }) {
 
 /** Le Catéchisme du KCCisme en questions et réponses (voir src/content/catechisme.ts). */
 export default function CatechismPage() {
-  const { tx, pick } = useI18n();
-  const { catechism, catechismIntro, catechismSource, neophytePath } = pick({ fr, en, pt });
+  const { tx } = useI18n();
+  const { catechism, catechismIntro, catechismSource, neophytePath } = usePageTexts('catechisme', { fr, en, pt });
   const all = useMemo(() => catechism.flatMap((g) => g.items), [catechism]);
   const total = all.length;
 

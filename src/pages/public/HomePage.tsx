@@ -19,6 +19,7 @@ import * as pt from '@/content/doctrine.pt';
 import type { Announcement } from '@/types';
 import { formatDate, formatTime } from '@/utils/format';
 import { cn } from '@/utils/format';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
@@ -70,8 +71,7 @@ const GALLERY = [
 
 /** Parole du jour : une des dix Paroles de l'Alliance, qui change chaque jour. */
 function useWordOfDay() {
-  const { locale } = useI18n();
-  const src = { fr, en, pt }[locale] ?? fr;
+  const src = usePageTexts('doctrine', { fr, en, pt });
   const list = src.lawTexts[0];
   const items = list.versions[0].items;
   const day = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000);

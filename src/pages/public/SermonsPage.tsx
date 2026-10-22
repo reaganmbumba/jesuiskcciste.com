@@ -9,13 +9,14 @@ import * as pt from '@/content/predications.pt';
 import type { Sermon } from '@/content/predications';
 import { useI18n } from '@/i18n';
 import { AudioSermonsSection } from '@/features/sermons/SermonUi';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 type Filter = Sermon['theme'] | 'all';
 
 /** Prédications audio (base de données), puis prédications et séminaires du Chef Spirituel (voir src/content/predications.ts). */
 export default function SermonsPage() {
-  const { tx, pick } = useI18n();
-  const { seminars, sermonThemes, sermons, sermonsSource } = pick({ fr, en, pt });
+  const { tx } = useI18n();
+  const { seminars, sermonThemes, sermons, sermonsSource } = usePageTexts('predications', { fr, en, pt });
   const [filter, setFilter] = useState<Filter>('all');
   const shown = filter === 'all' ? sermons : sermons.filter((s) => s.theme === filter);
   const filters: [Filter, string][] = [['all', tx('Toutes', 'All', 'Todas')], ...(Object.entries(sermonThemes) as [Filter, string][])];

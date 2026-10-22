@@ -21,24 +21,27 @@ export default function AdminMedia() {
   const [artists = [], albums = [], parishes = []] = data ?? [];
   return (
     <>
-      <h1 className="mb-4 font-display text-2xl font-semibold text-night">KCC Music et médias</h1>
-      <Tabs tabs={[{ key: 'tracks', label: 'Titres' }, { key: 'artists', label: 'Artistes et chorales' }, { key: 'albums', label: 'Albums' }, { key: 'media', label: 'Bibliothèque' }, { key: 'sales', label: 'Ventes' }]} value={tab} onChange={setTab} />
+      <h1 className="font-display text-2xl font-semibold text-night">Musique : chants et albums</h1>
+      <p className="mb-4 mt-1 max-w-3xl text-sm text-ink/65">Pour ajouter un chant : onglet « Chants », bouton « Ajouter », puis choisissez le fichier audio. Pour un album : créez-le dans « Albums », puis choisissez cet album dans la fiche de chaque chant. Le crayon modifie, la corbeille supprime.</p>
+      <Tabs tabs={[{ key: 'tracks', label: 'Chants' }, { key: 'artists', label: 'Artistes et chorales' }, { key: 'albums', label: 'Albums' }, { key: 'media', label: 'Bibliothèque' }, { key: 'sales', label: 'Ventes' }]} value={tab} onChange={setTab} />
       {tab === 'tracks' && (
-        <CrudTable<Track> entity="tracks" title="Titres" repo={tracksRepo} exportName="titres" searchFields={['title', 'author', 'category']}
+        <CrudTable<Track> entity="tracks" title="Chants" repo={tracksRepo} exportName="chants" searchFields={['title', 'author', 'category']}
           filters={[{ key: 'broadcastRights', label: 'Droits', options: RIGHTS }]}
           columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste / chorale', render: (t) => artists.find((a) => a.id === t.artistId)?.name ?? '—' }, { key: 'category', label: 'Catégorie' }, { key: 'durationSeconds', label: 'Durée', render: (t) => formatDuration(t.durationSeconds) }, { key: 'priceAmount', label: 'Prix', render: (t) => (t.priceAmount && t.priceCurrency ? priceLabel(t.priceAmount, t.priceCurrency) : '—') }, { key: 'broadcastRights', label: 'Droits', render: (t) => <Badge tone={t.broadcastRights === 'authorized' ? 'green' : t.broadcastRights === 'pending' ? 'amber' : 'red'}>{RIGHTS.find((r) => r.value === t.broadcastRights)?.label}</Badge> }]}
           formFields={[
-            { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'author', label: 'Auteur / compositeur', type: 'text', required: true },
+            { key: 'title', label: 'Titre du chant', type: 'text', required: true }, { key: 'author', label: 'Auteur / compositeur', type: 'text', required: true },
+            { key: 'audioUrl', label: 'Fichier audio', type: 'audio', required: true, hint: '50 Mo maximum. La durée se remplit toute seule.' },
             { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) },
             { key: 'albumId', label: 'Album', type: 'select', options: albums.map((a) => ({ value: a.id, label: a.title })) },
-            { key: 'category', label: 'Catégorie', type: 'text', required: true }, { key: 'durationSeconds', label: 'Durée (secondes)', type: 'number', required: true },
-            { key: 'audioUrl', label: 'Fichier audio (URL du stockage)', type: 'text' }, { key: 'videoUrl', label: 'Vidéo (URL)', type: 'url' },
-            { key: 'broadcastRights', label: 'Autorisation de diffusion', type: 'select', required: true, options: RIGHTS, hint: 'La lecture publique n’est possible qu’avec une autorisation des ayants droit.' },
+            { key: 'category', label: 'Catégorie', type: 'text', required: true, hint: 'Ex. Chants, Cantiques, Louange' }, { key: 'durationSeconds', label: 'Durée (secondes)', type: 'number' },
+            { key: 'videoUrl', label: 'Vidéo (lien, facultatif)', type: 'url' },
+            { key: 'broadcastRights', label: 'Autorisation de diffusion', type: 'select', required: true, options: RIGHTS, hint: 'Seuls les chants « Diffusion autorisée » peuvent être écoutés sur le site.' },
             { key: 'priceAmount', label: 'Prix de vente', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES },
             { key: 'saleFilePath', label: 'Fichier vendu (chemin dans le stockage privé « music »)', type: 'text', hint: 'Facultatif : sinon l’acheteur reçoit le fichier d’écoute.' },
             { key: 'lyrics', label: 'Paroles (si autorisées)', type: 'textarea' },
           ]}
-          defaults={{ broadcastRights: 'pending', durationSeconds: 0 }}
+          defaults={{ broadcastRights: 'authorized', durationSeconds: 0, category: 'Chants' }}
+          transformBeforeSave={(v) => ({ ...v, durationSeconds: v.durationSeconds ?? 0 })}
         />
       )}
       {tab === 'artists' && (

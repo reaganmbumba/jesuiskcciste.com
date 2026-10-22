@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { repository } from '@/services/repository';
 import { camelize } from '@/utils/case';
 import { prepareImage } from '@/features/apostles/apostles';
+import { audioTypeOf, checkAudio, readDuration } from '@/features/sermons/sermons';
 import { galleryPhotos, type GalleryPhoto, type GalleryTheme } from '@/content/galerie';
 import { YOUTUBE_VIDEOS, type YouTubeVideo } from '@/config/youtube';
 import { CONTRIBUTIONS, DONATION_ACCOUNTS, SOLIDARITY_OPERATIONS, type Contribution, type DonationAccount, type SolidarityOperation } from '@/content/solidarite';
@@ -141,6 +142,24 @@ async function imageSize(blob: Blob): Promise<{ w: number; h: number }> {
   } catch {
     return { w: 1200, h: 900 };
   }
+}
+
+/**
+ * Dépose un chant dans le bucket public `chants` et renvoie son adresse et
+ * sa durée (lue par le navigateur, en secondes).
+ */
+export async function uploadSiteAudio(file: File, title: string): Promise<{ url: string; duration: number | null }> {
+  const problem = checkAudio(file);
+  if (problem) throw new Error(problem.replace('Coupez la prédication en deux parties ou compressez', 'Compressez'));
+  const type = audioTypeOf(file)!;
+  const duration = await readDuration(file);
+  if (isDemoMode) return { url: URL.createObjectURL(file), duration };
+  const ext = type === 'audio/mpeg' ? 'mp3' : file.name.split('.').pop()?.toLowerCase() ?? 'mp3';
+  const base = title.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'chant';
+  const path = `${base}-${randomId()}.${ext}`;
+  const up = await supabase!.storage.from('chants').upload(path, file, { contentType: type, upsert: false, cacheControl: '31536000' });
+  if (up.error) throw new Error(`Envoi du chant impossible : ${up.error.message}`);
+  return { url: supabase!.storage.from('chants').getPublicUrl(path).data.publicUrl, duration };
 }
 
 /** Identifiant YouTube (11 caractères) tiré d'un lien collé, ou null. */

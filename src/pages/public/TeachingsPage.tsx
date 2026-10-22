@@ -9,6 +9,7 @@ import * as fr from '@/content/eglise';
 import * as en from '@/content/eglise.en';
 import * as pt from '@/content/eglise.pt';
 import { useI18n, type Tri } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
@@ -24,7 +25,7 @@ const anchors = [
 export default function TeachingsPage() {
   const { hash } = useLocation();
   const { tx, pick } = useI18n();
-  const { minuteToLearn, pgmVision, prophetHistory, socialFund, songs, teachings } = pick({ fr, en, pt });
+  const { minuteToLearn, pgmVision, prophetHistory, socialFund, songs, teachings } = usePageTexts('eglise', { fr, en, pt });
   useEffect(() => {
     if (!hash) return;
     const el = document.getElementById(hash.slice(1));

@@ -497,3 +497,25 @@ export interface AudioSermon {
   published: boolean;
   createdAt?: string;
 }
+
+// ——— Réunions en visioconférence ———
+export interface Meeting {
+  id: UUID;
+  title: string;
+  /** Sujet ou ordre du jour. */
+  description: string;
+  startsAt: string;
+  durationMinutes: number;
+  /** « members » : salle réservée aux membres validés ; « public » : ouverte à tous. */
+  audience: 'members' | 'public';
+  isCancelled: boolean;
+  createdAt: string;
+}
+
+/** Salle d'une réunion : lisible seulement par ceux qui peuvent la rejoindre. */
+export interface MeetingRoom {
+  meetingId: UUID;
+  jitsiRoom: string;
+  /** Lien Zoom, Google Meet… ; vide = salle Jitsi du site. */
+  externalUrl?: string | null;
+}

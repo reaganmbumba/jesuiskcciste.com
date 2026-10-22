@@ -7,6 +7,7 @@ import * as en from '@/content/liturgie.en';
 import * as pt from '@/content/liturgie.pt';
 import type { Rite, RiteText } from '@/content/liturgie';
 import { useI18n } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 const langCode = (l?: string) => (l === 'Lingala' ? 'ln' : l === 'Kikongo' ? 'kg' : l === 'English' ? 'en' : l === 'Português' ? 'pt' : l === 'Français' ? 'fr' : undefined);
 
@@ -79,8 +80,8 @@ function RiteSection({ rite, index, acclamation }: { rite: Rite; index: number; 
 
 /** Rites et célébrations de l'EBNM (voir src/content/liturgie.ts). */
 export default function LiturgyPage() {
-  const { tx, pick } = useI18n();
-  const { liturgyIntro, rites } = pick({ fr, en, pt });
+  const { tx } = useI18n();
+  const { liturgyIntro, rites } = usePageTexts('liturgie', { fr, en, pt });
   return (
     <>
       <PageHeader eyebrow={tx('Liturgie', 'Liturgy', 'Liturgia')} title={tx('Rites et célébrations', 'Rites and celebrations', 'Ritos e celebrações')} description={tx('Le déroulement officiel des cultes et des sacrements de l’Église Bon Nouveau Message, avec leurs prières.', 'The official order of the services and sacraments of the Église Bon Nouveau Message, with their prayers.', 'A ordem oficial dos cultos e sacramentos da Église Bon Nouveau Message, com as suas orações.')}>

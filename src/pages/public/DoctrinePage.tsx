@@ -9,6 +9,7 @@ import * as en from '@/content/doctrine.en';
 import * as pt from '@/content/doctrine.pt';
 import type { MultilingualList } from '@/content/doctrine';
 import { useI18n, type Tri } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
@@ -67,7 +68,7 @@ export default function DoctrinePage() {
   const {
     doctrineSource, feasts, kccApparition, lawTexts, nameOfGod, oracle, professionOfFaith,
     prophetOath, prophetPortrait, prophetTimeline, sabbathService, sacraments, specificities,
-  } = pick({ fr, en, pt });
+  } = usePageTexts('doctrine', { fr, en, pt });
   useEffect(() => {
     if (!hash) return;
     const el = document.getElementById(hash.slice(1));

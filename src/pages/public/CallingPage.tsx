@@ -5,14 +5,15 @@ import * as fr from '@/content/mon-appel';
 import * as en from '@/content/mon-appel.en';
 import * as pt from '@/content/mon-appel.pt';
 import { useI18n } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 /** Le livre complet, mis en ligne par Reagan MBUMBA (version numérique fidèle). */
 const BOOK_PDF = '/livres/mon-appel.pdf';
 
 /** « Mon Appel », le récit de l'appel du Prophète (1955-1957), et sa note biographique (voir src/content/mon-appel.ts). */
 export default function CallingPage() {
-  const { tx, pick } = useI18n();
-  const { biography, callingBook, callingChapters, callingConclusion } = pick({ fr, en, pt });
+  const { tx } = useI18n();
+  const { biography, callingBook, callingChapters, callingConclusion } = usePageTexts('mon-appel', { fr, en, pt });
 
   return (
     <>

@@ -7,6 +7,7 @@ import * as pt from '@/content/doctrine.pt';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { ButtonLink } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
+import { usePageTexts } from '@/features/content/pageTexts';
 
 /**
  * Présentation de l'Église. Le texte saisi par l'administration
@@ -15,8 +16,8 @@ import { useI18n } from '@/i18n';
  */
 export default function AboutPage() {
   const { settings } = useSiteSettings();
-  const { tx, locale } = useI18n();
-  const d = { fr, en, pt }[locale];
+  const { tx } = useI18n();
+  const d = usePageTexts('doctrine', { fr, en, pt });
   return (
     <>
       <PageHeader eyebrow={tx('À propos', 'About', 'Sobre')} title={tx('L’Église Bon Nouveau Message (EBNM/KCC)', 'The Église Bon Nouveau Message (EBNM/KCC)', 'A Église Bon Nouveau Message (EBNM/KCC)')} description={tx('Présentation officielle, histoire, organisation et contacts institutionnels.', 'Official presentation, history, organisation and institutional contacts.', 'Apresentação oficial, história, organização e contactos institucionais.')} />

@@ -3,7 +3,9 @@ import { Search } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
 import { ShareButtons } from '@/components/common/ShareButtons';
-import { hymns, type Hymn } from '@/content/cantiques';
+import * as hymnBook from '@/content/cantiques';
+import type { Hymn } from '@/content/cantiques';
+import { usePageTexts } from '@/features/content/pageTexts';
 import { useI18n } from '@/i18n';
 
 const LANGS = ['Tous', 'Lingala', 'Kikongo'] as const;
@@ -43,6 +45,7 @@ function HymnCard({ h, open }: { h: Hymn; open?: boolean }) {
 /** Recueil de cantiques lingala et kikongo, avec recherche (voir src/content/cantiques.ts). */
 export default function HymnalPage() {
   const { tx } = useI18n();
+  const { hymns } = usePageTexts('cantiques', hymnBook, false);
   const [q, setQ] = useState('');
   const [lang, setLang] = useState<(typeof LANGS)[number]>('Tous');
   const [shown, setShown] = useState(PAGE);
@@ -53,13 +56,13 @@ export default function HymnalPage() {
     if (i < 0) return;
     setShown((s) => Math.max(s, Math.ceil((i + 1) / PAGE) * PAGE));
     setTimeout(() => document.getElementById(target)?.scrollIntoView({ block: 'start' }), 60);
-  }, [target]);
+  }, [target, hymns]);
 
   const results = useMemo(() => {
     const needle = fold(q.trim());
     return hymns.filter((h) => (lang === 'Tous' || h.lang === lang)
       && (!needle || fold(h.title).includes(needle) || h.lines.some((l) => fold(l).includes(needle))));
-  }, [q, lang]);
+  }, [q, lang, hymns]);
 
   return (
     <>

@@ -78,6 +78,7 @@ const SITE_MAP: { label: string; to: string; what: string }[] = [
   { label: 'Paroisses', to: '/admin/paroisses', what: 'Liste officielle des paroisses' },
   { label: 'Formations', to: '/admin/formations', what: 'Cours et examens de l’Académie' },
   { label: 'Projets', to: '/admin/projets', what: 'Projets de solidarité et contributions déclarées' },
+  { label: 'Cantiques, doctrine, catéchisme…', to: '/admin/textes', what: 'Rites, livre « Mon Appel », enseignements, en 3 langues' },
   { label: 'Contact et réseaux', to: '/admin/parametres', what: 'E-mail, téléphone, réseaux, présentation de l’Église' },
 ];
 

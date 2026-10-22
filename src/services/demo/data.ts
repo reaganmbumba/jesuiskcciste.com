@@ -8,7 +8,7 @@
  * vides jusqu'à leur saisie par l'administration.
  */
 import type {
-  Album, Apostle, ApostlePhotoSubmission, Announcement, AppNotification, Artist, AuditLog, Certificate, Contribution, Course, Enrollment,
+  Album, Apostle, ApostlePhotoSubmission, Announcement, AudioSermon, AppNotification, Artist, AuditLog, Certificate, Contribution, Course, Enrollment,
   Expense, KccEvent, MediaItem, OrganizationalUnit, Parish, Profile, Section, SolidarityProject, Track,
 } from '@/types';
 
@@ -196,3 +196,8 @@ export const demoApostles: Apostle[] = [
   { id: 'apo-2', fullName: 'Apôtre exemple B', title: 'Révérend Apôtre', status: 'deceased', photoUrl: null, place: 'Paroisse de Matadi', deathYear: 2010, sortOrder: 2 },
 ];
 export const demoApostleSubmissions: ApostlePhotoSubmission[] = [];
+
+/** Prédications déjà fournies (fichiers dans public/predications/, même contenu que supabase/seed_predications.sql). */
+export const demoAudioSermons: AudioSermon[] = [
+  { id: 'a0d10000-0000-4000-8000-000000000001', title: 'Prédication sur Genèse 3 : 1-5', preacherName: 'KAPAPA MUANDA Bossin', preacherTitle: 'Disciple', parish: 'Paroisse d’Aéroport', preacherPhotoUrl: '/predications/bossin-kapapa.jpg', audioUrl: '/predications/bossin-kapapa-genese-3.mp3', durationSeconds: 1141, bibleText: 'Genèse 3 : 1-5', published: true, createdAt: '2026-10-22T10:55:00Z' },
+];

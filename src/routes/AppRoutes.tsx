@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
-  LayoutDashboard, Megaphone, Medal, MessageCircle, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
+  LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -77,6 +77,7 @@ const AdminCertificates = lazy(() => import('@/pages/admin/AdminCertificates'));
 const AdminMedia = lazy(() => import('@/pages/admin/AdminMedia'));
 const AdminProjects = lazy(() => import('@/pages/admin/AdminProjects'));
 const AdminApostles = lazy(() => import('@/pages/admin/AdminApostles'));
+const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 
@@ -105,6 +106,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/medias', label: 'KCC Music et médias', icon: Music2, permission: 'music.manage' },
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
   { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
+  { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
 ];
@@ -203,6 +205,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="music.manage" />}><Route path="medias" element={<AdminMedia />} /></Route>
           <Route element={<RequirePermission permission="projects.manage" />}><Route path="projets" element={<AdminProjects />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="apotres" element={<AdminApostles />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="parametres" element={<AdminSettings />} /></Route>
         </Route>

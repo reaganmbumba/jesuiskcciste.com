@@ -8,10 +8,11 @@ import * as en from '@/content/predications.en';
 import * as pt from '@/content/predications.pt';
 import type { Sermon } from '@/content/predications';
 import { useI18n } from '@/i18n';
+import { AudioSermonsSection } from '@/features/sermons/SermonUi';
 
 type Filter = Sermon['theme'] | 'all';
 
-/** Prédications et séminaires du Chef Spirituel (voir src/content/predications.ts). */
+/** Prédications audio (base de données), puis prédications et séminaires du Chef Spirituel (voir src/content/predications.ts). */
 export default function SermonsPage() {
   const { tx, pick } = useI18n();
   const { seminars, sermonThemes, sermons, sermonsSource } = pick({ fr, en, pt });
@@ -21,9 +22,12 @@ export default function SermonsPage() {
 
   return (
     <>
-      <PageHeader eyebrow={tx('Parole de l’Éternel', 'Word of the Eternal', 'Palavra do Eterno')} title={tx('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários')} description={tx('L’enseignement de Son Éminence le Chef Spirituel, tiré des notes de prédications et des rapports de séminaires de l’Église (2003-2015).', 'The teaching of His Eminence the Spiritual Leader, taken from the Church’s sermon notes and seminar reports (2003-2015).', 'O ensino de Sua Eminência o Chefe Espiritual, tirado das notas de pregações e dos relatórios de seminários da Igreja (2003-2015).')} />
+      <PageHeader eyebrow={tx('Parole de l’Éternel', 'Word of the Eternal', 'Palavra do Eterno')} title={tx('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários')} description={tx('Des prédications à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église (2003-2015).', 'Sermons to listen to, and the teaching of His Eminence the Spiritual Leader taken from the Church’s sermon notes and seminar reports (2003-2015).', 'Pregações para ouvir, e o ensino de Sua Eminência o Chefe Espiritual tirado das notas de pregações e dos relatórios de seminários da Igreja (2003-2015).')} />
 
-      <section className="container-page py-14">
+      <AudioSermonsSection />
+
+      <section id="ecrites" className="container-page scroll-mt-32 py-14">
+        <SectionHeading eyebrow={tx('À lire', 'To read', 'Para ler')} title={tx('L’enseignement du Chef Spirituel', 'The Spiritual Leader’s teaching', 'O ensino do Chefe Espiritual')} />
         <div role="tablist" aria-label={tx('Thèmes', 'Themes', 'Temas')} className="mb-8 flex flex-wrap gap-2">
           {filters.map(([k, label]) => (
             <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}

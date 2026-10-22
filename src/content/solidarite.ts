@@ -10,6 +10,13 @@ export const DONATION_ACCOUNTS: DonationAccount[] = [
   { provider: 'mpesa', number: '+243 861 271 633', holder: 'Reagan MBUMBA MBUMBA' },
 ];
 
+/**
+ * Paiement depuis le site (le donateur saisit son numéro et confirme sur son téléphone).
+ * Passer à true une fois le compte marchand FlexPay ouvert et la fonction `dons-solidarite`
+ * déployée (voir docs/DONS.md).
+ */
+export const ONLINE_DONATIONS_OPEN = false;
+
 /** Opérations auxquelles un don peut être rattaché (même ordre que SolidarityOperations). */
 export const DONATION_OPERATIONS = [
   { key: 'ngidinga', label: { fr: 'Opération 100 chaises — Ngidinga', en: 'Operation 100 Chairs — Ngidinga', pt: 'Operação 100 cadeiras — Ngidinga' } },

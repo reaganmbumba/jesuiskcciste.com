@@ -42,7 +42,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
 
 // Préfixes RDC (après 243) par opérateur. Africell (90/91) n'est pas pris en charge par FlexPay.
-const PREFIXES: Record<Provider, string[]> = { mpesa: ['81', '82', '83'], orange_money: ['80', '84', '85', '89'], airtel_money: ['97', '98', '99'] };
+const PREFIXES: Record<Provider, string[]> = { mpesa: ['81', '82', '83', '86'], orange_money: ['80', '84', '85', '89'], airtel_money: ['97', '98', '99'] };
 const PROVIDER_LABEL: Record<Provider, string> = { mpesa: 'M-Pesa', orange_money: 'Orange Money', airtel_money: 'Airtel Money' };
 
 /** 0812345678, +243 81 234 5678, 812345678 → 243812345678 (ou null). */

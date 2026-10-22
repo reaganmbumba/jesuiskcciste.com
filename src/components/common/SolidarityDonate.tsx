@@ -5,7 +5,8 @@ import { MOBILE_PROVIDERS, type MobileProvider } from '@/features/music/shop';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
-import { DONATION_ACCOUNTS, DONATION_OPERATIONS } from '@/content/solidarite';
+import { DONATION_ACCOUNTS, DONATION_OPERATIONS, ONLINE_DONATIONS_OPEN } from '@/content/solidarite';
+import { OnlineDonate } from './OnlineDonate';
 
 /** Message WhatsApp qui confirme un don envoyé par Mobile Money. */
 export function donationMessage(d: { operation: string; provider: string; amount: string; currency: string; name: string; reference: string }) {
@@ -23,7 +24,7 @@ export function donationMessage(d: { operation: string; provider: string; amount
  * Espace « Faire un don » : le donateur choisit son opérateur, voit le numéro où envoyer
  * l'argent, puis confirme son envoi sur WhatsApp. Aucun paiement ne passe par le site.
  */
-export function SolidarityDonate() {
+export function SolidarityDonate({ online = ONLINE_DONATIONS_OPEN }: { online?: boolean }) {
   const { pick, tx } = useI18n();
   const { settings } = useSiteSettings();
   const whatsapp = settings.contact.phone.replace(/\D/g, '');
@@ -36,6 +37,7 @@ export function SolidarityDonate() {
   const [reference, setReference] = useState('');
   const [copied, setCopied] = useState('');
   const [error, setError] = useState('');
+  const [mode, setMode] = useState<'online' | 'manual'>(online ? 'online' : 'manual');
 
   const accounts = DONATION_ACCOUNTS.filter((a) => a.provider === provider);
   const providerLabel = MOBILE_PROVIDERS.find((p) => p.key === provider)?.label ?? '';
@@ -57,21 +59,43 @@ export function SolidarityDonate() {
         <div className="p-6 sm:p-8">
           <HandHeart className="h-8 w-8 text-gold" />
           <h2 className="mt-3 font-display text-2xl font-medium sm:text-3xl">{tx('Faire un don', 'Make a donation', 'Fazer um donativo')}</h2>
-          <p className="mt-2 text-sm text-white/70">{tx(
-            'Envoyez votre contribution par Mobile Money, puis confirmez-la sur WhatsApp : elle sera ajoutée à la liste publique de l’opération.',
-            'Send your contribution by Mobile Money, then confirm it on WhatsApp: it will be added to the operation’s public list.',
-            'Envie a sua contribuição por Mobile Money e confirme-a no WhatsApp: será adicionada à lista pública da operação.',
-          )}</p>
-          <ol className="mt-5 space-y-2 text-sm text-white/80">
-            {[
-              tx('Choisissez l’opérateur et l’opération.', 'Choose the operator and the operation.', 'Escolha a operadora e a operação.'),
-              tx('Envoyez l’argent au numéro affiché.', 'Send the money to the number shown.', 'Envie o dinheiro para o número indicado.'),
-              tx('Confirmez votre don sur WhatsApp.', 'Confirm your donation on WhatsApp.', 'Confirme o seu donativo no WhatsApp.'),
-            ].map((s, i) => <li key={s} className="flex gap-3"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold text-xs font-bold text-night">{i + 1}</span>{s}</li>)}
-          </ol>
+          {mode === 'online' ? (
+            <>
+              <p className="mt-2 text-sm text-white/70">{tx(
+                'Payez directement depuis votre téléphone : la demande arrive sur votre numéro, vous confirmez avec votre code PIN.',
+                'Pay straight from your phone: the request arrives on your number and you confirm with your PIN.',
+                'Pague diretamente pelo seu telefone: o pedido chega ao seu número e confirma com o seu PIN.',
+              )}</p>
+              <Steps steps={[
+                tx('Saisissez votre numéro et le montant.', 'Enter your number and the amount.', 'Introduza o seu número e o montante.'),
+                tx('Une demande de paiement arrive sur votre téléphone.', 'A payment request arrives on your phone.', 'Um pedido de pagamento chega ao seu telefone.'),
+                tx('Tapez votre code PIN : c’est fait.', 'Enter your PIN: done.', 'Introduza o seu PIN: está feito.'),
+              ]} />
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-white/70">{tx(
+                'Envoyez votre contribution par Mobile Money, puis confirmez-la sur WhatsApp : elle sera ajoutée à la liste publique de l’opération.',
+                'Send your contribution by Mobile Money, then confirm it on WhatsApp: it will be added to the operation’s public list.',
+                'Envie a sua contribuição por Mobile Money e confirme-a no WhatsApp: será adicionada à lista pública da operação.',
+              )}</p>
+              <Steps steps={[
+                tx('Choisissez l’opérateur et l’opération.', 'Choose the operator and the operation.', 'Escolha a operadora e a operação.'),
+                tx('Envoyez l’argent au numéro affiché.', 'Send the money to the number shown.', 'Envie o dinheiro para o número indicado.'),
+                tx('Confirmez votre don sur WhatsApp.', 'Confirm your donation on WhatsApp.', 'Confirme o seu donativo no WhatsApp.'),
+              ]} />
+            </>
+          )}
         </div>
         <div className="bg-white p-6 text-ink sm:p-8">
-          {providers.length ? (
+          {online && (
+            <div role="tablist" className="mb-5 grid grid-cols-2 gap-1 rounded-full bg-mist p-1 text-xs font-semibold sm:text-sm">
+              {([['online', tx('Payer depuis mon téléphone', 'Pay from my phone', 'Pagar pelo meu telefone')], ['manual', tx('Envoyer moi-même', 'Send it myself', 'Enviar eu mesmo')]] as const).map(([k, l]) => (
+                <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => setMode(k)} className={cn('rounded-full px-3 py-2 transition', mode === k ? 'bg-night text-white' : 'text-ink/70')}>{l}</button>
+              ))}
+            </div>
+          )}
+          {online && mode === 'online' ? <OnlineDonate /> : providers.length ? (
             <div className="space-y-4">
               <div role="radiogroup" aria-label={tx('Opérateur', 'Operator', 'Operadora')} className="flex flex-wrap gap-2">
                 {providers.map((p) => (
@@ -124,5 +148,13 @@ export function SolidarityDonate() {
         </div>
       </div>
     </div>
+  );
+}
+
+function Steps({ steps }: { steps: string[] }) {
+  return (
+    <ol className="mt-5 space-y-2 text-sm text-white/80">
+      {steps.map((s, i) => <li key={s} className="flex gap-3"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gold text-xs font-bold text-night">{i + 1}</span>{s}</li>)}
+    </ol>
   );
 }

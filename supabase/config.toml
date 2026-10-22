@@ -5,3 +5,8 @@ project_id = "anawpwprqvzxgzcpqqwu"
 # elle-même la session de l'acheteur pour les autres actions.
 [functions.boutique-musique]
 verify_jwt = false
+
+# Dons en ligne de /solidarite : on peut donner sans compte, et FlexPay
+# appelle le webhook sans jeton.
+[functions.dons-solidarite]
+verify_jwt = false

@@ -12,6 +12,7 @@ import { ShareButtons } from '@/components/common/ShareButtons';
 import { useAuth } from '@/features/auth/AuthContext';
 import { addComment, COMMENT_MAX, deleteComment, deleteTopic, getTopic, listComments, setCommentHidden, updateTopic } from '@/features/forum/forum';
 import { Paragraphs, TopicDialog } from '@/features/forum/ForumUi';
+import { WriteToMemberButton } from '@/features/messages/MessagesUi';
 import { useAsync } from '@/hooks/useAsync';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { useI18n } from '@/i18n';
@@ -171,6 +172,9 @@ function CommentList({ topic, comments, moderator, busy, onToggleHidden, onDelet
                       <Building2 className="h-3.5 w-3.5" aria-hidden />{c.parishName || tx('Paroisse non indiquée', 'Parish not given', 'Paróquia não indicada')}
                     </p>
                     {c.isHidden && <Badge tone="red">{tx('Masqué', 'Hidden', 'Oculto')}</Badge>}
+                    {profile?.status === 'active' && c.authorId && !own && (
+                      <WriteToMemberButton compact memberId={c.authorId} label={tx('Écrire en privé', 'Write privately', 'Escrever em privado')} />
+                    )}
                   </div>
                   <p className="text-xs text-ink/50">{formatDate(c.createdAt, locale)} · {formatTime(c.createdAt, locale)}</p>
                   <Paragraphs text={c.body} className="mt-2 space-y-2 break-words text-[15px] leading-relaxed text-ink/85" />

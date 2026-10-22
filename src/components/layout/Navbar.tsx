@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Heart, LayoutDashboard, LogOut, Menu, Search, Shield, X } from 'lucide-react';
+import { ChevronDown, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search, Shield, X } from 'lucide-react';
 import { MAIN_NAV } from '@/config/navigation';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
+import { useUnreadMessages } from '@/features/messages/MessagesUi';
 import { Logo } from '@/components/common/Logo';
 import { Avatar } from '@/components/ui/Misc';
 import { ButtonLink, buttonClass } from '@/components/ui/Button';
@@ -25,6 +26,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const userRef = useRef<HTMLDivElement>(null);
+  const unread = useUnreadMessages();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -90,13 +92,17 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
             {profile ? (
               <div ref={userRef} className="relative hidden sm:block">
                 <button onClick={() => setUserMenu((v) => !v)} className={cn('flex items-center gap-2 rounded-full py-1 pl-1 pr-2.5 transition', solid ? 'hover:bg-night/5' : 'hover:bg-white/10')} aria-expanded={userMenu} aria-haspopup="menu">
-                  <Avatar person={profile} url={profile.avatarUrl} size={34} />
+                  <span className="relative">
+                    <Avatar person={profile} url={profile.avatarUrl} size={34} />
+                    {unread > 0 && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-gold ring-2 ring-white" aria-label={tx('Nouveaux messages', 'New messages', 'Novas mensagens')} />}
+                  </span>
                   <span className={cn('hidden text-sm font-semibold md:block', solid ? 'text-night' : 'text-white')}>{profile.firstName}</span>
                   <ChevronDown className={cn('h-4 w-4', solid ? 'text-ink/50' : 'text-white/70')} />
                 </button>
                 {userMenu && (
                   <div role="menu" className="absolute right-0 top-full mt-2 w-56 rounded-3xl border border-night/10 bg-white p-2 shadow-lift">
                     <Link role="menuitem" to="/espace" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-mist"><LayoutDashboard className="h-4 w-4" /> {t('nav.mySpace')}</Link>
+                    <Link role="menuitem" to="/espace/messages" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-mist"><MessageCircle className="h-4 w-4" /> <span className="flex-1">{tx('Messages privés', 'Private messages', 'Mensagens privadas')}</span>{unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-[11px] font-bold text-night">{unread}</span>}</Link>
                     {can(profile, 'admin.access') && <Link role="menuitem" to="/admin" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-mist"><Shield className="h-4 w-4" /> {t('nav.admin')}</Link>}
                     <button role="menuitem" onClick={async () => { await signOut(); navigate('/'); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-700 hover:bg-red-50"><LogOut className="h-4 w-4" /> {t('nav.logout')}</button>
                   </div>
@@ -139,6 +145,9 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
                 {profile ? (
                   <>
                     <ButtonLink to="/espace" className="flex-1">{t('nav.mySpace')}</ButtonLink>
+                    <ButtonLink to="/espace/messages" variant="outline" className="relative px-4" aria-label={tx('Messages privés', 'Private messages', 'Mensagens privadas')} icon={<MessageCircle className="h-5 w-5" />}>
+                      {unread > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-gold px-1.5 text-[11px] font-bold text-night">{unread}</span>}
+                    </ButtonLink>
                     <button className={buttonClass('outline', 'md', 'flex-1')} onClick={async () => { await signOut(); navigate('/'); }}>{t('nav.logout')}</button>
                   </>
                 ) : (

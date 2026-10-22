@@ -21,6 +21,7 @@ import { formatDate, formatTime } from '@/utils/format';
 import { cn } from '@/utils/format';
 import { usePageTexts } from '@/features/content/pageTexts';
 import { HomeLiveBlock } from '@/features/livestreams/LivestreamUi';
+import { HomeRadioBlock } from '@/features/radio/RadioUi';
 
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
@@ -181,6 +182,9 @@ export default function HomePage() {
 
             {/* DIRECT DU CULTE : seulement s'il y en a un en cours ou programmé */}
             <HomeLiveBlock className="mt-12" />
+
+            {/* RADIO : chants et prédications en continu */}
+            <HomeRadioBlock className="mt-12" />
 
             {/* ACTUALITÉS + PAROLE DU JOUR */}
             <section className="mt-12 grid gap-6 xl:grid-cols-12" aria-labelledby="news-title">

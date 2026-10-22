@@ -6,6 +6,8 @@ import { SiteSettingsProvider } from '@/hooks/useSiteSettings';
 import { ScrollToTop } from '@/layouts/PublicLayout';
 import { AppRoutes } from '@/routes/AppRoutes';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { RadioProvider } from '@/features/radio/RadioContext';
+import { MiniRadioPlayer } from '@/features/radio/RadioUi';
 
 export default function App() {
   return (
@@ -15,8 +17,11 @@ export default function App() {
           <AuthProvider>
             <ToastProvider>
               <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <ScrollToTop />
-                <AppRoutes />
+                <RadioProvider>
+                  <ScrollToTop />
+                  <AppRoutes />
+                  <MiniRadioPlayer />
+                </RadioProvider>
               </BrowserRouter>
             </ToastProvider>
           </AuthProvider>

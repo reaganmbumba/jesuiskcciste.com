@@ -2,13 +2,15 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
-  LayoutDashboard, Megaphone, Medal, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
+  LayoutDashboard, Megaphone, Medal, MessageCircle, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
 import { RedirectIfAuthenticated, RequireAuth, RequirePermission } from './guards';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can, type Permission } from '@/lib/permissions';
+import { useUnreadMessages } from '@/features/messages/MessagesUi';
+import { useI18n } from '@/i18n';
 
 // Découpage du code par page (chargement différé).
 const HomePage = lazy(() => import('@/pages/public/HomePage'));
@@ -61,6 +63,8 @@ const MyActivitiesPage = lazy(() => import('@/pages/member/MyActivitiesPage'));
 const MyCertificatesPage = lazy(() => import('@/pages/member/MyCertificatesPage'));
 const MyContributionsPage = lazy(() => import('@/pages/member/MyContributionsPage'));
 const MyPurchasesPage = lazy(() => import('@/pages/member/MyPurchasesPage'));
+const MessagesPage = lazy(() => import('@/pages/member/MessagesPage'));
+const ConversationPage = lazy(() => import('@/pages/member/ConversationPage'));
 const NotificationsPage = lazy(() => import('@/pages/member/NotificationsPage'));
 const SettingsPage = lazy(() => import('@/pages/member/SettingsPage'));
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview'));
@@ -85,6 +89,7 @@ const MEMBER_MENU: SideItem[] = [
   { to: '/espace/certificats', label: 'Mes certificats', icon: Award },
   { to: '/espace/contributions', label: 'Mes contributions', icon: HandCoins },
   { to: '/espace/achats', label: 'Mes achats', icon: ShoppingBag },
+  { to: '/espace/messages', label: 'Messages', icon: MessageCircle },
   { to: '/espace/notifications', label: 'Notifications', icon: Bell },
   { to: '/espace/parametres', label: 'Paramètres', icon: Settings },
 ];
@@ -103,6 +108,13 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
 ];
+
+function MemberShell() {
+  const { tx } = useI18n();
+  const unread = useUnreadMessages();
+  const items = MEMBER_MENU.map((i) => (i.to === '/espace/messages' ? { ...i, label: tx('Messages privés', 'Private messages', 'Mensagens privadas'), badge: unread } : i));
+  return <DashboardLayout items={items} title="Mon espace" />;
+}
 
 function AdminShell() {
   const { profile } = useAuth();
@@ -163,7 +175,7 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<RequireAuth />}>
-        <Route path="espace" element={<DashboardLayout items={MEMBER_MENU} title="Mon espace" />}>
+        <Route path="espace" element={<MemberShell />}>
           <Route index element={<MemberDashboard />} />
           <Route path="profil" element={<MyProfilePage />} />
           <Route path="paroisse" element={<MyParishPage />} />
@@ -172,6 +184,8 @@ export function AppRoutes() {
           <Route path="certificats" element={<MyCertificatesPage />} />
           <Route path="contributions" element={<MyContributionsPage />} />
           <Route path="achats" element={<MyPurchasesPage />} />
+          <Route path="messages" element={<MessagesPage />} />
+          <Route path="messages/:id" element={<ConversationPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="parametres" element={<SettingsPage />} />
         </Route>

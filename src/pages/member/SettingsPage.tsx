@@ -15,6 +15,7 @@ import type { NotificationKind, PrivacySettings } from '@/types';
 
 const PRIVACY_FIELDS: { key: keyof PrivacySettings; label: string; description?: string }[] = [
   { key: 'listedInDirectory', label: 'Apparaître dans l’annuaire', description: 'Si désactivé, seuls les responsables habilités vous voient.' },
+  { key: 'acceptMessages', label: 'Recevoir des messages privés des membres', description: 'Si désactivé, aucun membre ne peut vous écrire en privé.' },
   { key: 'showPhoto', label: 'Afficher ma photo' },
   { key: 'showCity', label: 'Afficher ma ville' },
   { key: 'showParish', label: 'Afficher ma paroisse' },
@@ -69,7 +70,7 @@ export default function SettingsPage() {
       <Card><CardBody>
         <h2 className="font-display text-xl font-semibold text-night">Confidentialité</h2>
         <p className="mt-1 text-sm text-ink/60">Choisissez ce que les autres membres peuvent voir. Ces règles sont appliquées par la base de données.</p>
-        <div className="mt-5 space-y-4">{PRIVACY_FIELDS.map((f) => <Checkbox key={f.key} label={f.label} description={f.description} checked={privacy[f.key]} onChange={(e) => setPrivacy({ ...privacy, [f.key]: e.target.checked })} />)}</div>
+        <div className="mt-5 space-y-4">{PRIVACY_FIELDS.map((f) => <Checkbox key={f.key} label={f.label} description={f.description} checked={privacy[f.key] ?? true} onChange={(e) => setPrivacy({ ...privacy, [f.key]: e.target.checked })} />)}</div>
         <div className="mt-6 flex justify-end"><Button onClick={savePrivacy} loading={saving}>Enregistrer</Button></div>
       </CardBody></Card>
 

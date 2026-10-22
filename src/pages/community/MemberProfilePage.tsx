@@ -9,6 +9,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { listDirectory } from '@/services';
+import { WriteToMemberButton } from '@/features/messages/MessagesUi';
 import { useI18n } from '@/i18n';
 
 export default function MemberProfilePage() {
@@ -44,6 +45,7 @@ export default function MemberProfilePage() {
             <div>
               <h1 className="font-display text-3xl font-semibold text-night">{entry.displayName}</h1>
               <p className="text-ink/60">{entry.parishName ?? tx('Rattachement non public', 'Affiliation not public', 'Vínculo não público')}</p>
+              <WriteToMemberButton memberId={entry.id} variant="gold" className="mt-4" />
             </div>
           </CardBody>
           <dl className="grid gap-px overflow-hidden rounded-b-2xl border-t border-night/[0.06] bg-night/[0.06] sm:grid-cols-2">

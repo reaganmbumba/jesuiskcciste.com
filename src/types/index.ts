@@ -38,6 +38,8 @@ export interface PrivacySettings {
   showEmail: boolean;
   showPhone: boolean;
   listedInDirectory: boolean;
+  /** Recevoir des messages privés des autres membres (absent = oui). */
+  acceptMessages?: boolean;
 }
 
 export interface Profile {
@@ -442,4 +444,34 @@ export interface ForumComment {
   body: string;
   isHidden: boolean;
   createdAt: string;
+}
+
+/** Une conversation privée, vue par l'un des deux participants. */
+export interface PrivateConversation {
+  id: UUID;
+  otherId: UUID;
+  otherName: string;
+  otherParish?: string | null;
+  lastMessageAt?: string | null;
+  lastBody?: string | null;
+  lastSenderId?: UUID | null;
+  unreadCount: number;
+  /** Faux si l'interlocuteur refuse les messages, est bloqué ou vous a bloqué. */
+  canSend: boolean;
+  blockedByMe: boolean;
+}
+
+export interface PrivateMessage {
+  id: UUID;
+  conversationId: UUID;
+  senderId?: UUID | null;
+  body: string;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface MessageRecipient {
+  id: UUID;
+  displayName: string;
+  parishName?: string | null;
 }

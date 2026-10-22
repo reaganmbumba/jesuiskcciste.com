@@ -32,10 +32,21 @@ export const rites: Rite[] = [
     summary: 'The penitent confesses their sins before the Eternal and before witnesses, then the officiant pronounces absolution in the Name of the Eternal. The Eternal asks for no sacrifice: only the sincere decision to sin no more.',
     programme: [{ steps: ['Hymn', 'Opening prayer', 'Calling of the penitent', 'Beginning of the confession', 'Confession of sins', 'End of the confession', 'Word of the officiant', 'Absolution of sins', 'Departure of the penitent', 'Hymn', 'Closing prayer'] }],
     texts: [
+      { title: 'Maloba ya ntubela', lang: 'Lingala', tab: true, lines: [], parts: [
+        { title: 'Maloba ya ebandeli', lines: ['Na kombo nayo Monsantu Yawe,', 'na fukami liboso bua yo pona ko ntubela masumu nanga', 'mpo tete na zua bilimbisi.'] },
+        { title: 'Maloba ma bosilisi', lines: ['Na kombo nayo Mosantu, oh Yawe, na sengi,', 'olimbisa ngai na mabunga ma ngai manso.', 'Tika ete ejala bongo na kombo nayo Mosantu.'] },
+        { title: 'Maloba ma bolimbisi', lines: ['Solo, tondimi ete yo Yawe Njambe Mokeli mwa biso, ojali bulee,', 'pe olimbisi ye na mabunga naye manso.', 'Tika ete ezala bango na kombo nayo Mosantu.', 'Alléluia !! Yaka Nkolo Yawe na nkombo nayo Mosantu.'] },
+      ] },
+      { title: 'Mpova za mpedoso', lang: 'Kikongo', tab: true, lines: [], parts: [
+        { title: 'Mpova ya ntete', lines: ['Mu nkumbu aku ya nlongo, oh Yaveh,', 'mfukamene va ntadisi aku mukulomba ngiambudulu mu ntulumunu zami', 'mu tambula ngiambudulu kua ngeye.'] },
+        { title: 'Mpova mu manisi', lines: ['Mu nkumbu aku ya nlongo, ngieti kulomba mutu', 'ngiambudila masumu mami mamosono mayavengi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.'] },
+        { title: 'Mpova ya ngiambudulu', lines: ['Mukedika, tulekele minu vo ngeye Yave Nzambi eto, wena wa nlongo', 'ye meni kunyambudila mu ntulumunu zandi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.', 'Alléluia !! Wiza Mfumu Yaveh, mu nkumbu aku ya nlongo.'] },
+      ] },
       { title: 'Beginning of the confession', lines: ['By Your Holy Name, Eternal God,', 'I kneel before You', 'to confess my sins', 'so that I may be forgiven.'] },
       { title: 'End of the confession', lines: ['By Your Holy Name, Eternal,', 'for all that I know', 'and all that I no longer remember,', 'I ask You, O Eternal God, to forgive me by Your Holy Name,', 'and you also, His witnesses,', 'for I have resolved never to go back to it.', 'Yes, may it be so by Your Holy Name.'] },
       { title: 'Absolution', lines: ['Truly, we have believed that You, Eternal God, our Creator, are holy, and that You want Your people to be holy.', 'Our brother (our sister) has just confessed all their sins to obtain Your forgiveness. Yes, I believe You have granted it by Your Name.', 'To the witnesses: “Do you also want them to be forgiven?” – “Yes, we want them to be forgiven in the Name of the Eternal God.”', 'Rise, believe and rejoice, for your sins are forgiven by the Eternal God. Yes, may it be so by His Holy Name.'] },
     ],
+    notes: ['The prayer of repentance (confession and absolution) is also said in Lingala, “Maloba ya ntubela”, and in Kikongo, “Mpova za mpedoso”.'],
   },
   {
     id: 'onction',

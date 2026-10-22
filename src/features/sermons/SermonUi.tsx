@@ -1,4 +1,5 @@
-import { useMemo, useState, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import { BookOpen, CalendarDays, Clock, Download, Headphones, MapPin, Search } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
@@ -34,6 +35,13 @@ export function AudioSermonsSection() {
   const { data, loading, error, reload } = useAsync(() => listPublicSermons(), []);
   const [q, setQ] = useState('');
   const sermons = data ?? [];
+  // Liens du menu « /predications#audio » : la section n'existe qu'après le chargement.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (loading) return;
+    const id = decodeURIComponent(hash.slice(1));
+    if (id === 'audio' || id.startsWith('audio-') || id === 'ecrites') setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
+  }, [loading, hash]);
   const shown = useMemo(() => {
     const k = norm(q.trim());
     return k ? sermons.filter((s) => [s.title, s.preacherName, s.preacherTitle, s.parish, s.bibleText].some((v) => v && norm(v).includes(k))) : sermons;

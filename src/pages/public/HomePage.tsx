@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, MessageCircle, Mic, Music2, Phone, PlayCircle, ScrollText, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, Medal, MessageCircle, MessagesSquare, Mic, Music2, Phone, PlayCircle, ScrollText, Sparkles, Users } from 'lucide-react';
 import { KccIcon } from '@/components/common/KccIcon';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -39,6 +39,9 @@ const QUICK: { title: Tri; text: Tri; to: string; icon: typeof Users; from: stri
   { title: T('Musique', 'Music', 'Música'), text: T('Cantiques, chorales et albums', 'Hymns, choirs and albums', 'Hinos, coros e álbuns'), to: '/musique', icon: Music2, from: '#EC4899', to2: '#9D174D' },
   { title: T('Vidéos', 'Videos', 'Vídeos'), text: T('Notre chaîne YouTube', 'Our YouTube channel', 'O nosso canal YouTube'), to: '/videos', icon: PlayCircle, from: '#EF4444', to2: '#7F1D1D' },
   { title: T('Documents', 'Documents', 'Documentos'), text: T('Bibliothèque et publications', 'Library and publications', 'Biblioteca e publicações'), to: '/bibliotheque', icon: FileText, from: '#14B8A6', to2: '#115E59' },
+  { title: T('Prédications audio', 'Audio sermons', 'Pregações em áudio'), text: T('Écouter les prédicateurs', 'Listen to the preachers', 'Ouvir os pregadores'), to: '/predications#audio', icon: Mic, from: '#0EA5E9', to2: '#075985' },
+  { title: T('Révérends Apôtres', 'Reverend Apostles', 'Reverendos Apóstolos'), text: T('En vie et décédés, avec leur photo', 'Living and deceased, with their photo', 'Vivos e falecidos, com a sua foto'), to: '/apotres', icon: Medal, from: '#A78BFA', to2: '#5B21B6' },
+  { title: T('Forum', 'Forum', 'Fórum'), text: T('Discuter entre membres', 'Talk with other members', 'Conversar entre membros'), to: '/forum', icon: MessagesSquare, from: '#84CC16', to2: '#3F6212' },
 ];
 
 /** Rubriques « La Foi » mises en avant sur l'accueil (icônes neutres, sans symbole religieux). */
@@ -46,7 +49,7 @@ const FAITH: { title: Tri; text: Tri; to: string; icon: typeof Users }[] = [
   { title: T('Catéchisme', 'Catechism', 'Catecismo'), text: T('Les bases de notre foi, question par question', 'The basics of our faith, question by question', 'As bases da nossa fé, pergunta a pergunta'), to: '/catechisme', icon: BookOpen },
   { title: T('Liturgie et rites', 'Liturgy and rites', 'Liturgia e ritos'), text: T('Le déroulement des cultes et des cérémonies', 'How services and ceremonies unfold', 'O desenrolar dos cultos e cerimónias'), to: '/liturgie', icon: ScrollText },
   { title: T('L’appel du Prophète', 'The Prophet’s calling', 'O chamado do Profeta'), text: T('Les origines du Bon Nouveau Message', 'The origins of the Bon Nouveau Message', 'As origens do Bon Nouveau Message'), to: '/appel-du-prophete', icon: Sparkles },
-  { title: T('Prédications', 'Sermons', 'Pregações'), text: T('Enseignements et messages à réécouter', 'Teachings and messages to revisit', 'Ensinamentos e mensagens para rever'), to: '/predications', icon: Mic },
+  { title: T('Prédications audio', 'Audio sermons', 'Pregações em áudio'), text: T('Prédications à écouter et enseignements', 'Sermons to listen to and teachings', 'Pregações para ouvir e ensinamentos'), to: '/predications#audio', icon: Mic },
   { title: T('Cantiques', 'Hymns', 'Hinos'), text: T('Les chants de l’assemblée, en plusieurs langues', 'The assembly’s songs, in several languages', 'Os cânticos da assembleia, em várias línguas'), to: '/cantiques', icon: Music2 },
   { title: T('Galerie', 'Gallery', 'Galeria'), text: T('Photos d’hier et d’aujourd’hui', 'Photos from yesterday and today', 'Fotos de ontem e de hoje'), to: '/galerie', icon: Images },
 ];
@@ -165,7 +168,7 @@ export default function HomePage() {
             {/* ACCÈS RAPIDES */}
             <nav aria-label={tx('Accès rapides', 'Quick access', 'Acesso rápido')} className="relative z-10 -mt-10 grid grid-cols-3 overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-lift">
               {QUICK.map(({ title, text, to, icon, from, to2 }, k) => (
-                <Link key={to} to={to} className={cn('group flex flex-col items-center gap-2 border-night/[0.06] px-2 py-4 text-center transition hover:bg-gold-50 focus-visible:bg-gold-50 focus-visible:outline-none sm:flex-row sm:gap-3.5 sm:px-4 sm:text-left', k % 3 !== 2 && 'border-r', k < 6 && 'border-b')}>
+                <Link key={to} to={to} className={cn('group flex flex-col items-center gap-2 border-night/[0.06] px-2 py-4 text-center transition hover:bg-gold-50 focus-visible:bg-gold-50 focus-visible:outline-none sm:flex-row sm:gap-3.5 sm:px-4 sm:text-left', k % 3 !== 2 && 'border-r', k < QUICK.length - 3 && 'border-b')}>
                   <KccIcon icon={icon} from={from} to={to2} />
                   <span className="min-w-0">
                     <span className="block text-[13px] font-semibold leading-tight text-night sm:text-[15px] group-hover:text-gold-700">{pick(title)}</span>

@@ -199,5 +199,5 @@ export const demoApostleSubmissions: ApostlePhotoSubmission[] = [];
 
 /** Prédications déjà fournies (fichiers dans public/predications/, même contenu que supabase/seed_predications.sql). */
 export const demoAudioSermons: AudioSermon[] = [
-  { id: 'a0d10000-0000-4000-8000-000000000001', title: 'Prédication sur Genèse 3 : 1-5', preacherName: 'KAPAPA MUANDA Bossin', preacherTitle: 'Disciple', parish: 'Paroisse d’Aéroport', preacherPhotoUrl: '/predications/bossin-kapapa.jpg', audioUrl: '/predications/bossin-kapapa-genese-3.mp3', durationSeconds: 1141, bibleText: 'Genèse 3 : 1-5', published: true, createdAt: '2026-10-22T10:55:00Z' },
+  { id: 'a0d10000-0000-4000-8000-000000000001', title: 'Respectons les lois de Yahwé et observons fidèlement les enseignements que notre Prophète nous a laissés', preacherName: 'KAPAPA MUANDA Bossin', preacherTitle: 'Disciple', parish: 'Paroisse d’Aéroport', preacherPhotoUrl: '/predications/bossin-kapapa.jpg', audioUrl: '/predications/bossin-kapapa-genese-3.mp3', durationSeconds: 1141, bibleText: 'Genèse 3 : 1-5', published: true, createdAt: '2026-10-22T10:55:00Z' },
 ];

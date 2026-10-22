@@ -26,7 +26,7 @@ export function Footer() {
   const link = 'text-[13px] text-white/65 transition hover:text-white';
   const groups: { title: string; links: [string, string][] }[] = [
     { title: t('footer.navigation'), links: [[tx('À propos', 'About', 'Sobre'), '/a-propos'], [t('nav.community'), '/communaute'], [tx('Paroisses', 'Parishes', 'Paróquias'), '/paroisses'], [tx('Actualités', 'News', 'Notícias'), '/actualites']] },
-    { title: tx('La Foi', 'Our Faith', 'A Fé'), links: [[tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), '/doctrine'], [tx('Catéchisme', 'Catechism', 'Catecismo'), '/catechisme'], [tx('Prédications', 'Sermons', 'Pregações'), '/predications'], [tx('Cantiques', 'Hymns', 'Hinos'), '/cantiques']] },
+    { title: tx('La Foi', 'Our Faith', 'A Fé'), links: [[tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), '/doctrine'], [tx('Catéchisme', 'Catechism', 'Catecismo'), '/catechisme'], [tx('Prédications audio', 'Audio sermons', 'Pregações em áudio'), '/predications#audio'], [tx('Cantiques', 'Hymns', 'Hinos'), '/cantiques']] },
     { title: tx('Médias', 'Media', 'Média'), links: [['KCC Music', '/musique'], [tx('Vidéos', 'Videos', 'Vídeos'), '/videos'], [tx('Galerie', 'Gallery', 'Galeria'), '/galerie'], [tx('Bibliothèque', 'Library', 'Biblioteca'), '/bibliotheque']] },
     { title: t('footer.services'), links: [[tx('Académie KCC', 'KCC Academy', 'Academia KCC'), '/academie'], [tx('Agenda', 'Calendar', 'Agenda'), '/agenda'], [t('nav.solidarity'), '/solidarite'], [tx('Application Android', 'Android app', 'Aplicação Android'), '/app/android.apk']] },
   ];

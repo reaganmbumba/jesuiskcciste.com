@@ -108,7 +108,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
                 <ButtonLink to="/inscription" variant="outline" size="sm" className="hidden 2xl:inline-flex">{t('nav.signup')}</ButtonLink>
               </div>
             )}
-            <ButtonLink to="/solidarite" variant="gold" size="sm" icon={<Heart className="h-4 w-4" />} className="hidden sm:inline-flex">{tx('Faire un don', 'Donate', 'Fazer um donativo')}</ButtonLink>
+            <ButtonLink to="/solidarite#don" variant="gold" size="sm" icon={<Heart className="h-4 w-4" />} className="hidden sm:inline-flex">{tx('Faire un don', 'Donate', 'Fazer um donativo')}</ButtonLink>
             <button onClick={() => setOpen((v) => !v)} className={cn('grid h-10 w-10 place-items-center rounded-full xl:hidden', solid ? 'text-night hover:bg-night/5' : 'text-white hover:bg-white/10')} aria-label={open ? tx('Fermer le menu', 'Close menu', 'Fechar o menu') : tx('Ouvrir le menu', 'Open menu', 'Abrir o menu')} aria-expanded={open} aria-controls="menu-mobile">
               {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>

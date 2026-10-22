@@ -1,6 +1,7 @@
 import { CalendarCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { useI18n } from '@/i18n';
+import { CONTRIBUTIONS } from '@/content/solidarite';
 
 /**
  * Opérations « 100 chaises » menées par l'initiative JE SUIS KCCiste.
@@ -12,6 +13,7 @@ export function SolidarityOperations() {
   const operations = [
     {
       done: true,
+      key: 'luanika' as const,
       parish: 'Luanika',
       photos: ['/images/solidarite/luanika-eglise.jpg', '/images/solidarite/luanika-facade.jpg'],
       t: tx('Opération 100 chaises — Paroisse de Luanika', 'Operation 100 Chairs — Luanika parish', 'Operação 100 cadeiras — Paróquia de Luanika'),
@@ -29,6 +31,7 @@ export function SolidarityOperations() {
     },
     {
       done: false,
+      key: 'ngidinga' as const,
       parish: 'Ngidinga',
       photos: ['/images/solidarite/ngidinga-bancs-bambou.jpg'],
       t: tx('Opération 100 chaises — Paroisse de Ngidinga', 'Operation 100 Chairs — Ngidinga parish', 'Operação 100 cadeiras — Paróquia de Ngidinga'),
@@ -59,10 +62,26 @@ export function SolidarityOperations() {
             <ul className="mt-4 flex flex-wrap gap-2">
               {o.facts.map((f) => <li key={f} className="rounded-full bg-mist px-3 py-1 text-xs font-semibold text-night">{f}</li>)}
             </ul>
+            <ContributorList parish={o.key} />
             <p className="mt-auto flex items-center gap-1.5 pt-4 text-xs text-ink/55"><CalendarCheck className="h-4 w-4 text-gold" />{o.date}</p>
           </div>
         </article>
       ))}
     </div>
+  );
+}
+
+/** Liste publique des contributions d'une opération (nom et montant, jamais de numéro). */
+function ContributorList({ parish }: { parish: keyof typeof CONTRIBUTIONS }) {
+  const { tx } = useI18n();
+  const list = CONTRIBUTIONS[parish];
+  if (!list.length) return null;
+  return (
+    <details className="group mt-4 rounded-2xl bg-mist px-4 py-3">
+      <summary className="cursor-pointer text-sm font-semibold text-night">{tx('Voir la liste des contributions', 'See the list of contributions', 'Ver a lista das contribuições')} ({list.length})</summary>
+      <ol className="mt-3 max-h-80 divide-y divide-night/[0.06] overflow-y-auto text-sm">
+        {list.map((c, i) => <li key={i} className="flex justify-between gap-3 py-1.5"><span className="text-ink/80"><span className="mr-2 text-ink/40">{i + 1}.</span>{c.name}</span><span className="shrink-0 font-semibold text-night">{c.amount}</span></li>)}
+      </ol>
+    </details>
   );
 }

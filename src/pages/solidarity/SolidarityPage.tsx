@@ -1,27 +1,36 @@
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { FileCheck2, HandHeart, ShieldCheck, Smartphone } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { ProjectCard } from '@/components/cards/Cards';
-import { ButtonLink } from '@/components/ui/Button';
+import { ButtonLink, buttonClass } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Spinner';
 import { useAsync } from '@/hooks/useAsync';
 import { projectsRepo } from '@/services';
 import { useI18n } from '@/i18n';
 import { SolidarityHighlights } from '@/components/common/SolidarityHighlights';
 import { SolidarityOperations } from '@/components/common/SolidarityOperations';
+import { SolidarityDonate } from '@/components/common/SolidarityDonate';
 
 export default function SolidarityPage() {
   const { tx } = useI18n();
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    const el = document.getElementById(hash.slice(1));
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }, [hash]);
   const { data = [], loading } = useAsync(() => projectsRepo.all(), []);
   const pillars = [
     { icon: HandHeart, t: tx('Agir ensemble', 'Acting together', 'Agir juntos'), d: tx('Soutien aux paroisses, aux familles et aux projets communautaires.', 'Support for parishes, families and community projects.', 'Apoio às paróquias, às famílias e aos projetos comunitários.') },
     { icon: ShieldCheck, t: tx('Transparence', 'Transparency', 'Transparência'), d: tx('Seuls les paiements confirmés sont comptabilisés. Les déclarations sont distinguées.', 'Only confirmed payments are counted. Declarations are shown separately.', 'Só os pagamentos confirmados são contabilizados. As declarações são distinguidas.') },
     { icon: FileCheck2, t: tx('Redevabilité', 'Accountability', 'Prestação de contas'), d: tx('Dépenses, pièces justificatives et bilans publiés par les gestionnaires.', 'Expenses, receipts and reports published by the managers.', 'Despesas, comprovativos e balanços publicados pelos gestores.') },
-    { icon: Smartphone, t: tx('Paiement mobile', 'Mobile payment', 'Pagamento móvel'), d: tx('M-Pesa, Orange Money, Airtel Money : intégration prévue, pas encore active.', 'M-Pesa, Orange Money, Airtel Money: integration planned, not active yet.', 'M-Pesa, Orange Money, Airtel Money: integração prevista, ainda não ativa.') },
+    { icon: Smartphone, t: tx('Paiement mobile', 'Mobile payment', 'Pagamento móvel'), d: tx('Dons par M-Pesa, Orange Money ou Airtel Money, confirmés sur WhatsApp.', 'Donations by M-Pesa, Orange Money or Airtel Money, confirmed on WhatsApp.', 'Donativos por M-Pesa, Orange Money ou Airtel Money, confirmados no WhatsApp.') },
   ];
   return (
     <>
       <PageHeader eyebrow={tx('Solidarité KCC', 'KCC Solidarity', 'Solidariedade KCC')} title={tx('Servir ensemble, en toute transparence', 'Serving together, with full transparency', 'Servir juntos, com toda a transparência')} description={tx('Des projets suivis, documentés et rendus publics, au service de la communauté.', 'Projects that are tracked, documented and made public, serving the community.', 'Projetos acompanhados, documentados e tornados públicos, ao serviço da comunidade.')}>
-        <div className="flex flex-wrap gap-3"><ButtonLink to="/solidarite/projets" variant="gold">{tx('Voir les projets', 'View projects', 'Ver os projetos')}</ButtonLink><ButtonLink to="/enseignements#caisse" variant="light">{tx('Caisse d’assistance sociale', 'Social assistance fund', 'Caixa de assistência social')}</ButtonLink></div>
+        <div className="flex flex-wrap gap-3"><a href="#don" className={buttonClass('gold')}>{tx('Faire un don', 'Make a donation', 'Fazer um donativo')}</a><ButtonLink to="/solidarite/projets" variant="light">{tx('Voir les projets', 'View projects', 'Ver os projetos')}</ButtonLink><ButtonLink to="/enseignements#caisse" variant="light">{tx('Caisse d’assistance sociale', 'Social assistance fund', 'Caixa de assistência social')}</ButtonLink></div>
       </PageHeader>
       <section className="container-page py-14">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -30,6 +39,9 @@ export default function SolidarityPage() {
         <div className="mt-14">
           <SectionHeading eyebrow={tx('Nos opérations', 'Our operations', 'As nossas operações')} title={tx('Des chaises pour nos paroisses', 'Chairs for our parishes', 'Cadeiras para as nossas paróquias')} />
           <SolidarityOperations />
+        </div>
+        <div className="mt-14">
+          <SolidarityDonate />
         </div>
         <div className="mt-14">
           <SectionHeading eyebrow={tx('Projets', 'Projects', 'Projetos')} title={data.some((p) => p.status === 'active') ? tx('Projets en cours', 'Current projects', 'Projetos em curso') : tx('Nos œuvres de solidarité', 'Our solidarity work', 'As nossas obras de solidariedade')} />

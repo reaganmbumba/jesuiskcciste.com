@@ -16,7 +16,7 @@ import { demoTracks } from '@/services/demo/data';
 export type MobileProvider = MusicOrder['provider'];
 
 export const MOBILE_PROVIDERS: { key: MobileProvider; label: string; prefixes: string[]; className: string }[] = [
-  { key: 'mpesa', label: 'M-Pesa', prefixes: ['81', '82', '83'], className: 'bg-[#E60000] text-white' },
+  { key: 'mpesa', label: 'M-Pesa', prefixes: ['81', '82', '83', '86'], className: 'bg-[#E60000] text-white' },
   { key: 'orange_money', label: 'Orange Money', prefixes: ['80', '84', '85', '89'], className: 'bg-[#FF7900] text-black' },
   { key: 'airtel_money', label: 'Airtel Money', prefixes: ['97', '98', '99'], className: 'bg-[#ED1C24] text-white' },
 ];

@@ -9,7 +9,7 @@ import { CrudTable, Tabs } from '@/features/administration/CrudTable';
 import { OFFICIAL_PARISH_LIST_ID, OfficialParishList } from '@/components/common/OfficialParishList';
 import { PreacherPortrait } from '@/features/sermons/SermonUi';
 import {
-  AUDIO_ACCEPT, audioSermonsRepo, checkAudio, deleteSermon, replacePreacherPhoto, replaceSermonAudio, uploadPreacherPhoto, uploadSermonAudio,
+  AUDIO_ACCEPT, audioSermonsRepo, checkAudio, deleteSermon, errorText, replacePreacherPhoto, removeSermonFile, replaceSermonAudio, uploadPreacherPhoto, uploadSermonAudio,
 } from '@/features/sermons/sermons';
 import type { Repository } from '@/services/repository';
 import { formatDuration } from '@/utils/format';
@@ -27,11 +27,6 @@ const adminRepo: Repository<AudioSermon> = {
     if (s) await deleteSermon(s); else await audioSermonsRepo.remove(id);
   },
 };
-
-const errorText = (e: unknown) =>
-  e instanceof Error && e.message === 'format' ? 'Photo : format non pris en charge (JPG, PNG ou WebP).'
-  : e instanceof Error && e.message === 'size' ? 'Photo trop lourde (20 Mo maximum).'
-  : e instanceof Error ? e.message : 'Échec de l’envoi.';
 
 export default function AdminSermons() {
   const [tab, setTab] = useState<'add' | 'list'>('add');
@@ -139,6 +134,10 @@ function AddSermon({ onDone }: { onDone: () => void }) {
       await audioSermonsRepo.create({
         title: v.title.trim(), preacherName: v.preacherName.trim(), preacherTitle: clean(v.preacherTitle), parish: clean(v.parish),
         bibleText: clean(v.bibleText), preachedOn: clean(v.preachedOn), description: clean(v.description), preacherPhotoUrl, published, ...file,
+      }).catch(async (err) => {
+        // Rien n'a été enregistré : on ne laisse pas le fichier audio orphelin dans le stockage.
+        await removeSermonFile(file.audioPath);
+        throw err;
       });
       notify(`« ${v.title.trim()} » est ${published ? 'en ligne' : 'enregistrée (masquée)'}.`);
       setV(EMPTY); pickPhoto(null); setAudio(null);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { BookOpen, CalendarDays, Clock, Download, Headphones, MapPin, Search } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
@@ -37,11 +37,13 @@ export function AudioSermonsSection() {
   const sermons = data ?? [];
   // Liens du menu « /predications#audio » : la section n'existe qu'après le chargement.
   const { hash } = useLocation();
+  // Lien partagé d'une prédication : /predications/audio/<id>.
+  const { id: sharedId } = useParams();
   useEffect(() => {
     if (loading) return;
-    const id = decodeURIComponent(hash.slice(1));
+    const id = sharedId ? `audio-${sharedId}` : decodeURIComponent(hash.slice(1));
     if (id === 'audio' || id.startsWith('audio-') || id === 'ecrites') setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
-  }, [loading, hash]);
+  }, [loading, hash, sharedId]);
   const shown = useMemo(() => {
     const k = norm(q.trim());
     return k ? sermons.filter((s) => [s.title, s.preacherName, s.preacherTitle, s.parish, s.bibleText].some((v) => v && norm(v).includes(k))) : sermons;
@@ -91,7 +93,7 @@ export function AudioSermonsSection() {
                       <p className="mt-4 text-xs text-amber-700">{tx('Audio bientôt disponible.', 'Audio coming soon.', 'Áudio disponível em breve.')}</p>
                     )}
                     <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-night/[0.06] pt-4">
-                      <ShareButtons size="sm" url={`/predications#audio-${s.id}`} title={`${s.title} — ${s.preacherName}`} text={s.parish ?? undefined} />
+                      <ShareButtons size="sm" url={`/predications/audio/${s.id}`} title={`${s.title} — ${s.preacherName}`} text={[s.preacherTitle, s.preacherName, s.parish].filter(Boolean).join(' · ')} image={s.preacherPhotoUrl} />
                       {s.audioUrl && (
                         <a href={s.audioUrl} download className="inline-flex items-center gap-1.5 text-xs font-semibold text-night/70 hover:text-gold-700">
                           <Download className="h-4 w-4" aria-hidden />{tx('Télécharger', 'Download', 'Descarregar')}

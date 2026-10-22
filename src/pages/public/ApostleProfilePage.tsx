@@ -71,7 +71,7 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
         {a.status !== 'unknown' && (
           <Badge tone={deceased ? 'neutral' : 'green'} className="mt-3">{deceased ? tx('Décédé', 'Deceased', 'Falecido') : tx('En vie', 'Living', 'Vivo')}</Badge>
         )}
-        <ShareButtons size="sm" url={`/apotres/${a.id}`} title={`${a.title} ${a.fullName}`} className="mt-5 justify-center" />
+        <ShareButtons size="sm" url={`/apotres/${a.id}`} title={`${a.title} ${a.fullName}`} image={a.photoUrl} className="mt-5 justify-center" />
       </div>
 
       <dl className="grid border-t border-night/[0.06] sm:grid-cols-3">

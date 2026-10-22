@@ -15,6 +15,8 @@ export interface SiteSettings {
   contact: { email: string; phone: string; address: string };
   socials: { label: string; url: string }[];
   churchPresentation: string;
+  /** Radio Je suis KCCiste : ce que l'administration laisse passer à l'antenne. */
+  radio?: { songs: boolean; sermons: boolean; excluded: string[] };
 }
 
 export const defaultSiteSettings: SiteSettings = {

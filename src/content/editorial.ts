@@ -184,7 +184,7 @@ export const editorialTracks = (): Track[] => [
   { id: id('trk-yawhe-oyebi-misala-na-ngai'), title: 'Yawhe oyebi misala na ngai', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 145, audioUrl: '/audio/yawhe-oyebi-misala-na-ngai.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: id('trk-zalaka-reconnaissant'), title: 'Zalaka reconnaissant', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 255, audioUrl: '/audio/zalaka-reconnaissant.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: id('trk-zalaka-connaissant'), title: 'Zalaka connaissant', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 255, audioUrl: '/audio/zalaka-connaissant.mp3', broadcastRights: 'authorized', lyrics: null },
-  { id: id('trk-yave-lusia-ya-ina'), title: 'Yave Lusia ya ina', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 97, audioUrl: '/audio/yave-lusia-ya-ina.mp3', broadcastRights: 'authorized', lyrics: null },
+  { id: id('trk-yave-lusia-ya-ika'), title: 'Yave lusia ya ika', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 97, audioUrl: '/audio/yave-lusia-ya-ika.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: id('trk-motivation-3'), title: 'Motivation 3', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 55, audioUrl: '/audio/motivation-3.mp3', broadcastRights: 'authorized', lyrics: null },
 ];
 

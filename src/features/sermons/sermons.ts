@@ -74,6 +74,10 @@ async function removeFile(path?: string | null) {
   await supabase!.storage.from(BUCKET).remove([path]);
 }
 
+/** Supprime un fichier déposé, sans échouer (nettoyage après une erreur). */
+export const removeSermonFile = (path?: string | null) => removeFile(path).catch(() => undefined);
+
+
 /** Dépose le fichier audio ; renvoie les champs à enregistrer sur la prédication. */
 export async function uploadSermonAudio(file: File, title: string): Promise<Pick<AudioSermon, 'audioUrl' | 'audioPath' | 'durationSeconds'>> {
   const problem = checkAudio(file);
@@ -113,4 +117,20 @@ export async function deleteSermon(sermon: AudioSermon): Promise<void> {
 export function sortSermons(list: AudioSermon[]): AudioSermon[] {
   const key = (s: AudioSermon) => s.preachedOn ?? s.createdAt?.slice(0, 10) ?? '';
   return [...list].sort((a, b) => key(b).localeCompare(key(a)) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+}
+
+/** Message lisible : Supabase renvoie souvent un simple objet { message, code } et non une Error. */
+export function errorText(e: unknown): string {
+  const msg = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : '';
+  const code = typeof e === 'object' && e && 'code' in e ? String((e as { code: unknown }).code) : '';
+  if (msg === 'format') return 'Photo : format non pris en charge (JPG, PNG ou WebP).';
+  if (msg === 'size') return 'Photo trop lourde (20 Mo maximum).';
+  if (/bucket not found|audio_sermons|schema cache|does not exist/i.test(msg) || code === '42P01' || code === 'PGRST205')
+    return 'La rubrique n’est pas encore installée dans Supabase : collez le fichier « predications-a-coller-dans-supabase.sql » dans le SQL Editor, cliquez sur Run, puis réessayez.';
+  if (/row-level security|permission denied|unauthorized/i.test(msg) || code === '42501')
+    return 'Votre compte n’a pas le droit d’ajouter des prédications (administration centrale requise). Reconnectez-vous puis réessayez.';
+  if (/payload too large|exceeded the maximum allowed size|entity too large/i.test(msg))
+    return 'Fichier trop lourd pour Supabase (50 Mo maximum).';
+  if (/failed to fetch|network|load failed/i.test(msg)) return 'Connexion interrompue pendant l’envoi. Vérifiez votre réseau puis réessayez.';
+  return msg ? `Échec de l’envoi : ${msg}${code ? ` (${code})` : ''}` : 'Échec de l’envoi.';
 }

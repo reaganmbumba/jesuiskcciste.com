@@ -8,7 +8,7 @@ import { formatDuration } from '@/utils/format';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
-import { KindIcon, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
+import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -36,15 +36,16 @@ export default function RadioPage() {
                 : <span className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-600 text-night sm:h-28 sm:w-28">{r.current ? <KindIcon item={r.current} className="h-10 w-10" /> : <Radio className="h-10 w-10" aria-hidden />}</span>}
               <div className="min-w-0" aria-live="polite">
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-300">
-                  {r.playing && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
+                  {r.onLive && <LiveBadge />}
+                  {r.playing && !r.onLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
                   {r.active ? (r.playing ? tx('À l’antenne', 'On air', 'No ar') : tx('En pause', 'Paused', 'Em pausa')) : tx('Prête à démarrer', 'Ready to start', 'Pronta a começar')}
                 </p>
                 <h2 className="mt-1 font-display text-2xl font-semibold leading-tight sm:text-3xl">{r.current?.title ?? RADIO_NAME}</h2>
-                <p className="mt-1 truncate text-sm text-white/65">{r.current?.subtitle ?? tx('Appuyez sur « Écouter » pour lancer la radio.', 'Press “Listen” to start the radio.', 'Carregue em «Ouvir» para iniciar a rádio.')}</p>
+                <p className="mt-1 truncate text-sm text-white/65">{r.current?.subtitle ?? (r.liveOn ? `${tx('Émission en direct', 'Live show', 'Emissão em direto')} : ${r.liveTitle}` : null) ?? tx('Appuyez sur « Écouter » pour lancer la radio.', 'Press “Listen” to start the radio.', 'Carregue em «Ouvir» para iniciar a rádio.')}</p>
               </div>
             </div>
 
-            {r.active && (
+            {r.active && !r.onLive && (
               <div className="mt-6">
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={tx('Progression du titre', 'Track progress', 'Progresso da faixa')}><div className="h-full bg-gold" style={{ width: `${pct}%` }} /></div>
                 <div className="mt-1.5 flex justify-between text-xs tabular-nums text-white/50"><span>{formatDuration(Math.floor(r.time))}</span><span>{r.duration ? formatDuration(Math.floor(r.duration)) : ''}</span></div>
@@ -52,16 +53,23 @@ export default function RadioPage() {
             )}
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={r.toggle} disabled={r.ready && !r.items.length}
+              <button type="button" onClick={r.toggle} disabled={r.ready && !r.items.length && !r.liveOn}
                 className="inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 font-semibold text-night hover:bg-gold-300 disabled:opacity-50">
                 {r.active && r.playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                 {r.active && r.playing ? tx('Pause', 'Pause', 'Pausa') : r.loading && !r.ready ? tx('Chargement…', 'Loading…', 'A carregar…') : tx('Écouter', 'Listen', 'Ouvir')}
               </button>
-              {r.active && <button type="button" onClick={r.next} className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-3 text-sm font-semibold hover:bg-white/10"><SkipForward className="h-4 w-4" />{tx('Suivant', 'Next', 'Seguinte')}</button>}
+              {r.active && !r.onLive && <button type="button" onClick={r.next} className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-3 text-sm font-semibold hover:bg-white/10"><SkipForward className="h-4 w-4" />{tx('Suivant', 'Next', 'Seguinte')}</button>}
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
 
-            <RadioModeChooser light className="mt-6" />
+            {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
+            {r.callUrl && (
+              <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">
+                <p className="text-sm text-white/80">{tx('Intervenez en direct : appelez l’émission. La radio se coupe pendant l’appel, vous entendez l’animateur dans l’appel, et tous les auditeurs vous entendent à l’antenne.', 'Join the show live: call in. The radio stops during the call, you hear the host in the call, and every listener hears you on air.', 'Participe em direto: ligue para a emissão. A rádio para durante a chamada, ouve o animador na chamada e todos os ouvintes o ouvem no ar.')}</p>
+                <CallShowButton className="mt-3" />
+              </div>
+            )}
+            {!r.onLive && <RadioModeChooser light className="mt-6" />}
             {r.failed && <p className="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-100" role="alert">{tx('Les titres ne se chargent pas. Vérifiez votre connexion Internet puis appuyez de nouveau sur « Écouter ».', 'Tracks are not loading. Check your Internet connection and press “Listen” again.', 'As faixas não carregam. Verifique a ligação à Internet e carregue de novo em «Ouvir».')}</p>}
           </div>
         </div>

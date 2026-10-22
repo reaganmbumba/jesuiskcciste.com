@@ -25,7 +25,7 @@ export function SolidarityOperations() {
       facts: [
         tx('150 chaises remises', '150 chairs delivered', '150 cadeiras entregues'),
         tx('73 contributeurs', '73 contributors', '73 contribuidores'),
-        tx('1 321,60 $ + 564 000 FC collectés', '$1,321.60 + 564,000 FC raised', '1 321,60 $ + 564 000 FC recolhidos'),
+        tx('1 326,60 $ + 584 000 FC collectés', '$1,326.60 + 584,000 FC raised', '1 326,60 $ + 584 000 FC recolhidos'),
       ],
       date: tx('Remise officielle le dimanche 13 septembre 2026', 'Official handover on Sunday 13 September 2026', 'Entrega oficial no domingo, 13 de setembro de 2026'),
     },
@@ -43,7 +43,7 @@ export function SolidarityOperations() {
       facts: [
         tx('Objectif : 100 chaises', 'Goal: 100 chairs', 'Objetivo: 100 cadeiras'),
         tx('38 contributions', '38 contributions', '38 contribuições'),
-        tx('922 $ + 316 000 FC collectés', '$922 + 316,000 FC raised', '922 $ + 316 000 FC recolhidos'),
+        tx('942 $ + 316 000 FC collectés', '$942 + 316,000 FC raised', '942 $ + 316 000 FC recolhidos'),
       ],
       date: tx('Liste arrêtée au 19 octobre 2026 · achat et remise des chaises en préparation', 'List as of 19 October 2026 · purchase and handover of the chairs being prepared', 'Lista de 19 de outubro de 2026 · compra e entrega das cadeiras em preparação'),
     },
@@ -80,7 +80,7 @@ function ContributorList({ parish }: { parish: keyof typeof CONTRIBUTIONS }) {
     <details className="group mt-4 rounded-2xl bg-mist px-4 py-3">
       <summary className="cursor-pointer text-sm font-semibold text-night">{tx('Voir la liste des contributions', 'See the list of contributions', 'Ver a lista das contribuições')} ({list.length})</summary>
       <ol className="mt-3 max-h-80 divide-y divide-night/[0.06] overflow-y-auto text-sm">
-        {list.map((c, i) => <li key={i} className="flex justify-between gap-3 py-1.5"><span className="text-ink/80"><span className="mr-2 text-ink/40">{i + 1}.</span>{c.name}</span><span className="shrink-0 font-semibold text-night">{c.amount}</span></li>)}
+        {list.map((c, i) => <li key={i} className="flex justify-between gap-3 py-1.5"><span className="text-ink/80"><span className="mr-2 text-ink/40">{i + 1}.</span>{c.flag && <span className="mr-1.5" aria-hidden>{c.flag}</span>}{c.name}</span><span className="shrink-0 font-semibold text-night">{c.amount}</span></li>)}
       </ol>
     </details>
   );

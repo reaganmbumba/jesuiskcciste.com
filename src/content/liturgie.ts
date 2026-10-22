@@ -7,7 +7,7 @@
  * uniquement ; aucun nom de fidèle n'y figure.
  */
 
-export interface RiteText { title: string; lines: string[]; lang?: string; /** Variante linguistique d'un même texte, présentée en onglets. */ tab?: boolean }
+export interface RiteText { title: string; lines: string[]; lang?: string; /** Variante linguistique d'un même texte, présentée en onglets. */ tab?: boolean; /** Texte en plusieurs parties (début, fin, absolution…). */ parts?: { title: string; lines: string[] }[] }
 export interface Rite {
   id: string;
   title: string;
@@ -50,10 +50,21 @@ export const rites: Rite[] = [
     summary: 'Le confessant avoue ses péchés devant l’Éternel et devant des témoins, puis l’officiant prononce l’absolution au Nom de l’Éternel. L’Éternel ne demande aucun sacrifice : seulement la décision sincère de ne plus pécher.',
     programme: [{ steps: ['Cantique', 'Prière d’ouverture', 'Appel du confessant', 'Début de l’aveu', 'Aveu des péchés', 'Fin de l’aveu', 'Mot de l’officiant', 'Absolution des péchés', 'Sortie du confessant', 'Cantique', 'Prière de clôture'] }],
     texts: [
+      { title: 'Maloba ya ntubela', lang: 'Lingala', tab: true, lines: [], parts: [
+        { title: 'Maloba ya ebandeli', lines: ['Na kombo nayo Monsantu Yawe,', 'na fukami liboso bua yo pona ko ntubela masumu nanga', 'mpo tete na zua bilimbisi.'] },
+        { title: 'Maloba ma bosilisi', lines: ['Na kombo nayo Mosantu, oh Yawe, na sengi,', 'olimbisa ngai na mabunga ma ngai manso.', 'Tika ete ejala bongo na kombo nayo Mosantu.'] },
+        { title: 'Maloba ma bolimbisi', lines: ['Solo, tondimi ete yo Yawe Njambe Mokeli mwa biso, ojali bulee,', 'pe olimbisi ye na mabunga naye manso.', 'Tika ete ezala bango na kombo nayo Mosantu.', 'Alléluia !! Yaka Nkolo Yawe na nkombo nayo Mosantu.'] },
+      ] },
+      { title: 'Mpova za mpedoso', lang: 'Kikongo', tab: true, lines: [], parts: [
+        { title: 'Mpova ya ntete', lines: ['Mu nkumbu aku ya nlongo, oh Yaveh,', 'mfukamene va ntadisi aku mukulomba ngiambudulu mu ntulumunu zami', 'mu tambula ngiambudulu kua ngeye.'] },
+        { title: 'Mpova mu manisi', lines: ['Mu nkumbu aku ya nlongo, ngieti kulomba mutu', 'ngiambudila masumu mami mamosono mayavengi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.'] },
+        { title: 'Mpova ya ngiambudulu', lines: ['Mukedika, tulekele minu vo ngeye Yave Nzambi eto, wena wa nlongo', 'ye meni kunyambudila mu ntulumunu zandi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.', 'Alléluia !! Wiza Mfumu Yaveh, mu nkumbu aku ya nlongo.'] },
+      ] },
       { title: 'Début de l’aveu', lines: ['Par Ton Saint Nom, Éternel Dieu,', 'je m’agenouille devant Toi', 'pour confesser mes péchés', 'afin que je sois pardonné.'] },
       { title: 'Fin de l’aveu', lines: ['Par Ton Saint Nom, Éternel,', 'pour tout ce que je connais', 'et tout ce que je ne me rappelle plus,', 'je Te demande, ô Éternel Dieu, de me pardonner par Ton Saint Nom,', 'ainsi qu’à vous, ses témoins,', 'car j’ai résolu de ne plus y revenir.', 'Oui, qu’il en soit ainsi par Ton Saint Nom.'] },
       { title: 'Absolution', lines: ['Certes, nous avons cru que Toi, Éternel Dieu, notre Créateur, Tu es saint, et que Tu veux que Ton peuple soit saint.', 'Notre frère (notre sœur) vient de confesser tous ses péchés afin d’obtenir Ton pardon. Oui, je crois que Tu le lui as accordé par Ton Nom.', 'Aux témoins : « Voulez-vous aussi qu’il soit pardonné ? » – « Oui, nous voulons qu’il soit pardonné au Nom de l’Éternel Dieu. »', 'Lève-toi, crois et réjouis-toi, car tes péchés sont pardonnés par l’Éternel Dieu. Oui, qu’il en soit ainsi par Son Saint Nom.'] },
     ],
+    notes: ['La prière de repentance (aveu et absolution) se dit aussi en lingala, « Maloba ya ntubela », et en kikongo, « Mpova za mpedoso ».'],
   },
   {
     id: 'onction',

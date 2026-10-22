@@ -20,7 +20,7 @@ function RiteTexts({ texts }: { texts: RiteText[] }) {
     <div className="mt-6 grid gap-4 md:grid-cols-2">
       {multi.length > 1 && (
         <div className="rounded-2xl border border-gold/30 bg-gold-50/40 p-5">
-          <div role="tablist" aria-label={tx('Langue de la déclaration', 'Language of the declaration', 'Língua da declaração')} className="flex flex-wrap gap-2">
+          <div role="tablist" aria-label={tx('Langue du texte', 'Language of the text', 'Língua do texto')} className="flex flex-wrap gap-2">
             {multi.map((t, i) => (
               <button key={t.title} type="button" role="tab" aria-selected={i === active} onClick={() => setActive(i)}
                 className={`rounded-full border px-3 py-1 text-sm transition ${i === active ? 'border-gold bg-gold text-night' : 'border-night/10 bg-white text-ink/70 hover:border-gold/60'}`}>{t.lang}</button>
@@ -28,6 +28,12 @@ function RiteTexts({ texts }: { texts: RiteText[] }) {
           </div>
           <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-gold-700">{multi[active].title}</p>
           <div lang={langCode(multi[active].lang)} className="mt-2 space-y-1 font-display text-lg italic text-night/85">{multi[active].lines.map((l, i) => <p key={i}>{l}</p>)}</div>
+          {multi[active].parts?.map((p) => (
+            <div key={p.title} lang={langCode(multi[active].lang)} className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gold-700/80">{p.title}</p>
+              <div className="mt-1 space-y-1 font-display text-lg italic text-night/85">{p.lines.map((l, i) => <p key={i}>{l}</p>)}</div>
+            </div>
+          ))}
         </div>
       )}
       {others.map((t) => (

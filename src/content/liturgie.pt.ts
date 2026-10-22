@@ -32,10 +32,21 @@ export const rites: Rite[] = [
     summary: 'O confessante confessa os seus pecados diante do Eterno e de testemunhas; depois o oficiante pronuncia a absolvição em Nome do Eterno. O Eterno não pede nenhum sacrifício: apenas a decisão sincera de não voltar a pecar.',
     programme: [{ steps: ['Cântico', 'Oração de abertura', 'Chamada do confessante', 'Início da confissão', 'Confissão dos pecados', 'Fim da confissão', 'Palavra do oficiante', 'Absolvição dos pecados', 'Saída do confessante', 'Cântico', 'Oração de encerramento'] }],
     texts: [
+      { title: 'Maloba ya ntubela', lang: 'Lingala', tab: true, lines: [], parts: [
+        { title: 'Maloba ya ebandeli', lines: ['Na kombo nayo Monsantu Yawe,', 'na fukami liboso bua yo pona ko ntubela masumu nanga', 'mpo tete na zua bilimbisi.'] },
+        { title: 'Maloba ma bosilisi', lines: ['Na kombo nayo Mosantu, oh Yawe, na sengi,', 'olimbisa ngai na mabunga ma ngai manso.', 'Tika ete ejala bongo na kombo nayo Mosantu.'] },
+        { title: 'Maloba ma bolimbisi', lines: ['Solo, tondimi ete yo Yawe Njambe Mokeli mwa biso, ojali bulee,', 'pe olimbisi ye na mabunga naye manso.', 'Tika ete ezala bango na kombo nayo Mosantu.', 'Alléluia !! Yaka Nkolo Yawe na nkombo nayo Mosantu.'] },
+      ] },
+      { title: 'Mpova za mpedoso', lang: 'Kikongo', tab: true, lines: [], parts: [
+        { title: 'Mpova ya ntete', lines: ['Mu nkumbu aku ya nlongo, oh Yaveh,', 'mfukamene va ntadisi aku mukulomba ngiambudulu mu ntulumunu zami', 'mu tambula ngiambudulu kua ngeye.'] },
+        { title: 'Mpova mu manisi', lines: ['Mu nkumbu aku ya nlongo, ngieti kulomba mutu', 'ngiambudila masumu mami mamosono mayavengi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.'] },
+        { title: 'Mpova ya ngiambudulu', lines: ['Mukedika, tulekele minu vo ngeye Yave Nzambi eto, wena wa nlongo', 'ye meni kunyambudila mu ntulumunu zandi.', 'Bika buakala bobo mu nkumbu aku ya nlongo.', 'Alléluia !! Wiza Mfumu Yaveh, mu nkumbu aku ya nlongo.'] },
+      ] },
       { title: 'Início da confissão', lines: ['Pelo Teu Santo Nome, Eterno Deus,', 'ajoelho-me diante de Ti', 'para confessar os meus pecados', 'a fim de ser perdoado.'] },
       { title: 'Fim da confissão', lines: ['Pelo Teu Santo Nome, Eterno,', 'por tudo o que conheço', 'e por tudo o que já não recordo,', 'peço-Te, ó Eterno Deus, que me perdoes pelo Teu Santo Nome,', 'e a vós também, suas testemunhas,', 'porque resolvi não voltar a fazê-lo.', 'Sim, que assim seja pelo Teu Santo Nome.'] },
       { title: 'Absolvição', lines: ['Na verdade, cremos que Tu, Eterno Deus, nosso Criador, és santo e queres que o Teu povo seja santo.', 'O nosso irmão (a nossa irmã) acaba de confessar todos os seus pecados para obter o Teu perdão. Sim, creio que lho concedeste pelo Teu Nome.', 'Às testemunhas: «Quereis também que seja perdoado?» – «Sim, queremos que seja perdoado em Nome do Eterno Deus.»', 'Levanta-te, crê e alegra-te, porque os teus pecados são perdoados pelo Eterno Deus. Sim, que assim seja pelo Seu Santo Nome.'] },
     ],
+    notes: ['A oração de arrependimento (confissão e absolvição) diz-se também em lingala, «Maloba ya ntubela», e em kikongo, «Mpova za mpedoso».'],
   },
   {
     id: 'onction',

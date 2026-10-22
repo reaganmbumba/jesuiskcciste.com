@@ -39,6 +39,7 @@ const PAGES: Record<string, [string, string]> = {
   '/communaute': ['Un seul peuple, partout dans le monde', 'Découvrez l’organisation de la communauté et retrouvez les vôtres.'],
   '/paroisses': ['Paroisses', 'Les paroisses enregistrées sur JE SUIS KCCiste, en RD Congo et dans la diaspora.'],
   '/forum': ['Forum de discussion', 'Des sujets proposés par l’administration, commentés par les membres inscrits avec leur nom et leur paroisse.'],
+  '/reunions': ['Réunions en vidéo', 'Se réunir en visioconférence, comme sur Zoom, pour partager des sujets entre membres de la communauté KCCiste.'],
   '/sections': ['Sections', 'Chaque paroisse peut organiser ses sections : jeunesse, chorales, mamans, diaspora…'],
   '/actualites': ['Actualités et annonces', 'Les dernières nouvelles et annonces de la communauté KCCiste.'],
   '/agenda': ['Agenda et événements', 'Cultes, réunions, formations, séminaires, concerts et actions de solidarité.'],

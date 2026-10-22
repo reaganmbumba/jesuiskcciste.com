@@ -11,6 +11,7 @@ export const MAIN_NAV: NavGroup[] = [
     key: 'nav.community', to: '/communaute', children: [
       { label: l('Communauté KCCiste', 'KCCist community', 'Comunidade KCCista'), to: '/communaute', description: l('Vie et organisation de la communauté', 'Life and organisation of the community', 'Vida e organização da comunidade') },
       { label: l('Forum de discussion', 'Discussion forum', 'Fórum de discussão'), to: '/forum', description: l('Sujets et commentaires des membres', 'Topics and members’ comments', 'Temas e comentários dos membros') },
+      { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Se réunir en visioconférence', 'Meet by video call', 'Reunir-se por videoconferência') },
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
       { label: l('Messages privés', 'Private messages', 'Mensagens privadas'), to: '/espace/messages', description: l('Écrire à un autre membre', 'Write to another member', 'Escrever a outro membro') },
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('La liste officielle, par pays', 'The official list, by country', 'A lista oficial, por país') },
@@ -41,6 +42,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.activities', to: '/agenda', children: [
       { label: l('Agenda et événements', 'Calendar and events', 'Agenda e eventos'), to: '/agenda', description: l('Cultes, réunions, séminaires…', 'Services, meetings, seminars…', 'Cultos, reuniões, seminários…') },
+      { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Rejoindre une visioconférence', 'Join a video call', 'Entrar numa videoconferência') },
       { label: l('Actualités et annonces', 'News and announcements', 'Notícias e anúncios'), to: '/actualites', description: l('Les dernières publications', 'Latest posts', 'As últimas publicações') },
     ],
   },

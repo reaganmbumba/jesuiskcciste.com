@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
-  LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
+  LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
   LayoutGrid, FileText,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
@@ -38,6 +38,7 @@ const ParishDetailPage = lazy(() => import('@/pages/community/ParishDetailPage')
 const SectionsPage = lazy(() => import('@/pages/community/SectionsPage'));
 const ForumPage = lazy(() => import('@/pages/community/ForumPage'));
 const ForumTopicPage = lazy(() => import('@/pages/community/ForumTopicPage'));
+const MeetingsPage = lazy(() => import('@/pages/community/MeetingsPage'));
 const NewsPage = lazy(() => import('@/pages/events/NewsPage'));
 const NewsDetailPage = lazy(() => import('@/pages/events/NewsDetailPage'));
 const AgendaPage = lazy(() => import('@/pages/events/AgendaPage'));
@@ -112,6 +113,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
   { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
+  { to: '/reunions', label: 'Réunions en vidéo', icon: Video, permission: 'moderation' },
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
 ];
@@ -156,6 +158,7 @@ export function AppRoutes() {
         <Route path="sections" element={<SectionsPage />} />
         <Route path="forum" element={<ForumPage />} />
         <Route path="forum/:id" element={<ForumTopicPage />} />
+        <Route path="reunions" element={<MeetingsPage />} />
         <Route path="actualites" element={<NewsPage />} />
         <Route path="actualites/:id" element={<NewsDetailPage />} />
         <Route path="agenda" element={<AgendaPage />} />

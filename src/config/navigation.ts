@@ -10,6 +10,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.community', to: '/communaute', children: [
       { label: l('Communauté KCCiste', 'KCCist community', 'Comunidade KCCista'), to: '/communaute', description: l('Vie et organisation de la communauté', 'Life and organisation of the community', 'Vida e organização da comunidade') },
+      { label: l('Forum de discussion', 'Discussion forum', 'Fórum de discussão'), to: '/forum', description: l('Sujets et commentaires des membres', 'Topics and members’ comments', 'Temas e comentários dos membros') },
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('La liste officielle, par pays', 'The official list, by country', 'A lista oficial, por país') },
       { label: l('Sections', 'Sections', 'Secções'), to: '/sections', description: l('Les sections rattachées', 'Affiliated sections', 'As secções associadas') },

@@ -475,3 +475,25 @@ export interface MessageRecipient {
   displayName: string;
   parishName?: string | null;
 }
+
+// ——— Prédications audio ———
+export interface AudioSermon {
+  id: UUID;
+  /** Sujet de la prédication. */
+  title: string;
+  preacherName: string;
+  /** Rang du prédicateur : Révérend Apôtre, Pasteur… */
+  preacherTitle?: string | null;
+  parish?: string | null;
+  preacherPhotoUrl?: string | null;
+  audioUrl?: string | null;
+  /** Chemin du fichier dans le bucket `predications`. */
+  audioPath?: string | null;
+  durationSeconds?: number | null;
+  bibleText?: string | null;
+  /** AAAA-MM-JJ. */
+  preachedOn?: string | null;
+  description?: string | null;
+  published: boolean;
+  createdAt?: string;
+}

@@ -36,3 +36,11 @@ export const galleryPhotos: GalleryPhoto[] = [
   g('archive-serviteurs-noir-et-blanc.jpg', 1383, 949, 'histoire', T('Archive en noir et blanc : un groupe de serviteurs', 'Black-and-white archive: a group of servants', 'Arquivo a preto e branco: um grupo de servos')),
   g('archive-groupe-sepia.jpg', 1383, 910, 'histoire', T('Archive ancienne : une communauté rassemblée', 'Early archive: a community gathered together', 'Arquivo antigo: uma comunidade reunida')),
 ];
+
+/**
+ * Clé d'une photo dans son lien partagé /galerie/photo/<clé> : le nom du fichier
+ * sans extension (« foule-assemblee », « 2026-10-22-3f9a1c2b7d4e » pour une photo
+ * ajoutée dans l'administration). Le Worker retrouve la photo par cette clé.
+ */
+export const photoKey = (src: string) =>
+  (src.split(/[?#]/)[0].split('/').pop() ?? '').replace(/\.[a-z0-9]+$/i, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');

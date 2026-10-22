@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { PUBLIC_SITE_URL, WHATSAPP_GROUP_URL } from '@/config/site';
 import type { Locale } from '@/i18n';
+import { DEFAULT_SHARE_IMAGE } from '@/hooks/usePageMeta';
 
 /* Logos des réseaux (tracés simplifiés, couleur héritée). */
 function FacebookIcon({ className }: { className?: string }) {
@@ -105,7 +106,7 @@ interface ShareButtonsProps {
   title?: string;
   /** Texte d'accompagnement pour la feuille de partage du téléphone. */
   text?: string;
-  /** Photo du contenu : jointe au partage depuis un téléphone (WhatsApp, Instagram…). */
+  /** Photo du contenu, jointe au partage depuis un téléphone (WhatsApp, Instagram…). Sans photo : l'image habituelle du site. */
   image?: string | null;
   /** `dark` : sur fond bleu nuit (en-têtes) ; `light` : sur fond clair (cartes). */
   tone?: 'dark' | 'light';
@@ -129,17 +130,22 @@ export function ShareButtons({ url, title, text, image, tone = 'light', size = '
   const photo = useRef<File | null>(null);
   useEffect(() => {
     photo.current = null;
-    if (!image || /\.svg(\?|$)/i.test(image) || !canUseNativeShare() || typeof navigator.canShare !== 'function') return;
+    if (!canUseNativeShare() || typeof navigator.canShare !== 'function') return;
     let cancelled = false;
-    fetch(absoluteShareUrl(image))
-      .then((r) => (r.ok ? r.blob() : null))
-      .then((blob) => {
-        if (!blob || cancelled || !blob.type.startsWith('image/')) return;
-        const name = absoluteShareUrl(image).split('/').pop()?.split('?')[0] || 'photo.jpg';
-        const file = new File([blob], name, { type: blob.type });
-        if (navigator.canShare({ files: [file] })) photo.current = file;
-      })
-      .catch(() => { /* partage sans photo */ });
+    const load = async (src: string): Promise<File | null> => {
+      const r = await fetch(absoluteShareUrl(src));
+      const blob = r.ok ? await r.blob() : null;
+      if (!blob || !blob.type.startsWith('image/')) return null;
+      const name = absoluteShareUrl(src).split('/').pop()?.split('?')[0] || 'photo.jpg';
+      const file = new File([blob], name, { type: blob.type });
+      return navigator.canShare({ files: [file] }) ? file : null;
+    };
+    // Règle du site : chaque partage a sa photo ; sinon (absente, SVG, illisible) l'image habituelle du site.
+    const own = image && !/\.svg(\?|$)/i.test(image) ? image : null;
+    (async () => {
+      const file = (own ? await load(own).catch(() => null) : null) ?? (await load(DEFAULT_SHARE_IMAGE).catch(() => null));
+      if (!cancelled) photo.current = file;
+    })();
     return () => { cancelled = true; };
   }, [image]);
 

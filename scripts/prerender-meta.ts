@@ -16,6 +16,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/content/editorial';
+import { demoAudioSermons } from '@/services/demo/data';
+import { galleryPhotos, photoKey } from '@/content/galerie';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
@@ -30,7 +32,7 @@ const PAGES: Record<string, [string, string]> = {
   '/catechisme': ['Le Catéchisme du KCCisme', 'Questions et réponses sur les croyances, l’enseignement, les fêtes, les sacrements et l’Alliance.'],
   '/liturgie': ['Rites et célébrations', 'Le déroulement officiel des cultes et des sacrements de l’Église Bon Nouveau Message, avec leurs prières.'],
   '/appel-du-prophete': ['L’appel du Prophète', 'Du 8 mars 1955 au début de 1957 : apparitions, signes et épreuves par lesquels l’Éternel a appelé et préparé DIZOLELE-MPUNGU WAFIDUSWA Isaac.'],
-  '/predications': ['Prédications et séminaires', 'L’enseignement de Son Éminence le Chef Spirituel, tiré des notes de prédications et des rapports de séminaires de l’Église (2003-2015).'],
+  '/predications': ['Prédications', 'Des prédications audio à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église.'],
   '/galerie': ['Galerie photo de l’Église', 'Cultes, mamans, temples et archives anciennes de l’Église Bon Nouveau Message (fonds d’archives de la communauté).'],
   '/apotres': ['Les Révérends Apôtres', 'Tous les Révérends Apôtres de l’Église Bon Nouveau Message, en vie et décédés. Vous avez la photo d’un apôtre ? Envoyez-la.'],
   '/videos': ['Vidéos', 'Les vidéos de la communauté sur notre chaîne YouTube « Je suis KCCiste ». Chaque abonnement et chaque partage aide la chaîne à grandir.'],
@@ -90,6 +92,10 @@ function render(path: string, { title, description, image }: Meta) {
   writeFileSync(file, html);
 }
 
+/** « Disciple KAPAPA MUANDA Bossin · Paroisse d’Aéroport · Genèse 3 : 1-5 » */
+const sermonSummary = (s: { preacherTitle?: string | null; preacherName: string; parish?: string | null; bibleText?: string | null }) =>
+  [[s.preacherTitle, s.preacherName].filter(Boolean).join(' '), s.parish, s.bibleText].filter(Boolean).join(' · ');
+
 let count = 0;
 for (const [path, [title, description]] of Object.entries(PAGES)) {
   render(path, { title, description });
@@ -105,6 +111,16 @@ for (const e of editorialEvents('fr')) {
 }
 for (const c of editorialCourses('fr')) {
   render(`/academie/formations/${c.slug}`, { title: c.title, description: c.summary, image: c.coverUrl });
+  count += 1;
+}
+// Prédications audio livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
+for (const s of demoAudioSermons) {
+  render(`/predications/audio/${s.id}`, { title: s.title, description: sermonSummary(s), image: s.preacherPhotoUrl });
+  count += 1;
+}
+// Photos de la galerie livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
+for (const p of galleryPhotos) {
+  render(`/galerie/photo/${photoKey(p.src)}`, { title: p.caption.fr, description: PAGES['/galerie'][1], image: p.src });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

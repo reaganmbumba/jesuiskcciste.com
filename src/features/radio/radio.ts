@@ -16,7 +16,7 @@ import type { AudioSermon, Track } from '@/types';
  * (réglage `radio` de `site_settings`, clé « public » : aucun SQL à coller).
  *
  * Émissions en direct : l'animateur diffuse depuis son téléphone ou son
- * ordinateur vers un flux audio gratuit (Zeno.fm, Icecast…), puis appuie sur
+ * ordinateur vers un flux audio gratuit (Caster.fm, Zeno.fm ou tout serveur Icecast), puis appuie sur
  * « Passer en direct » dans l'administration. La radio de chaque auditeur
  * bascule alors sur ce flux, et revient aux chants quand le direct s'arrête.
  */

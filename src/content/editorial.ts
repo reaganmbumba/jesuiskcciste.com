@@ -183,6 +183,8 @@ export const editorialTracks = (): Track[] => [
   { id: id('trk-yawhe-libanga'), title: 'Yawhe Libanga', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 90, audioUrl: '/audio/yawhe-libanga.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: id('trk-yawhe-oyebi-misala-na-ngai'), title: 'Yawhe oyebi misala na ngai', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 145, audioUrl: '/audio/yawhe-oyebi-misala-na-ngai.mp3', broadcastRights: 'authorized', lyrics: null },
   { id: id('trk-zalaka-reconnaissant'), title: 'Zalaka reconnaissant', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 255, audioUrl: '/audio/zalaka-reconnaissant.mp3', broadcastRights: 'authorized', lyrics: null },
+  { id: id('trk-zalaka-connaissant'), title: 'Zalaka connaissant', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 255, audioUrl: '/audio/zalaka-connaissant.mp3', broadcastRights: 'authorized', lyrics: null },
+  { id: id('trk-chant-kcciste-titre-a-preciser'), title: 'Chant KCCiste (titre à préciser)', author: 'JE SUIS KCCiste', artistId: id('art-kcciste'), albumId: null, category: 'Chants', durationSeconds: 97, audioUrl: '/audio/chant-kcciste-titre-a-preciser.mp3', broadcastRights: 'authorized', lyrics: null },
 ];
 
 export function editorialMedia(locale = currentLocale()): MediaItem[] {

@@ -1,10 +1,13 @@
-import { BookMarked, Globe2, MapPin, Quote } from 'lucide-react';
+import { BookMarked, BookOpen, Download, Globe2, MapPin, Quote } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
-import { ButtonLink } from '@/components/ui/Button';
+import { ButtonLink, buttonClass } from '@/components/ui/Button';
 import * as fr from '@/content/mon-appel';
 import * as en from '@/content/mon-appel.en';
 import * as pt from '@/content/mon-appel.pt';
 import { useI18n } from '@/i18n';
+
+/** Le livre complet, mis en ligne par Reagan MBUMBA (version numérique fidèle). */
+const BOOK_PDF = '/livres/mon-appel.pdf';
 
 /** « Mon Appel », le récit de l'appel du Prophète (1955-1957), et sa note biographique (voir src/content/mon-appel.ts). */
 export default function CallingPage() {
@@ -23,6 +26,13 @@ export default function CallingPage() {
             <p className="mt-2 font-medium">{callingBook.author}</p>
             <p className="mt-1 text-sm text-white/60">{callingBook.published}</p>
             <blockquote className="mt-6 border-l-2 border-gold/60 pl-4 text-sm italic leading-relaxed text-white/80">{callingBook.preface}<footer className="mt-2 not-italic text-gold-300">{callingBook.prefaceAuthor}</footer></blockquote>
+            <div id="lire" className="mt-7 scroll-mt-32 border-t border-white/10 pt-6">
+              <p className="text-sm text-white/70">{tx('Le livre complet, fidèle au texte original, en PDF (49 pages, 1,3 Mo).', 'The full book, faithful to the original text, as a PDF (49 pages, 1.3 MB, in French).', 'O livro completo, fiel ao texto original, em PDF (49 páginas, 1,3 MB, em francês).')}</p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <a href={BOOK_PDF} target="_blank" rel="noopener" className={buttonClass('gold')}><BookOpen className="h-4 w-4" aria-hidden />{tx('Lire le livre', 'Read the book', 'Ler o livro')}</a>
+                <a href={BOOK_PDF} download="Mon-Appel-DIZOLELE-MPUNGU-WAFIDUSWA-Isaac.pdf" className={buttonClass('light')}><Download className="h-4 w-4" aria-hidden />{tx('Télécharger', 'Download', 'Descarregar')}</a>
+              </div>
+            </div>
           </div>
           <div className="prose-kcc lg:col-span-3">
             {callingBook.intro.map((p, i) => <p key={i} className={i === 1 ? 'font-display text-xl italic text-night' : ''}>{p}</p>)}

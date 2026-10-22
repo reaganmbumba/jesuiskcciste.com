@@ -5,6 +5,10 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { YOUTUBE_CHANNEL_NAME, YOUTUBE_VIDEOS, youtubeChannelUrl, youtubeSubscribeUrl, youtubeWatchUrl, type YouTubeVideo } from '@/config/youtube';
 import { ShareButtons } from '@/components/common/ShareButtons';
+import { toVideo, useSiteContent } from '@/features/content/siteContent';
+
+/** Vidéos mises en avant (gérées dans l'administration, « Contenu du site »). */
+export const useYouTubeVideos = (): YouTubeVideo[] => useSiteContent('videos', toVideo, YOUTUBE_VIDEOS) ?? [];
 
 export function YouTubeIcon({ className }: { className?: string }) {
   return (
@@ -72,6 +76,7 @@ export function YouTubeEmbed({ video, className }: { video: YouTubeVideo; classN
 /** Bandeau complet de la chaîne : présentation, bouton d'abonnement et vidéos. */
 export function YouTubeChannelSection({ showPageLink = false, limit }: { showPageLink?: boolean; limit?: number }) {
   const { tx } = useI18n();
+  const videos = useYouTubeVideos();
   return (
     <section className="relative isolate overflow-hidden bg-night-950 py-20 text-white sm:py-24" aria-labelledby="yt-title">
       <div className="pointer-events-none absolute -right-32 -top-32 -z-10 h-96 w-96 rounded-full bg-[#FF0000]/20 blur-[120px]" aria-hidden />
@@ -91,7 +96,7 @@ export function YouTubeChannelSection({ showPageLink = false, limit }: { showPag
           </div>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {YOUTUBE_VIDEOS.slice(0, limit).map((v) => <YouTubeEmbed key={v.id} video={v} />)}
+          {videos.slice(0, limit).map((v) => <YouTubeEmbed key={v.id} video={v} />)}
         </div>
         {showPageLink && (
           <p className="mt-8 text-center">

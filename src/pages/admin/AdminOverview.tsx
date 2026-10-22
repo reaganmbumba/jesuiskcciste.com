@@ -29,6 +29,7 @@ export default function AdminOverview() {
         <div><h1 className="font-display text-2xl font-semibold text-night">Vue d’ensemble</h1><p className="text-sm text-ink/60">Rôle(s) : {roles || 'Membre'}</p></div>
         {isDemoMode && <span className="flex items-center gap-2 text-xs text-ink/55"><DemoBadge /> Chiffres calculés sur les données fictives</span>}
       </div>
+      {can(profile, 'settings.manage') && <SiteMap />}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={<Users className="h-5 w-5" />} label="Membres actifs" value={members.filter((m) => m.status === 'active').length} />
         <StatCard icon={<Building2 className="h-5 w-5" />} label="Paroisses" value={parishes.length} />
@@ -61,5 +62,35 @@ export default function AdminOverview() {
         </CardBody></Card>
       )}
     </div>
+  );
+}
+
+/** Où modifier chaque rubrique du site public. */
+const SITE_MAP: { label: string; to: string; what: string }[] = [
+  { label: 'Actualités et annonces', to: '/admin/annonces', what: 'Articles de l’accueil et de « Actualités », avec photo' },
+  { label: 'Agenda', to: '/admin/evenements', what: 'Cultes, réunions, concerts, avec affiche' },
+  { label: 'Galerie photo', to: '/admin/contenu', what: 'Photos et légendes de la galerie' },
+  { label: 'Vidéos YouTube', to: '/admin/contenu', what: 'Vidéos de l’accueil et de la page Vidéos' },
+  { label: 'Solidarité', to: '/admin/contenu', what: 'Opérations, listes de contributions, numéros de don' },
+  { label: 'Prédications audio', to: '/admin/predications', what: 'Audio, photo du prédicateur, paroisse' },
+  { label: 'Révérends Apôtres', to: '/admin/apotres', what: 'Profils, photos, propositions des visiteurs' },
+  { label: 'Musique et bibliothèque', to: '/admin/medias', what: 'Chants, artistes, albums, documents' },
+  { label: 'Paroisses', to: '/admin/paroisses', what: 'Liste officielle des paroisses' },
+  { label: 'Formations', to: '/admin/formations', what: 'Cours et examens de l’Académie' },
+  { label: 'Projets', to: '/admin/projets', what: 'Projets de solidarité et contributions déclarées' },
+  { label: 'Contact et réseaux', to: '/admin/parametres', what: 'E-mail, téléphone, réseaux, présentation de l’Église' },
+];
+
+function SiteMap() {
+  return (
+    <Card><CardBody>
+      <h2 className="mb-1 font-semibold text-night">Modifier le site : où trouver quoi</h2>
+      <p className="mb-3 text-sm text-ink/60">Chaque rubrique se modifie ici : bouton « Ajouter », crayon pour modifier, corbeille pour supprimer.</p>
+      <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {SITE_MAP.map((x) => (
+          <li key={x.label}><Link to={x.to} className="block rounded-lg bg-mist px-3 py-2 hover:bg-gold-50"><span className="block text-sm font-semibold text-night">{x.label}</span><span className="block text-xs text-ink/60">{x.what}</span></Link></li>
+        ))}
+      </ul>
+    </CardBody></Card>
   );
 }

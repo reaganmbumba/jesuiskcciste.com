@@ -44,14 +44,14 @@ export default function AdminMedia() {
       {tab === 'artists' && (
         <CrudTable<Artist> entity="artists" title="Artistes et chorales" repo={artistsRepo} searchFields={['name']}
           columns={[{ key: 'name', label: 'Nom' }, { key: 'kind', label: 'Type', render: (a) => (a.kind === 'choir' ? 'Chorale' : 'Artiste') }, { key: 'parishId', label: 'Paroisse', render: (a) => parishes.find((p) => p.id === a.parishId)?.name ?? '—' }]}
-          formFields={[{ key: 'name', label: 'Nom', type: 'text', required: true }, { key: 'kind', label: 'Type', type: 'select', required: true, options: [{ value: 'choir', label: 'Chorale' }, { value: 'artist', label: 'Artiste' }] }, { key: 'parishId', label: 'Paroisse', type: 'select', options: parishes.map((p) => ({ value: p.id, label: p.name })) }, { key: 'imageUrl', label: 'Photo (URL)', type: 'url' }, { key: 'bio', label: 'Présentation', type: 'textarea' }]}
+          formFields={[{ key: 'name', label: 'Nom', type: 'text', required: true }, { key: 'kind', label: 'Type', type: 'select', required: true, options: [{ value: 'choir', label: 'Chorale' }, { value: 'artist', label: 'Artiste' }] }, { key: 'parishId', label: 'Paroisse', type: 'select', options: parishes.map((p) => ({ value: p.id, label: p.name })) }, { key: 'imageUrl', label: 'Photo', type: 'image' }, { key: 'bio', label: 'Présentation', type: 'textarea' }]}
           defaults={{ kind: 'choir', bio: '' }}
         />
       )}
       {tab === 'albums' && (
         <CrudTable<Album> entity="albums" title="Albums" repo={albumsRepo} searchFields={['title']}
           columns={[{ key: 'title', label: 'Titre' }, { key: 'artistId', label: 'Artiste', render: (a) => artists.find((x) => x.id === a.artistId)?.name ?? '—' }, { key: 'year', label: 'Année' }, { key: 'priceAmount', label: 'Prix', render: (a) => (a.priceAmount && a.priceCurrency ? priceLabel(a.priceAmount, a.priceCurrency) : '—') }]}
-          formFields={[{ key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) }, { key: 'year', label: 'Année', type: 'number' }, { key: 'coverUrl', label: 'Pochette (URL)', type: 'url' }, { key: 'priceAmount', label: 'Prix de l’album complet', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES }]}
+          formFields={[{ key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'artistId', label: 'Artiste / chorale', type: 'select', required: true, options: artists.map((a) => ({ value: a.id, label: a.name })) }, { key: 'year', label: 'Année', type: 'number' }, { key: 'coverUrl', label: 'Pochette', type: 'image' }, { key: 'priceAmount', label: 'Prix de l’album complet', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES }]}
         />
       )}
       {tab === 'media' && (

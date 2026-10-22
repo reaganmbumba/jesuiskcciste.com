@@ -82,7 +82,7 @@ export default function AdminProjects() {
             { key: 'goalAmount', label: 'Objectif financier', type: 'number', required: true },
             { key: 'currency', label: 'Devise', type: 'select', required: true, options: [{ value: 'USD', label: 'USD' }, { value: 'CDF', label: 'CDF' }, { value: 'EUR', label: 'EUR' }] },
             { key: 'launchedAt', label: 'Date de lancement', type: 'date', required: true }, { key: 'deadline', label: 'Date limite', type: 'date' },
-            { key: 'status', label: 'Statut', type: 'select', required: true, options: P_STATUS }, { key: 'imageUrl', label: 'Image (URL)', type: 'url' },
+            { key: 'status', label: 'Statut', type: 'select', required: true, options: P_STATUS }, { key: 'imageUrl', label: 'Photo', type: 'image' },
             { key: 'participationTerms', label: 'Modalités de participation', type: 'textarea' },
           ]}
           defaults={{ currency: 'USD', status: 'draft', confirmedAmount: 0, declaredAmount: 0, launchedAt: new Date().toISOString(), participationTerms: 'Le paiement en ligne n’est pas encore disponible.' }}

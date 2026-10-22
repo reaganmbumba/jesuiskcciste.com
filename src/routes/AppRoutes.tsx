@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
+  LayoutGrid,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -80,6 +81,7 @@ const AdminApostles = lazy(() => import('@/pages/admin/AdminApostles'));
 const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
+const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
 
 const MEMBER_MENU: SideItem[] = [
   { to: '/espace', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
@@ -97,6 +99,7 @@ const MEMBER_MENU: SideItem[] = [
 
 const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin', label: 'Vue d’ensemble', icon: BarChart3, end: true, permission: 'admin.access' },
+  { to: '/admin/contenu', label: 'Contenu du site', icon: LayoutGrid, permission: 'settings.manage' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
   { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
@@ -206,6 +209,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="projects.manage" />}><Route path="projets" element={<AdminProjects />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="apotres" element={<AdminApostles />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="contenu" element={<AdminSiteContent />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="parametres" element={<AdminSettings />} /></Route>
         </Route>

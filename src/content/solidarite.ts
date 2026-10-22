@@ -1,4 +1,7 @@
 import type { MobileProvider } from '@/features/music/shop';
+import type { Tri } from '@/i18n';
+
+const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
 /**
  * Numéros Mobile Money où envoyer un don, affichés dans l'espace « Faire un don »
@@ -147,3 +150,48 @@ export const CONTRIBUTIONS: Record<'luanika' | 'ngidinga', Contribution[]> = {
     { flag: '🇨🇩', name: "Ma Diaconesse Marceline Mpandu Milandu", amount: '16 $' },
   ],
 };
+
+/**
+ * Opérations « 100 chaises » menées par l'initiative JE SUIS KCCiste
+ * (contenu de base : l'administration les modifie dans « Contenu du site »).
+ * `key` relie l'opération à sa liste de contributions.
+ */
+export interface SolidarityOperation { key: string; parish: string; done: boolean; photos: string[]; t: Tri; d: Tri; facts: Tri[]; date: Tri }
+export const SOLIDARITY_OPERATIONS: SolidarityOperation[] = [
+  {
+    done: true,
+    key: 'luanika',
+    parish: 'Luanika',
+    photos: ['/images/solidarite/luanika-eglise.jpg', '/images/solidarite/luanika-facade.jpg'],
+    t: T('Opération 100 chaises — Paroisse de Luanika', 'Operation 100 Chairs — Luanika parish', 'Operação 100 cadeiras — Paróquia de Luanika'),
+    d: T(
+      'Dans cette paroisse rurale du Kongo-Central, les fidèles s’asseyaient sur des bancs en bambou. Grâce à la mobilisation des KCCistes de plusieurs pays, l’objectif a été dépassé : 150 chaises en plastique ont été achetées à Lufu puis transportées jusqu’à Luanika.',
+      'In this rural parish of Kongo-Central, the faithful used to sit on bamboo benches. Thanks to KCCistes from several countries, the goal was exceeded: 150 plastic chairs were bought in Lufu and carried all the way to Luanika.',
+      'Nesta paróquia rural do Kongo-Central, os fiéis sentavam-se em bancos de bambu. Graças à mobilização dos KCCistas de vários países, o objetivo foi ultrapassado: 150 cadeiras de plástico foram compradas em Lufu e transportadas até Luanika.',
+    ),
+    facts: [
+      T('150 chaises remises', '150 chairs delivered', '150 cadeiras entregues'),
+      T('73 contributeurs', '73 contributors', '73 contribuidores'),
+      T('1 326,60 $ + 584 000 FC collectés', '$1,326.60 + 584,000 FC raised', '1 326,60 $ + 584 000 FC recolhidos'),
+    ],
+    date: T('Remise officielle le dimanche 13 septembre 2026', 'Official handover on Sunday 13 September 2026', 'Entrega oficial no domingo, 13 de setembro de 2026'),
+  },
+  {
+    done: false,
+    key: 'ngidinga',
+    parish: 'Ngidinga',
+    photos: ['/images/solidarite/ngidinga-bancs-bambou.jpg'],
+    t: T('Opération 100 chaises — Paroisse de Ngidinga', 'Operation 100 Chairs — Ngidinga parish', 'Operação 100 cadeiras — Paróquia de Ngidinga'),
+    d: T(
+      'Après Luanika, la paroisse sœur de Ngidinga : les fidèles y prient encore assis sur des bambous posés sur des briques. La collecte continue pour leur offrir 100 chaises.',
+      'After Luanika, our sister parish of Ngidinga: the faithful still pray sitting on bamboo poles laid on bricks. The collection continues to give them 100 chairs.',
+      'Depois de Luanika, a paróquia irmã de Ngidinga: os fiéis ainda rezam sentados em bambus apoiados em tijolos. A recolha continua para lhes oferecer 100 cadeiras.',
+    ),
+    facts: [
+      T('Objectif : 100 chaises', 'Goal: 100 chairs', 'Objetivo: 100 cadeiras'),
+      T('40 contributions', '40 contributions', '40 contribuições'),
+      T('979 $ + 316 000 FC collectés', '$979 + 316,000 FC raised', '979 $ + 316 000 FC recolhidos'),
+    ],
+    date: T('Liste à jour au 22 octobre 2026 · achat et remise des chaises en préparation', 'List as of 22 October 2026 · purchase and handover of the chairs being prepared', 'Lista de 22 de outubro de 2026 · compra e entrega das cadeiras em preparação'),
+  },
+];

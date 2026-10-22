@@ -39,7 +39,7 @@ export default function AdminCourses() {
           { key: 'level', label: 'Niveau', type: 'select', required: true, options: Object.entries(LEVEL_LABELS).map(([v, l]) => ({ value: v, label: l })) },
           { key: 'estimatedHours', label: 'Durée estimée (heures)', type: 'number', required: true },
           { key: 'access', label: 'Accessibilité', type: 'select', required: true, options: Object.entries(ACCESS_LABELS).map(([v, a]) => ({ value: v, label: a.label })) },
-          { key: 'trainerName', label: 'Formateur', type: 'text' }, { key: 'coverUrl', label: 'Image de couverture (URL)', type: 'url' },
+          { key: 'trainerName', label: 'Formateur', type: 'text' }, { key: 'coverUrl', label: 'Image de couverture', type: 'image' },
         ]}
         defaults={{ status: 'draft', level: 'debutant', access: 'members', estimatedHours: 1, modules: [], description: '' }}
         transformBeforeSave={(v) => ({ ...v, slug: String(v.slug ?? '').toLowerCase().replace(/[^a-z0-9-]+/g, '-') })}

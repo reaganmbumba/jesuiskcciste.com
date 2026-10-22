@@ -10,11 +10,16 @@ do $$ begin
   assert (select count(*) from public.site_content where collection = 'gallery') = 13, 'la galerie de base est copiée';
   assert (select count(*) from public.site_content where collection = 'contributions') = 113, 'les listes de contributions sont copiées';
   assert (select count(*) from public.announcements where id = md5('edito-ann-concert-glodie-massamba-matadi')::uuid) = 1, 'les actualités de base sont copiées';
+  assert (select count(*) from public.tracks where audio_url like '/audio/%' or title = 'Nouveau chant') = 31, 'les 31 chants sont copiés';
+  assert (select count(*) from public.tracks where album_id is not null) = 1, 'le chant de l’album est rattaché à son album';
+  assert (select count(*) from public.artists where name <> 'Chorale test') = 3, 'les artistes sont copiés';
 end $$;
 -- Le fichier peut être collé deux fois sans doublon.
 \i supabase/seed_site_content.sql
 do $$ begin
   assert (select count(*) from public.site_content where collection = 'gallery') = 13, 'pas de doublon dans la galerie';
+  assert (select count(*) from public.tracks where audio_url like '/audio/%' or title = 'Nouveau chant') = 31, 'pas de doublon dans les chants';
+  assert (select count(*) from public.artists where name <> 'Chorale test') = 3, 'pas de doublon dans les artistes';
 end $$;
 update public.site_content set published = false where collection = 'videos' and position = 10;
 
@@ -38,10 +43,14 @@ do $$ begin
   delete from public.site_content where collection = 'gallery';
   begin insert into storage.objects (bucket_id, name) values ('public-assets', 'contenu/annonces/intrus.jpg');
     raise exception 'un membre a déposé une photo'; exception when insufficient_privilege then null; end;
+  begin insert into storage.objects (bucket_id, name) values ('chants', 'intrus.mp3');
+    raise exception 'un membre a déposé un chant'; exception when insufficient_privilege then null; end;
+  delete from public.tracks;
 end $$;
 reset role;
 do $$ begin
   assert (select count(*) from public.site_content where collection = 'gallery') = 13, 'un membre ne supprime pas la galerie';
+  assert (select count(*) from public.tracks where audio_url like '/audio/%' or title = 'Nouveau chant') = 31, 'un membre ne supprime pas les chants';
   assert not exists (select 1 from public.site_content where collection = 'donation_accounts' and data = '{}'), 'un membre ne modifie pas les numéros de don';
 end $$;
 
@@ -68,11 +77,17 @@ do $$ begin
   update public.site_content set data = jsonb_set(data, '{holder}', '"Nouveau titulaire"') where collection = 'donation_accounts';
   delete from public.site_content where collection = 'gallery' and position = 10;
   insert into storage.objects (bucket_id, name) values ('public-assets', 'contenu/gallery/photo.jpg');
+  insert into storage.objects (bucket_id, name) values ('chants', 'nouveau-chant.mp3');
+  insert into public.tracks (title, author, artist_id, category, audio_url, broadcast_rights)
+    select 'Nouveau chant', 'JE SUIS KCCiste', id, 'Chants', 'https://exemple.invalid/nouveau-chant.mp3', 'authorized' from public.artists where name = 'JE SUIS KCCiste';
+  delete from public.tracks where title = 'Masina';
 end $$;
 reset role;
 do $$ begin
   assert (select count(*) from public.site_content where collection = 'videos') = 8, 'l’administrateur ajoute une vidéo';
   assert (select count(*) from public.site_content where collection = 'gallery') = 12, 'l’administrateur supprime une photo';
+  assert (select count(*) from public.tracks where audio_url like '/audio/%' or title = 'Nouveau chant') = 31 and exists (select 1 from public.tracks where title = 'Nouveau chant'), 'l’administrateur ajoute et supprime un chant';
+  assert (select count(*) from storage.objects where bucket_id = 'chants') = 1, 'l’administrateur dépose un chant';
   assert not exists (select 1 from public.site_content where collection = 'donation_accounts' and data->>'holder' <> 'Nouveau titulaire'), 'l’administrateur modifie les numéros';
 end $$;
 

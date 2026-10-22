@@ -16,6 +16,8 @@ import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
 import { isForSale } from '@/features/music/shop';
 import { ShareButtons } from '@/components/common/ShareButtons';
+import { useAuth } from '@/features/auth/AuthContext';
+import { can } from '@/lib/permissions';
 
 const RIGHTS = {
   authorized: { label: { fr: 'Diffusion autorisée', en: 'Broadcast allowed', pt: 'Difusão autorizada' }, tone: 'green' },
@@ -26,6 +28,7 @@ const RIGHTS = {
 export default function MusicPage() {
   const [params] = useSearchParams();
   const { tx, pick } = useI18n();
+  const { profile } = useAuth();
   const [buying, setBuying] = useState<SaleItem | null>(null);
   const { data, loading } = useAsync(() => Promise.all([tracksRepo.all(), artistsRepo.all(), albumsRepo.all()]), []);
   const [tracks = [], artists = [], albums = []] = data ?? [];
@@ -42,7 +45,7 @@ export default function MusicPage() {
   return (
     <div className={current ? 'pb-24' : ''}>
       <PageHeader eyebrow={tx('Médias', 'Media', 'Média')} title="KCC Music" description={tx('Chants, albums, chorales et artistes de la communauté, diffusés avec l’autorisation des ayants droit.', 'Songs, albums, choirs and artists of the community, shared with the permission of the rights holders.', 'Cânticos, álbuns, coros e artistas da comunidade, difundidos com autorização dos titulares de direitos.')}>
-        <div className="flex flex-wrap gap-3"><Link to="/musique/artistes" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Mic2 className="h-4 w-4" />{tx('Artistes et chorales', 'Artists and choirs', 'Artistas e coros')}</Link><Link to="/enseignements#pgm" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Music2 className="h-4 w-4" />{tx('Vision PGM et paroles', 'PGM vision and lyrics', 'Visão PGM e letras')}</Link></div>
+        <div className="flex flex-wrap gap-3">{can(profile, 'music.manage') && <Link to="/admin/medias" className="inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2 text-sm font-semibold text-night hover:bg-gold-300">+ {tx('Ajouter ou modifier des chants', 'Add or edit songs', 'Adicionar ou editar cânticos')}</Link>}<Link to="/musique/artistes" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Mic2 className="h-4 w-4" />{tx('Artistes et chorales', 'Artists and choirs', 'Artistas e coros')}</Link><Link to="/enseignements#pgm" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Music2 className="h-4 w-4" />{tx('Vision PGM et paroles', 'PGM vision and lyrics', 'Visão PGM e letras')}</Link></div>
       </PageHeader>
       <section className="container-page grid gap-8 py-10 lg:grid-cols-3">
         <div className="lg:col-span-2">

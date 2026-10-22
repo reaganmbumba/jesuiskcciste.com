@@ -74,7 +74,7 @@ const SITE_MAP: { label: string; to: string; what: string }[] = [
   { label: 'Solidarité', to: '/admin/contenu', what: 'Opérations, listes de contributions, numéros de don' },
   { label: 'Prédications audio', to: '/admin/predications', what: 'Audio, photo du prédicateur, paroisse' },
   { label: 'Révérends Apôtres', to: '/admin/apotres', what: 'Profils, photos, propositions des visiteurs' },
-  { label: 'Musique et bibliothèque', to: '/admin/medias', what: 'Chants, artistes, albums, documents' },
+  { label: 'Musique : chants et albums', to: '/admin/medias', what: 'Ajouter un chant (fichier audio), albums, artistes, documents' },
   { label: 'Paroisses', to: '/admin/paroisses', what: 'Liste officielle des paroisses' },
   { label: 'Formations', to: '/admin/formations', what: 'Cours et examens de l’Académie' },
   { label: 'Projets', to: '/admin/projets', what: 'Projets de solidarité et contributions déclarées' },

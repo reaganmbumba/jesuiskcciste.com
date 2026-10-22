@@ -106,7 +106,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/evenements', label: 'Événements', icon: CalendarDays, permission: 'events.manage' },
   { to: '/admin/formations', label: 'Formations et examens', icon: BookOpenCheck, permission: 'courses.manage_own' },
   { to: '/admin/certificats', label: 'Certificats', icon: Award, permission: 'certificates.manage' },
-  { to: '/admin/medias', label: 'KCC Music et médias', icon: Music2, permission: 'music.manage' },
+  { to: '/admin/medias', label: 'Musique : chants et albums', icon: Music2, permission: 'music.manage' },
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
   { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },

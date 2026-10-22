@@ -216,3 +216,51 @@ insert into public.media_items (id, title, kind, category, description, url, aud
   (md5('edito-med-caisse')::uuid, 'Règlement de la caisse d’assistance sociale', 'document', 'Solidarité', 'Entraide en cas de deuil et de maladie.', '/enseignements#caisse', 'public', '2026-10-20T09:00:00.000Z'),
   (md5('edito-med-video-kcc')::uuid, 'Le KCC expliqué en animation', 'video', 'Vidéos', 'Courte vidéo sur l’apparition des signes KCC.', '/videos/kcc-explication-apparition.mp4', 'public', '2026-10-20T09:00:00.000Z')
 on conflict (id) do nothing;
+
+-- Musique : 3 artistes, 1 album(s), 31 chants
+insert into public.artists (id, name, kind, bio, image_url) select md5('edito-art-ebnm')::uuid, 'Ensemble EBNM / KCC', 'choir', 'Cantiques d’ensemble de l’Église Bon Nouveau Message (KCC).', '/images/logo-kcc.png'
+where not exists (select 1 from public.artists where name = 'Ensemble EBNM / KCC') on conflict (id) do nothing;
+insert into public.artists (id, name, kind, bio, image_url) select md5('edito-art-patrick-beckham')::uuid, 'Patrick Beckham', 'artist', 'Artiste de la communauté KCCiste.', '/images/accueil/musique.svg'
+where not exists (select 1 from public.artists where name = 'Patrick Beckham') on conflict (id) do nothing;
+insert into public.artists (id, name, kind, bio, image_url) select md5('edito-art-kcciste')::uuid, 'JE SUIS KCCiste', 'artist', 'Chants de la communauté JE SUIS KCCiste, en lingala, kikongo, français et portugais.', '/images/logo-kcc.png'
+where not exists (select 1 from public.artists where name = 'JE SUIS KCCiste') on conflict (id) do nothing;
+insert into public.albums (id, title, artist_id, year, cover_url) select md5('edito-alb-cantiques-5')::uuid, 'Sélection cantiques d’ensemble – Volume 5', (select id from public.artists where name = 'Ensemble EBNM / KCC' order by created_at limit 1), null, '/images/logo-kcc.png'
+where not exists (select 1 from public.albums where title = 'Sélection cantiques d’ensemble – Volume 5') on conflict (id) do nothing;
+insert into public.tracks (id, title, author, artist_id, album_id, category, duration_seconds, audio_url, broadcast_rights, lyrics)
+select v.id, v.title, v.author, ar.id, al.id, v.category, v.duration, v.audio, v.rights::public.broadcast_rights, v.lyrics from (values
+  (md5('edito-trk-cantiques-5')::uuid, 'Sélection cantiques d’ensemble – Volume 5', 'EBNM / KCC', 'Ensemble EBNM / KCC', 'Sélection cantiques d’ensemble – Volume 5', 'Cantiques', 618, '/audio/cantiques-ensemble-volume-5.mp3', 'authorized', null),
+  (md5('edito-trk-masina')::uuid, 'Masina', 'EBNM / KCC', 'Ensemble EBNM / KCC', null, 'Chants', 332, '/audio/masina-ebnm-kcc.mp3', 'authorized', null),
+  (md5('edito-trk-merci-maman')::uuid, 'Merci Maman', 'Patrick Beckham', 'Patrick Beckham', null, 'Chants', 231, '/audio/merci-maman-patrick-beckham.mp3', 'authorized', null),
+  (md5('edito-trk-seigneur-gueris')::uuid, 'Seigneur, guéris ce qu’ils ont détruit en moi', 'EBNM / KCC', 'Ensemble EBNM / KCC', null, 'Chants', 61, '/audio/seigneur-gueris-ce-quils-ont-detruit-en-moi.mp3', 'authorized', null),
+  (md5('edito-trk-allelua')::uuid, 'Allelua', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 224, '/audio/allelua.mp3', 'authorized', null),
+  (md5('edito-trk-bolingo-en-lingala')::uuid, 'Bolingo (en lingala)', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 271, '/audio/bolingo-en-lingala.mp3', 'authorized', null),
+  (md5('edito-trk-celibataire')::uuid, 'Célibataire', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 211, '/audio/celibataire.mp3', 'authorized', null),
+  (md5('edito-trk-eh-yawhe')::uuid, 'Eh Yawhe', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 212, '/audio/eh-yawhe.mp3', 'authorized', null),
+  (md5('edito-trk-libota-na-ngai')::uuid, 'Libota na ngai', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 224, '/audio/libota-na-ngai.mp3', 'authorized', null),
+  (md5('edito-trk-mono-nzambi')::uuid, 'Mono Nzambi', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 107, '/audio/mono-nzambi.mp3', 'authorized', null),
+  (md5('edito-trk-motivation')::uuid, 'Motivation', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 212, '/audio/motivation.mp3', 'authorized', null),
+  (md5('edito-trk-motivation-2')::uuid, 'Motivation 2', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 180, '/audio/motivation-2.mp3', 'authorized', null),
+  (md5('edito-trk-nanga-mwa-yave')::uuid, 'Nanga mwa Yave', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 176, '/audio/nanga-mwa-yave.mp3', 'authorized', null),
+  (md5('edito-trk-natiki-na-maboko')::uuid, 'Natiki na maboko', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 216, '/audio/natiki-na-maboko.mp3', 'authorized', null),
+  (md5('edito-trk-ngai-na-tali')::uuid, 'Ngai na tali', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 91, '/audio/ngai-na-tali.mp3', 'authorized', null),
+  (md5('edito-trk-ngieti-lomba-remix')::uuid, 'Ngieti lomba (remix)', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 167, '/audio/ngieti-lomba-remix.mp3', 'authorized', null),
+  (md5('edito-trk-ngolu')::uuid, 'Ngolu', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 135, '/audio/ngolu.mp3', 'authorized', null),
+  (md5('edito-trk-profession-de-foi')::uuid, 'Profession de foi', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 209, '/audio/profession-de-foi.mp3', 'authorized', null),
+  (md5('edito-trk-profession-de-foi-portugais')::uuid, 'Profession de foi (en portugais)', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 248, '/audio/profession-de-foi-portugais.mp3', 'authorized', null),
+  (md5('edito-trk-sainte-convocation')::uuid, 'Sainte convocation', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 157, '/audio/sainte-convocation.mp3', 'authorized', null),
+  (md5('edito-trk-samba')::uuid, 'Samba', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 202, '/audio/samba.mp3', 'authorized', null),
+  (md5('edito-trk-simba-ngai-makasi')::uuid, 'Simba ngai makasi', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 197, '/audio/simba-ngai-makasi.mp3', 'authorized', null),
+  (md5('edito-trk-tala-motema-na-ngai')::uuid, 'Tala motema na ngai', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 160, '/audio/tala-motema-na-ngai.mp3', 'authorized', null),
+  (md5('edito-trk-totondele')::uuid, 'Totondele', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 140, '/audio/totondele.mp3', 'authorized', null),
+  (md5('edito-trk-vrai-kcciste-portugais')::uuid, 'Vrai KCCiste (en portugais)', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 222, '/audio/vrai-kcciste-portugais.mp3', 'authorized', null),
+  (md5('edito-trk-yawhe-libanga')::uuid, 'Yawhe Libanga', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 90, '/audio/yawhe-libanga.mp3', 'authorized', null),
+  (md5('edito-trk-yawhe-oyebi-misala-na-ngai')::uuid, 'Yawhe oyebi misala na ngai', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 145, '/audio/yawhe-oyebi-misala-na-ngai.mp3', 'authorized', null),
+  (md5('edito-trk-zalaka-reconnaissant')::uuid, 'Zalaka reconnaissant', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 255, '/audio/zalaka-reconnaissant.mp3', 'authorized', null),
+  (md5('edito-trk-zalaka-connaissant')::uuid, 'Zalaka connaissant', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 255, '/audio/zalaka-connaissant.mp3', 'authorized', null),
+  (md5('edito-trk-yave-lusia-ya-ika')::uuid, 'Yave lusia ya ika', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 97, '/audio/yave-lusia-ya-ika.mp3', 'authorized', null),
+  (md5('edito-trk-motivation-3')::uuid, 'Motivation 3', 'JE SUIS KCCiste', 'JE SUIS KCCiste', null, 'Chants', 55, '/audio/motivation-3.mp3', 'authorized', null)
+) as v(id, title, author, artist, album, category, duration, audio, rights, lyrics)
+cross join lateral (select id from public.artists where name = v.artist order by created_at limit 1) ar
+left join lateral (select id from public.albums where title = v.album order by created_at limit 1) al on true
+where not exists (select 1 from public.tracks t where t.audio_url = v.audio)
+on conflict (id) do nothing;

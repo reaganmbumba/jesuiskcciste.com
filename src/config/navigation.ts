@@ -43,12 +43,14 @@ export const MAIN_NAV: NavGroup[] = [
     key: 'nav.activities', to: '/agenda', children: [
       { label: l('Agenda et événements', 'Calendar and events', 'Agenda e eventos'), to: '/agenda', description: l('Cultes, réunions, séminaires…', 'Services, meetings, seminars…', 'Cultos, reuniões, seminários…') },
       { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Rejoindre une visioconférence', 'Join a video call', 'Entrar numa videoconferência') },
+      { label: l('Cultes en direct', 'Live services', 'Cultos em direto'), to: '/direct', description: l('Suivre le culte sur YouTube', 'Watch the service on YouTube', 'Acompanhar o culto no YouTube') },
       { label: l('Actualités et annonces', 'News and announcements', 'Notícias e anúncios'), to: '/actualites', description: l('Les dernières publications', 'Latest posts', 'As últimas publicações') },
     ],
   },
   {
     key: 'nav.media', to: '/musique', children: [
       { label: l('KCC Music', 'KCC Music', 'KCC Music'), to: '/musique', description: l('Chants, albums et lecteur', 'Songs, albums and player', 'Cânticos, álbuns e leitor') },
+      { label: l('Cultes en direct', 'Live services', 'Cultos em direto'), to: '/direct', description: l('Les cultes et grandes fêtes sur YouTube', 'Services and major feasts on YouTube', 'Cultos e grandes festas no YouTube') },
       { label: l('Vidéos YouTube', 'YouTube videos', 'Vídeos YouTube'), to: '/videos', description: l('La chaîne « Je suis KCCiste »', 'The “Je suis KCCiste” channel', 'O canal «Je suis KCCiste»') },
       { label: l('Artistes et chorales', 'Artists and choirs', 'Artistas e coros'), to: '/musique/artistes', description: l('Les voix de la communauté', 'The voices of the community', 'As vozes da comunidade') },
       { label: l('Bibliothèque numérique', 'Digital library', 'Biblioteca digital'), to: '/bibliotheque', description: l('Documents et supports', 'Documents and resources', 'Documentos e materiais') },

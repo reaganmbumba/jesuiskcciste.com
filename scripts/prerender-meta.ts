@@ -36,6 +36,7 @@ const PAGES: Record<string, [string, string]> = {
   '/galerie': ['Galerie photo de l’Église', 'Cultes, mamans, temples et archives anciennes de l’Église Bon Nouveau Message (fonds d’archives de la communauté).'],
   '/apotres': ['Les Révérends Apôtres', 'Tous les Révérends Apôtres de l’Église Bon Nouveau Message, en vie et décédés. Vous avez la photo d’un apôtre ? Envoyez-la.'],
   '/videos': ['Vidéos', 'Les vidéos de la communauté sur notre chaîne YouTube « Je suis KCCiste ». Chaque abonnement et chaque partage aide la chaîne à grandir.'],
+  '/direct': ['Cultes en direct', 'Suivez en direct les cultes et les grandes fêtes de l’Église Bon Nouveau Message sur la chaîne YouTube « Je suis KCCiste », avec le compte à rebours avant le début.'],
   '/communaute': ['Un seul peuple, partout dans le monde', 'Découvrez l’organisation de la communauté et retrouvez les vôtres.'],
   '/paroisses': ['Paroisses', 'Les paroisses enregistrées sur JE SUIS KCCiste, en RD Congo et dans la diaspora.'],
   '/forum': ['Forum de discussion', 'Des sujets proposés par l’administration, commentés par les membres inscrits avec leur nom et leur paroisse.'],

@@ -43,7 +43,13 @@ interface Props<T extends { id: string }> {
 
 const toInput = (type: FormFieldDef['type'], v: unknown) => {
   if (v === null || v === undefined) return type === 'checkbox' ? false : '';
-  if (type === 'datetime' && typeof v === 'string') return v.slice(0, 16);
+  if (type === 'datetime' && typeof v === 'string') {
+    // Le champ datetime-local attend l'heure de l'appareil, pas l'heure UTC stockée.
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return v.slice(0, 16);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
   if (type === 'date' && typeof v === 'string') return v.slice(0, 10);
   return v;
 };

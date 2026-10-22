@@ -498,6 +498,19 @@ export interface AudioSermon {
   createdAt?: string;
 }
 
+// ——— Directs des cultes (YouTube) ———
+export interface Livestream {
+  id: UUID;
+  title: string;
+  description?: string | null;
+  startsAt: string;
+  durationMinutes: number;
+  /** Identifiant de la vidéo YouTube (11 caractères) ; vide = le direct en cours de la chaîne. */
+  youtubeId?: string | null;
+  isCancelled: boolean;
+  createdAt?: string;
+}
+
 // ——— Réunions en visioconférence ———
 export interface Meeting {
   id: UUID;

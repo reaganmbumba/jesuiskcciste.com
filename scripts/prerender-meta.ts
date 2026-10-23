@@ -53,6 +53,7 @@ const PAGES: Record<string, [string, string]> = {
   '/solidarite': ['Servir ensemble, en toute transparence', 'Des projets suivis, documentés et rendus publics, au service de la communauté.'],
   '/solidarite/projets': ['Projets de solidarité', 'Les projets de solidarité de la communauté KCCiste.'],
   '/confidentialite': ['Confidentialité et conditions d’utilisation', 'Comment JE SUIS KCCiste protège vos données.'],
+  '/application': ['JE SUIS KCCiste sur votre téléphone', 'Installez l’application JE SUIS KCCiste sur votre téléphone Android, iPhone ou ordinateur : gratuit, en quelques secondes.'],
 };
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

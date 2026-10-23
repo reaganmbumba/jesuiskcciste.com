@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search, Shield, X } from 'lucide-react';
+import { ChevronDown, Heart, LayoutDashboard, LogOut, Menu, MessageCircle, Search, Shield, Smartphone, X } from 'lucide-react';
 import { MAIN_NAV } from '@/config/navigation';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -13,6 +13,7 @@ import { SearchDialog } from './SearchDialog';
 import { LanguageSwitch } from './LanguagePicker';
 import { DemoBanner } from '@/components/common/DemoNotice';
 import { OfflineNotice } from '@/components/common/OfflineNotice';
+import { InstallBanner } from '@/features/pwa/InstallBanner';
 import { OnlineCount } from '@/components/common/OnlineCount';
 import { cn } from '@/utils/format';
 
@@ -54,6 +55,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
       <header className={cn('top-0 z-40 transition-all duration-300', transparent ? 'fixed inset-x-0' : 'sticky', solid ? 'border-b border-night/[0.06] bg-white/80 shadow-[0_8px_30px_-20px_rgba(14,24,48,.25)] backdrop-blur-xl backdrop-saturate-150' : 'bg-gradient-to-b from-night-950/70 to-transparent')}>
         <DemoBanner />
         <OfflineNotice />
+        <InstallBanner />
         <a href="#contenu" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-gold focus:px-3 focus:py-2 focus:text-night">{tx('Aller au contenu', 'Skip to content', 'Ir para o conteúdo')}</a>
         <div className="container-page flex h-[72px] items-center justify-between gap-4">
           <Logo light={!solid} />
@@ -141,6 +143,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
                   )}
                 </div>
               ))}
+              <Link to="/application" className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-gold-50 px-4 py-3 text-sm font-semibold text-night"><Smartphone className="h-5 w-5 text-gold-600" aria-hidden /> {tx('Installer l’application sur mon téléphone', 'Install the app on my phone', 'Instalar a aplicação no meu telemóvel')}</Link>
               <div className="flex gap-2 border-t border-night/10 pt-4">
                 {profile ? (
                   <>

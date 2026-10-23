@@ -28,7 +28,7 @@ export function Footer() {
     { title: t('footer.navigation'), links: [[tx('À propos', 'About', 'Sobre'), '/a-propos'], [t('nav.community'), '/communaute'], [tx('Paroisses', 'Parishes', 'Paróquias'), '/paroisses'], [tx('Actualités', 'News', 'Notícias'), '/actualites']] },
     { title: tx('La Foi', 'Our Faith', 'A Fé'), links: [[tx('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), '/doctrine'], [tx('Catéchisme', 'Catechism', 'Catecismo'), '/catechisme'], [tx('Prédications audio', 'Audio sermons', 'Pregações em áudio'), '/predications#audio'], [tx('Cantiques', 'Hymns', 'Hinos'), '/cantiques']] },
     { title: tx('Médias', 'Media', 'Média'), links: [['KCC Music', '/musique'], [tx('Vidéos', 'Videos', 'Vídeos'), '/videos'], [tx('Galerie', 'Gallery', 'Galeria'), '/galerie'], [tx('Bibliothèque', 'Library', 'Biblioteca'), '/bibliotheque']] },
-    { title: t('footer.services'), links: [[tx('Académie KCC', 'KCC Academy', 'Academia KCC'), '/academie'], [tx('Agenda', 'Calendar', 'Agenda'), '/agenda'], [t('nav.solidarity'), '/solidarite'], [tx('Application Android', 'Android app', 'Aplicação Android'), '/app/android.apk']] },
+    { title: t('footer.services'), links: [[tx('Académie KCC', 'KCC Academy', 'Academia KCC'), '/academie'], [tx('Agenda', 'Calendar', 'Agenda'), '/agenda'], [t('nav.solidarity'), '/solidarite'], [tx('Application téléphone', 'Phone app', 'Aplicação para telemóvel'), '/application']] },
   ];
   return (
     <footer className="relative isolate overflow-hidden bg-night-950 text-white">

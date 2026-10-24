@@ -97,6 +97,8 @@ export interface Announcement {
   imageUrl?: string | null;
   /** Vidéo jointe à l'article (fichier servi par le site). */
   videoUrl?: string | null;
+  /** Photos supplémentaires affichées sous l'article. */
+  gallery?: string[];
   author: string;
   category: string;
   publishedAt: ISODate;

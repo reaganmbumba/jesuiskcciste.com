@@ -36,7 +36,9 @@ export default function NewsDetailPage() {
       <article className="container-page max-w-3xl py-12">
         {data.videoUrl
           ? <video src={data.videoUrl} poster={data.imageUrl ?? undefined} controls playsInline preload="metadata" className="mb-6 w-full rounded-2xl bg-black" />
-          : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
+          : data.gallery?.length
+            ? <div className="mb-6 grid gap-3 sm:grid-cols-3">{data.gallery.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="aspect-[3/4] w-full rounded-2xl object-cover" loading="lazy" /></a>)}</div>
+            : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
         <Card><CardBody className="prose-kcc">{data.content.split('\n').map((p, i) => (isHeading(p) ? <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3> : <p key={i}>{p}</p>))}</CardBody></Card>
         <ShareButtons title={data.title} text={data.summary} image={data.imageUrl} className="mt-6" />
         <ArticleComments articleId={data.id} />

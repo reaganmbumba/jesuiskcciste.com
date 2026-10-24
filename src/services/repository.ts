@@ -165,20 +165,29 @@ const wantsRawData = () => typeof window === 'undefined' || RAW_DATA_PATHS.test(
 /**
  * Ajoute le contenu éditorial de base à un dépôt Supabase : tant que la table
  * est vide, les pages publiques affichent ce contenu au lieu d'une page vide.
+ * `always` : contenu publié dans le code après le remplissage de la base, montré
+ * en plus des lignes de la base sur les pages publiques.
  * L'administration, l'inscription et l'espace membre voient toujours la base seule.
  */
-export function withEditorial<T extends { id: string }>(repo: Repository<T>, fallback: () => T[]): Repository<T> {
+export function withEditorial<T extends { id: string }>(repo: Repository<T>, fallback: () => T[], always: () => T[] = () => []): Repository<T> {
   if (isDemoMode) return repo;
+  const withAlways = (rows: T[]) => [...rows, ...always().filter((a) => !rows.some((r) => r.id === a.id))];
   return {
     ...repo,
     async list(params) {
-      const page = await repo.list(params);
-      if (page.total > 0 || wantsRawData()) return page;
-      return applyListParams(fallback(), params);
+      if (wantsRawData()) return repo.list(params);
+      const extra = always();
+      if (!extra.length) {
+        const page = await repo.list(params);
+        return page.total > 0 ? page : applyListParams(fallback(), params);
+      }
+      const rows = await repo.all();
+      return applyListParams(rows.length ? withAlways(rows) : fallback(), params);
     },
     async all() {
       const rows = await repo.all();
-      return rows.length || wantsRawData() ? rows : fallback();
+      if (wantsRawData()) return rows;
+      return rows.length ? withAlways(rows) : fallback();
     },
     async get(id) {
       const row = await repo.get(id).catch((e) => (fallback().some((r) => r.id === id) ? null : Promise.reject(e)));

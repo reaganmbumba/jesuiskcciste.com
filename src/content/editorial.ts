@@ -32,9 +32,9 @@ export function currentLocale(): Locale {
 
 const at = (iso: string) => new Date(iso).toISOString();
 
-const ANNOUNCEMENTS: { id: string; date: string; category: L; title: L; summary: L; content: L; image: string; video?: string; pinned?: boolean }[] = [
+const ANNOUNCEMENTS: { id: string; date: string; category: L; title: L; summary: L; content: L; image: string; video?: string; pinned?: boolean; always?: boolean }[] = [
   {
-    id: 'muanda-papa-joli', date: '2026-10-24T08:00:00Z', pinned: true, image: '/images/actualites/muanda-papa-joli.jpg', video: '/videos/actualites/muanda-papa-joli.mp4',
+    id: 'muanda-papa-joli', date: '2026-10-24T08:00:00Z', pinned: true, always: true, image: '/images/actualites/muanda-papa-joli.jpg', video: '/videos/actualites/muanda-papa-joli.mp4',
     category: L('Faits divers', 'News in brief', 'Ocorrências'),
     title: L('Muanda : Papa Joli, mari de la Diaconesse Chouchou, tué par balle dans le quartier Buamano', 'Muanda: Papa Joli, husband of Deaconess Chouchou, shot dead in the Buamano neighbourhood', 'Muanda: Papa Joli, esposo da Diaconisa Chouchou, morto a tiro no bairro Buamano'),
     summary: L('Dans la nuit du 22 octobre 2026, Papa Joli a perdu la vie lors d’une intrusion nocturne dans son ancienne résidence, au quartier Buamano.', 'On the night of 22 October 2026, Papa Joli lost his life during a night-time break-in at his former residence in the Buamano neighbourhood.', 'Na noite de 22 de outubro de 2026, Papa Joli perdeu a vida durante uma intrusão noturna na sua antiga residência, no bairro Buamano.'),
@@ -127,7 +127,14 @@ const FEASTS: { id: string; month: number; day: number; title: L; text: L }[] = 
 const id = (k: string) => `${EDITORIAL_PREFIX}${k}`;
 
 export function editorialAnnouncements(locale = currentLocale()): Announcement[] {
-  return ANNOUNCEMENTS.map((a) => ({
+  return toAnnouncements(ANNOUNCEMENTS, locale);
+}
+
+/** Articles ajoutés après le remplissage de la base : affichés en plus des annonces de Supabase. */
+export const editorialLiveAnnouncements = (locale = currentLocale()): Announcement[] => toAnnouncements(ANNOUNCEMENTS.filter((a) => a.always), locale);
+
+function toAnnouncements(list: typeof ANNOUNCEMENTS, locale: Locale): Announcement[] {
+  return list.map((a) => ({
     id: id(`ann-${a.id}`), title: a.title[locale], summary: a.summary[locale], content: a.content[locale], author: 'JE SUIS KCCiste',
     category: a.category[locale], publishedAt: at(a.date), status: 'published', audience: 'public', pinned: !!a.pinned, imageUrl: a.image, videoUrl: a.video ?? null,
   }));

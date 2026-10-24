@@ -6,7 +6,7 @@ import { isDemoMode } from '@/config/env';
 import { supabase } from '@/lib/supabase';
 import { camelize } from '@/utils/case';
 import { repository, withEditorial } from './repository';
-import { editorialAlbums, editorialAnnouncements, editorialArtists, editorialCourses, editorialEvents, editorialMedia, editorialParishes, editorialTracks } from '@/content/editorial';
+import { editorialAlbums, editorialAnnouncements, editorialLiveAnnouncements, editorialArtists, editorialCourses, editorialEvents, editorialMedia, editorialParishes, editorialTracks } from '@/content/editorial';
 import * as demo from './demo/data';
 import type {
   Announcement, AppNotification, Certificate, CommunityStats, Contribution, Course, Enrollment, KccEvent,
@@ -19,7 +19,7 @@ export const parishesRepo = withEditorial(repository('parishes', demo.demoParish
 export const sectionsRepo = repository('sections', demo.demoSections, 'sec');
 export const unitsRepo = repository('organizational_units', demo.demoUnits, 'unit');
 export const membersRepo = repository('profiles', demo.demoMembers, 'mem', '*', ['roles', 'email', 'status', 'createdAt']);
-export const announcementsRepo = withEditorial(repository('announcements', demo.demoAnnouncements, 'ann'), editorialAnnouncements);
+export const announcementsRepo = withEditorial(repository('announcements', demo.demoAnnouncements, 'ann'), editorialAnnouncements, editorialLiveAnnouncements);
 export const eventsRepo = withEditorial(repository('events', demo.demoEvents, 'evt'), editorialEvents);
 export const coursesRepo = withEditorial(repository('courses', demo.demoCourses, 'crs', '*, modules:course_modules(*, lessons(*))', ['modules', 'quizId']), editorialCourses);
 export const artistsRepo = withEditorial(repository('artists', demo.demoArtists, 'art'), editorialArtists);

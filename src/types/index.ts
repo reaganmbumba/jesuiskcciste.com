@@ -534,3 +534,21 @@ export interface MeetingRoom {
   /** Lien Zoom, Google Meet… ; vide = salle Jitsi du site. */
   externalUrl?: string | null;
 }
+
+/** Un commentaire sous une actualité (nom + paroisse recopiés du profil par la base). */
+export interface ArticleComment {
+  id: UUID;
+  articleId: string;
+  authorId?: UUID | null;
+  authorName: string;
+  parishName?: string | null;
+  body: string;
+  isHidden: boolean;
+  createdAt: string;
+}
+
+/** Les « J'aime » d'une actualité : total public et choix de la personne connectée. */
+export interface ArticleLikes {
+  likes: number;
+  liked: boolean;
+}

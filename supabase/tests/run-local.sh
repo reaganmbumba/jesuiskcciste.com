@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 DB=${KCC_TEST_DB:-kcc_test}
 psql -v ON_ERROR_STOP=1 -q -c "drop database if exists $DB" -c "create database $DB"
-for f in supabase/tests/00_local_supabase_stub.sql supabase/migrations/*.sql supabase/seed.sql supabase/seed_predications.sql supabase/tests/10_rls_tests.sql supabase/tests/20_music_shop_tests.sql supabase/tests/30_apostles_tests.sql supabase/tests/40_forum_tests.sql supabase/tests/50_private_messages_tests.sql supabase/tests/60_online_donations_tests.sql supabase/tests/70_audio_sermons_tests.sql supabase/seed_site_content.sql supabase/tests/80_site_content_tests.sql supabase/tests/90_page_texts_tests.sql supabase/tests/95_meetings_tests.sql supabase/tests/97_livestreams_tests.sql; do
+for f in supabase/tests/00_local_supabase_stub.sql supabase/migrations/*.sql supabase/seed.sql supabase/seed_predications.sql supabase/tests/10_rls_tests.sql supabase/tests/20_music_shop_tests.sql supabase/tests/30_apostles_tests.sql supabase/tests/40_forum_tests.sql supabase/tests/50_private_messages_tests.sql supabase/tests/60_online_donations_tests.sql supabase/tests/70_audio_sermons_tests.sql supabase/seed_site_content.sql supabase/tests/80_site_content_tests.sql supabase/tests/90_page_texts_tests.sql supabase/tests/95_meetings_tests.sql supabase/tests/97_livestreams_tests.sql supabase/tests/98_article_comments_tests.sql; do
   echo "→ $f"
   psql -v ON_ERROR_STOP=1 -q -d "$DB" -f "$f"
 done

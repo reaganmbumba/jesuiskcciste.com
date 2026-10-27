@@ -118,7 +118,7 @@ export default function AdminRadio() {
       </CardBody></Card>
       <Card><CardBody className="space-y-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><Newspaper className="h-5 w-5 text-gold-600" />Journal parlé</h2>
-        <Checkbox label="Diffuser le journal" description="Le journal de la semaine ouvre chaque tour de radio, avant les chants et les prédications." checked={r.news} onChange={(e) => setR({ ...r, news: e.currentTarget.checked })} />
+        <Checkbox label="Diffuser le journal" description="Le journal de la semaine ouvre la radio puis repasse après chaque série de 3 chants." checked={r.news} onChange={(e) => setR({ ...r, news: e.currentTarget.checked })} />
         {section('news', r.news)}
       </CardBody></Card>
       <div className="flex justify-end"><Button onClick={() => save()} loading={saving}>Enregistrer les réglages</Button></div>

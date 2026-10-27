@@ -214,15 +214,18 @@ export function shuffle<T>(list: T[], random: () => number = Math.random): T[] {
  * Un tour d'antenne : tous les titres une fois, dans un ordre aléatoire.
  * En mode « Tout », une prédication après chaque série de chants, comme à la
  * radio, pour que les quelques prédications ne se perdent pas parmi les chants.
- * Le journal parlé ouvre chaque tour, comme le journal de l'heure.
+ * Le journal parlé ouvre chaque tour et repasse après chaque série de chants.
  * `avoidFirst` : le dernier titre joué, pour ne pas l'entendre deux fois de suite.
  */
 export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null): RadioItem[] {
   const songs = shuffle(items.filter((i) => i.kind === 'song'), random);
   const talks = shuffle(items.filter((i) => i.kind === 'sermon'), random);
-  const out: RadioItem[] = items.filter((i) => i.kind === 'news');
+  const news = items.filter((i) => i.kind === 'news');
+  const out: RadioItem[] = [...news];
   while (songs.length || talks.length) {
-    out.push(...songs.splice(0, talks.length ? SONGS_BETWEEN_SERMONS : songs.length));
+    const serie = songs.splice(0, SONGS_BETWEEN_SERMONS);
+    out.push(...serie);
+    if (serie.length === SONGS_BETWEEN_SERMONS && (songs.length || talks.length)) out.push(...news);
     if (talks.length) out.push(talks.shift()!);
   }
   const f = out.findIndex((i) => i.kind !== 'news');

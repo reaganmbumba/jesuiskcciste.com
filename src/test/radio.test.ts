@@ -85,5 +85,10 @@ describe('Radio : émissions en direct et appels', () => {
       expect(round[0].key).toBe('news:j1');
       expect(round[1].key).not.toBe('song:a');
     }
+    const songs = [news, ...'abcdefg'.split('').map(song)];
+    const kinds = buildRound(songs, seeded(3)).map((i) => i.kind);
+    expect(kinds).toEqual(['news', 'song', 'song', 'song', 'news', 'song', 'song', 'song', 'news', 'song']);
+    const mixed = buildRound([news, ...'abcdef'.split('').map(song), talk('p')], seeded(3)).map((i) => i.kind);
+    expect(mixed).toEqual(['news', 'song', 'song', 'song', 'news', 'sermon', 'song', 'song', 'song']);
   });
 });

@@ -10,7 +10,7 @@ from texte import lire
 
 SR = 44100
 ICI = os.path.dirname(os.path.abspath(__file__))
-TAPIS_GAIN = .16  # tapis musical bien en dessous des voix
+TAPIS_GAIN = .13  # tapis musical bien en dessous des voix
 
 
 def charger(chemin):
@@ -50,12 +50,12 @@ def main(texte, sortie):
         r = e["nom"]
         if r == "OUVERTURE":
             piste = poser(piste, hab["indicatif"], t)
-            t += 2.6  # la voix entre sur la traîne de l'indicatif
+            t += 8.2  # la voix entre sur la traîne de l’indicatif, après le dernier accord
         elif r in ("VIRGULE", "TRANSITION"):
             son = hab["virgule" if r == "VIRGULE" else "transition"]
             t += .35
             piste = poser(piste, son, t, .7 if r == "VIRGULE" else .85)
-            t += (.9 if r == "VIRGULE" else 1.9)
+            t += (.9 if r == "VIRGULE" else 2.2)
         elif r == "SILENCE":
             t += 1.6
         elif r == "TAPIS":

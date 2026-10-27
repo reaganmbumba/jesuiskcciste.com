@@ -1,4 +1,4 @@
-"""Habillage sonore original du journal (indicatif, virgule, transition, tapis, fin), synthétisé avec numpy.
+"""Habillage sonore original du journal (indicatif, virgule, transition, tapis, fin), synthétisé avec numpy,\ndans le style rythmé des journaux des radios d'information.
 
 Usage : python habillage.py  →  habillage/*.wav (44,1 kHz, mono).
 """
@@ -82,62 +82,132 @@ def finir(s, crete=.89):
     return s
 
 
+# Style « journal d'information » (rythmé, comme les journaux des radios d'actualité) :
+# pulsation de basse, tic-tac de téléscripteur, ostinato, accords de cuivres frappés.
+BPM = 124
+T = 60 / BPM  # un temps
+DM, SIB, FA, DO = (50, 57, 62, 65, 69), (46, 53, 58, 62, 65), (41, 53, 57, 60, 65), (48, 55, 60, 64, 67)
+
+
+def scie(f, x, n=12):
+    return sum(np.sin(2 * np.pi * f * h * x) / h for h in range(1, n + 1))
+
+
+def cuivre(notes, d=.6, v=1.0):
+    """Accord de cuivres frappé : attaque brillante, corps plus sombre."""
+    x = t(d)
+    s = np.zeros_like(x)
+    for n in notes:
+        f = note(n)
+        s += scie(f, x, 14) * np.exp(-x * 9) * .6 + scie(f * 1.003, x, 5) * np.exp(-x * 2.5)
+    env = np.minimum(1, x / .008) * np.minimum(1, (d - x) / .06)
+    return v * s * env / len(notes)
+
+
+def tic(v=.25):
+    x = t(.03)
+    n = rng.standard_normal(len(x))
+    n = np.diff(n, prepend=0)  # aigu
+    return v * n * np.exp(-x * 180)
+
+
+def basse(n, d=.18, v=.8):
+    x = t(d)
+    f = note(n)
+    s = np.sign(np.sin(2 * np.pi * f * x)) * .5 + np.sin(2 * np.pi * f * x)
+    return v * s * np.exp(-x * 9) * np.minimum(1, (d - x) / .02)
+
+
+def cymbale(d=2.5, v=.25):
+    x = t(d)
+    n = np.diff(rng.standard_normal(len(x)), prepend=0)
+    return v * n * np.exp(-x * 2.2)
+
+
+def montee(d=1.0, v=.4):
+    """Montée de tension : souffle et sinus qui grimpent."""
+    x = t(d)
+    ph = 2 * np.pi * np.cumsum(200 * 2 ** (3 * x / d)) / SR
+    return souffle(d, v) + v * .3 * np.sin(ph) * (x / d) ** 2
+
+
+def mesures(n_mesures, accords, tics=True, ostinato=True, basse_v=.8, osti_v=.18):
+    """Le moteur rythmique : basse en croches, tic-tac en doubles croches, ostinato."""
+    s = np.zeros(int(n_mesures * 4 * T * SR) + SR)
+    for m in range(n_mesures):
+        a = accords[m % len(accords)]
+        for c in range(8):  # croches
+            debut = (m * 4 + c / 2) * T
+            s = poser(s, basse(a[0] - 12 if c % 2 == 0 else a[0], v=basse_v), debut)
+        for d in range(16):  # doubles croches
+            debut = (m * 4 + d / 4) * T
+            if tics:
+                s = poser(s, tic(.22 if d % 4 == 0 else .12), debut)
+            if ostinato:
+                s = poser(s, cloche(note(a[1 + d % 3] + 12), .25, osti_v), debut)
+        s = poser(s, frappe(.5, 60, .7), m * 4 * T)
+        s = poser(s, frappe(.3, 80, .35), (m * 4 + 2) * T)
+    return s
+
+
 def indicatif():
-    s = np.zeros(1)
-    s = poser(s, frappe(1.5, 70, 1.0), 0)
-    s = poser(s, souffle(.6, .25), 0)
-    for i, n in enumerate((60, 64, 67, 71, 74, 79)):  # do mi sol si ré sol : accord de do majeur 9
-        s = poser(s, cloche(note(n + 12), 2.2, .5), .55 + i * .13)
-    s = poser(s, nappe([note(n) for n in (48, 55, 64, 71, 74)], 5.2, 1.4, att=.4), .55)
-    s = poser(s, frappe(1.2, 65, .8), 1.35)
-    s = poser(s, cloche(note(84), 3.0, .55), 1.35)
-    s = poser(s, cloche(note(91), 3.0, .3), 1.35)
-    return finir(reverb(s, 2.5, .3))
+    s = mesures(2, [DM, DM])
+    s = poser(s, montee(4 * T, .45), 4 * T)
+    t0 = 8 * T
+    s = poser(s, cuivre(DM, 1.2, 1.3), t0)
+    s = poser(s, frappe(1.5, 55, 1.2), t0)
+    s = poser(s, cymbale(3.0, .3), t0)
+    for i, a in enumerate((SIB, DO)):
+        s = poser(s, cuivre(a, .35, 1.0), t0 + (2 + i * .75) * T)
+        s = poser(s, frappe(.4, 70, .6), t0 + (2 + i * .75) * T)
+    t1 = t0 + 4 * T
+    s = poser(s, mesures(1, [DM], ostinato=False), t1)
+    s = poser(s, cuivre(DM, 2.5, 1.4), t1 + 4 * T)
+    s = poser(s, frappe(2.0, 50, 1.3), t1 + 4 * T)
+    s = poser(s, cymbale(3.5, .35), t1 + 4 * T)
+    s = poser(s, nappe([note(n) for n in DM], 3.0, 1.0, att=.05), t1 + 4 * T)
+    return finir(reverb(s, 2.0, .18))
 
 
 def virgule():
     s = np.zeros(1)
-    s = poser(s, cloche(note(88), 1.4, .6), 0)
-    s = poser(s, cloche(note(83), 1.4, .6), .14)
-    s = poser(s, souffle(.25, .08, False), 0)
-    return finir(reverb(s, 1.2, .25), .6)
+    s = poser(s, souffle(.35, .25), 0)
+    s = poser(s, cuivre(DM, .45, 1.0), .35)
+    s = poser(s, frappe(.6, 65, .9), .35)
+    for i in range(4):
+        s = poser(s, tic(.2), .35 + i * T / 4)
+    return finir(reverb(s, 1.0, .15), .7)
 
 
 def transition():
     s = np.zeros(1)
-    s = poser(s, souffle(.9, .35), 0)
-    for i, n in enumerate((67, 71, 74, 79, 83)):
-        s = poser(s, cloche(note(n + 12), 1.8, .45), .7 + i * .07)
-    s = poser(s, frappe(1.0, 75, .8), .95)
-    s = poser(s, nappe([note(n) for n in (43, 50, 59, 62)], 2.0, 1.0, att=.1), .95)
-    return finir(reverb(s, 1.8, .3), .8)
+    s = poser(s, montee(1.0, .4), 0)
+    for i, a in enumerate((SIB, DO, DM)):
+        s = poser(s, cuivre(a, .3 if i < 2 else 1.0, 1.0), 1.0 + i * T / 2)
+        s = poser(s, frappe(.4 if i < 2 else 1.0, 70 if i < 2 else 55, .8), 1.0 + i * T / 2)
+    s = poser(s, cymbale(2.0, .25), 1.0 + T)
+    return finir(reverb(s, 1.5, .18), .8)
 
 
 def fin():
-    s = np.zeros(1)
-    for i, n in enumerate((79, 74, 71, 67, 64, 60)):
-        s = poser(s, cloche(note(n + 12), 2.4, .45), i * .14)
-    s = poser(s, frappe(1.6, 60, 1.0), .9)
-    s = poser(s, nappe([note(n) for n in (36, 48, 55, 64, 67, 72)], 5.0, 1.5, att=.2), .9)
-    s = poser(s, cloche(note(84), 4.0, .5), .9)
-    return finir(reverb(s, 3.0, .35))
+    s = mesures(2, [DM, SIB], osti_v=.15)
+    t0 = 8 * T
+    for i, a in enumerate((SIB, DO)):
+        s = poser(s, cuivre(a, .4, 1.1), t0 + i * T)
+        s = poser(s, frappe(.5, 70, .7), t0 + i * T)
+    s = poser(s, cuivre(DM, 3.0, 1.5), t0 + 2 * T)
+    s = poser(s, frappe(2.5, 45, 1.4), t0 + 2 * T)
+    s = poser(s, cymbale(4.0, .35), t0 + 2 * T)
+    s = poser(s, nappe([note(n) for n in DM], 4.0, 1.0, att=.05), t0 + 2 * T)
+    return finir(reverb(s, 2.5, .22))
 
 
 def tapis():
-    """Boucle de 16 s : do, la mineur, fa, sol, avec une pulsation douce à 90 battements par minute."""
-    temps = 60 / 90
-    accords = [(48, 55, 64, 67), (45, 52, 60, 64), (41, 53, 57, 60), (43, 50, 59, 62)]
-    duree = 16 * temps / 4 * 4 / 4 * 4  # quatre mesures de quatre temps
-    s = np.zeros(int(duree * SR) + SR * 3)
-    for i, a in enumerate(accords):
-        s = poser(s, nappe([note(n) for n in a], 4 * temps + .8, 1.0, att=.3), i * 4 * temps)
-        s = poser(s, cloche(note(a[3] + 12), 1.5, .12), i * 4 * temps)
-    for b in range(16):
-        s = poser(s, frappe(.4, 55, .5 if b % 4 == 0 else .25), b * temps)
-        s = poser(s, souffle(.08, .05, False), b * temps + temps / 2)
-    n = int(duree * SR)
+    """Boucle de 4 mesures sous les titres : pulsation et tic-tac, sans cuivres."""
+    s = mesures(4, [DM, SIB, FA, DO], basse_v=.7, osti_v=.12)
+    n = int(16 * T * SR)
     boucle = s[:n].copy()
-    boucle[: len(s) - n] += s[n:]  # la traîne revient au début : boucle sans coupure
+    boucle[: len(s) - n] += s[n:]
     return boucle / np.abs(boucle).max() * .8
 
 

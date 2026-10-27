@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { camelize } from '@/utils/case';
 import { listPublicSermons } from '@/features/sermons/sermons';
 import type { SiteSettings } from '@/config/site';
+import { JOURNAUX, type Journal } from '@/content/journaux';
 import type { AudioSermon, Track } from '@/types';
 
 /**
@@ -22,10 +23,10 @@ import type { AudioSermon, Track } from '@/types';
  */
 
 export type RadioMode = 'all' | 'songs' | 'sermons';
-export type RadioKind = 'song' | 'sermon' | 'live';
+export type RadioKind = 'song' | 'sermon' | 'news' | 'live';
 
 export interface RadioItem {
-  /** « song:<id> », « sermon:<id> » ou « live ». */
+  /** « song:<id> », « sermon:<id> », « news:<id> » ou « live ». */
   key: string;
   kind: RadioKind;
   title: string;
@@ -51,13 +52,15 @@ export interface RadioLive {
 export interface RadioSettings {
   songs: boolean;
   sermons: boolean;
+  /** Journal parlé au début de chaque tour. */
+  news: boolean;
   /** Clés des titres retirés de l'antenne. */
   excluded: string[];
   live: RadioLive;
 }
 
 export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '' };
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, excluded: [], live: defaultRadioLive };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, excluded: [], live: defaultRadioLive };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
@@ -115,6 +118,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
   return {
     songs: r?.songs !== false,
     sermons: r?.sermons !== false,
+    news: r?.news !== false,
     excluded: Array.isArray(r?.excluded) ? r!.excluded.filter((k) => typeof k === 'string') : [],
     live: {
       url: typeof l.url === 'string' ? l.url : '',
@@ -139,6 +143,17 @@ export const SONGS_BETWEEN_SERMONS = 3;
 
 export const songKey = (id: string) => `song:${id}`;
 export const sermonKey = (id: string) => `sermon:${id}`;
+export const newsKey = (id: string) => `news:${id}`;
+
+/** Un journal reste à l'antenne une semaine, puis laisse la place au suivant. */
+export const JOURNAL_DAYS = 7;
+
+/** Le journal le plus récent, s'il a moins de JOURNAL_DAYS jours. */
+export function currentNews(list: Journal[] = JOURNAUX, now = new Date()): RadioItem | null {
+  const j = [...list].filter((x) => new Date(x.date).getTime() <= now.getTime()).sort((a, b) => b.date.localeCompare(a.date))[0];
+  if (!j || now.getTime() - new Date(j.date).getTime() > JOURNAL_DAYS * 86400000) return null;
+  return { key: newsKey(j.id), kind: 'news', title: j.title, subtitle: 'Rédaction Je suis KCCiste', url: j.audioUrl, durationSeconds: j.durationSeconds || null, imageUrl: null };
+}
 
 export function songItem(t: Track, artistName?: string): RadioItem | null {
   if (!t.audioUrl || t.broadcastRights !== 'authorized') return null;
@@ -161,7 +176,8 @@ export async function loadRadioCatalog(): Promise<RadioItem[]> {
   const name = (id: string) => artists.find((a) => a.id === id)?.name;
   const songs = tracks.map((t) => songItem(t, name(t.artistId))).filter((x): x is RadioItem => !!x);
   const talks = sermons.map(sermonItem).filter((x): x is RadioItem => !!x);
-  return [...songs, ...talks];
+  const news = currentNews();
+  return [...(news ? [news] : []), ...songs, ...talks];
 }
 
 /** Ce qui est réellement diffusé, selon les réglages et le choix de l'auditeur. */
@@ -170,6 +186,7 @@ export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: Radio
   return catalog.filter((i) => {
     if (off.has(i.key)) return false;
     if (i.kind === 'song') return settings.songs && mode !== 'sermons';
+    if (i.kind === 'news') return settings.news && mode !== 'songs';
     return settings.sermons && mode !== 'songs';
   });
 }
@@ -197,20 +214,22 @@ export function shuffle<T>(list: T[], random: () => number = Math.random): T[] {
  * Un tour d'antenne : tous les titres une fois, dans un ordre aléatoire.
  * En mode « Tout », une prédication après chaque série de chants, comme à la
  * radio, pour que les quelques prédications ne se perdent pas parmi les chants.
+ * Le journal parlé ouvre chaque tour, comme le journal de l'heure.
  * `avoidFirst` : le dernier titre joué, pour ne pas l'entendre deux fois de suite.
  */
 export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null): RadioItem[] {
   const songs = shuffle(items.filter((i) => i.kind === 'song'), random);
   const talks = shuffle(items.filter((i) => i.kind === 'sermon'), random);
-  const out: RadioItem[] = [];
+  const out: RadioItem[] = items.filter((i) => i.kind === 'news');
   while (songs.length || talks.length) {
     out.push(...songs.splice(0, talks.length ? SONGS_BETWEEN_SERMONS : songs.length));
     if (talks.length) out.push(talks.shift()!);
   }
-  if (avoidFirst && out.length > 1 && out[0].key === avoidFirst) {
-    const k = out.findIndex((i) => i.kind === out[0].kind && i.key !== avoidFirst);
-    const swap = k > 0 ? k : 1;
-    [out[0], out[swap]] = [out[swap], out[0]];
+  const f = out.findIndex((i) => i.kind !== 'news');
+  if (avoidFirst && f >= 0 && out.length > f + 1 && out[f].key === avoidFirst) {
+    const k = out.findIndex((i, n) => n > f && i.kind === out[f].kind && i.key !== avoidFirst);
+    const swap = k > f ? k : f + 1;
+    [out[f], out[swap]] = [out[swap], out[f]];
   }
   return out;
 }

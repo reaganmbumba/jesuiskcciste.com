@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Mic, Music2, Pause, Phone, Play, Radio, SkipForward, X } from 'lucide-react';
+import { Mic, Music2, Newspaper, Pause, Phone, Play, Radio, SkipForward, X } from 'lucide-react';
 import { useI18n, type Tri } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
@@ -15,7 +15,7 @@ export const MODE_LABELS: Record<RadioMode, Tri> = {
 };
 
 export function KindIcon({ item, className }: { item: Pick<RadioItem, 'kind'>; className?: string }) {
-  const Icon = item.kind === 'live' ? Radio : item.kind === 'sermon' ? Mic : Music2;
+  const Icon = item.kind === 'live' ? Radio : item.kind === 'sermon' ? Mic : item.kind === 'news' ? Newspaper : Music2;
   return <Icon className={className} aria-hidden />;
 }
 

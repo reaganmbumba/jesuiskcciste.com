@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: ['claude/**']
-    paths: ['tools/journal-radio/*.txt', 'tools/journal-radio/*.py']
+    paths: ['tools/journal-radio/*.txt', 'tools/journal-radio/voix.py', 'tools/journal-radio/texte.py']
 
 permissions:
   contents: write

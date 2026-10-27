@@ -1,0 +1,69 @@
+# Journal de Radio Je suis KCCiste, édition du mardi 27 octobre 2026.
+# Texte validé par le Prédicateur Reagan MBUMBA.
+# ELLE = présentatrice, LUI = présentateur. Les lignes entre crochets sont l'habillage sonore :
+# [OUVERTURE] [TAPIS] [FIN TAPIS] [VIRGULE] [TRANSITION] [SILENCE] [FIN]
+
+[OUVERTURE]
+ELLE: Radio Je suis KCCiste. Il est l'heure de votre journal.
+LUI: Paix à vous, à toutes et à tous, en République démocratique du Congo et partout dans la diaspora. Nous sommes le mardi 27 octobre 2026. Bienvenue dans le journal de la rédaction de Je suis KCCiste.
+ELLE: Voici les titres.
+[TAPIS]
+ELLE: La Suprématie de l'Église communique : deux décisions concernant les responsables des laïcs de Kinshasa.
+[VIRGULE]
+LUI: À Kinshasa, le groupe Cœur de Louange Social tend la main à la section de Barumbu, qui veut acheter sa parcelle.
+[VIRGULE]
+ELLE: À Muanda, les fidèles de Pika Pende bâtissent de leurs propres mains leur nouvelle paroisse, grâce au Mvuilu.
+[VIRGULE]
+LUI: Muanda, encore, dans le deuil : Papa Joli, époux de la diaconesse Maman Chouchouna, a été tué par balle.
+[VIRGULE]
+ELLE: Opération cent chaises : après Luanika, la collecte pour Ngidinga se poursuit.
+[VIRGULE]
+LUI: Et en musique, retour sur le concert de Glodie Massamba à Matadi.
+[FIN TAPIS]
+[TRANSITION]
+
+LUI: Nous ouvrons ce journal avec deux circulaires de la Suprématie de l'Église Bon Nouveau Message, datées du 22 octobre 2026 et signées par Son Éminence Dizolele Mpungu Isaac, premier Souverain Pontife.
+ELLE: Par la circulaire numéro 104, la Suprématie annonce avec plaisir la promotion du Prédicateur Kinuani Munganga Tryphon au rang de premier Adjoint des laïcs de la ville-province de Kinshasa. L'Église est invitée à accueillir cette promotion dans un esprit de bienveillance et de soutien.
+LUI: Par la circulaire numéro 102, la Suprématie informe que le Prédicateur Mvuezolo Bavangila Albert, de la paroisse de Lemba, est déchu de ses fonctions de Président urbain des laïcs de la ville-province de Kinshasa, en raison de manquements constatés à son endroit. Il demeure toutefois Prédicateur au sein de l'Église. Selon la circulaire, cette décision est prise pour la sauvegarde de l'ordre hiérarchique, de la discipline et du bon fonctionnement du corps des laïcs.
+[VIRGULE]
+
+ELLE: Belle page de solidarité fraternelle à Kinshasa. Le groupe « Les Amis du Groupe Cœur de Louange Social » a remis un don à la section autonome de Barumbu de l'Église Bon Nouveau Message, le KCC. Cette section s'est lancée dans un grand projet : acquérir une parcelle pour y établir durablement son lieu de prière. Pour y parvenir, ses membres ont ouvert une collecte de fonds, et chaque contribution compte.
+ELLE: Vêtus de leurs tenues aux couleurs du groupe, frères et sœurs, petits et grands, se sont déplacés pour porter ce geste d'amour. Sur leurs tenues, une devise qui résume l'esprit de la visite : « Vouloir, c'est pouvoir ».
+LUI: Un geste qui rejoint l'enseignement du Mvuilu, « ma propriété » : chaque KCCiste est appelé à considérer l'œuvre de l'Église comme son propre bien, à l'aimer, à la protéger et à la soutenir. La rédaction félicite le groupe Cœur de Louange Social, et encourage paroisses, sections et groupes à soutenir eux aussi la collecte de Barumbu, chacun selon ses moyens.
+[VIRGULE]
+
+LUI: Direction Muanda, dans la province du Kongo Central. Ce samedi 24 octobre, à la paroisse de Pika Pende, les membres se sont réunis autour d'un Mvuilu, un travail communautaire, pour faire avancer la construction de leur nouveau lieu de culte, sous la conduite du Révérend Apôtre Kapita Zeba Louis.
+LUI: Sur le chantier, les murs s'élèvent bloc après bloc. Des maçons posent les blocs et vérifient l'alignement des murs, d'autres préparent le mortier. Et même les plus jeunes sont là, aux côtés des adultes.
+ELLE: Le Mvuilu, rappelons-le, n'est pas une simple corvée. C'est un enseignement du prophète Dizolele Mpungu Wafiduzwa Isaac, qui l'explique lui-même : « Depuis la naissance de l'Église, l'Éternel m'a inspiré le Mvuilu, qui signifie ma propriété. Par cette pratique, l'Éternel veut que chaque membre prenne cette œuvre comme sa propriété. »
+LUI: À Pika Pende, les fidèles n'attendent pas que d'autres bâtissent à leur place. Ils construisent eux-mêmes la maison où ils viendront adorer l'Éternel.
+[SILENCE]
+
+ELLE: Muanda toujours, mais l'actualité est cette fois douloureuse. Papa Joli, époux de Maman Chouchouna, diaconesse de la paroisse d'Atlantique, a perdu la vie dans la nuit du jeudi 22 octobre, au quartier Buamano.
+ELLE: Selon les informations communiquées à notre rédaction, des individus présentés comme des bandits se seraient introduits dans son ancienne résidence, où se trouvaient aussi les activités commerciales de la famille. Il aurait été atteint par balle. Au moment des faits, Maman Chouchouna et ses enfants se trouvaient dans leur nouvelle maison.
+ELLE: Les circonstances précises de cette attaque restent à établir. Il revient aux autorités compétentes de faire toute la lumière sur cette affaire.
+LUI: La rédaction de Je suis KCCiste présente ses sincères condoléances à Maman Chouchouna, à ses enfants et à toute leur famille. Que l'Éternel leur accorde la force et le courage dans cette épreuve.
+[SILENCE]
+[VIRGULE]
+
+LUI: Place à la solidarité, avec l'Opération cent chaises. À Luanika, paroisse rurale du Kongo Central, les fidèles s'asseyaient sur des bancs en bambou. Grâce à soixante-treize contributeurs venus de plusieurs pays, l'objectif a été dépassé : cent cinquante chaises en plastique, achetées à Lufu, ont été remises officiellement le dimanche 13 septembre.
+ELLE: Cap maintenant sur la paroisse sœur de Ngidinga, où l'on prie encore assis sur des bambous posés sur des briques. Au 22 octobre, quarante contributions ont permis de réunir neuf cent soixante-dix-neuf dollars et trois cent seize mille francs congolais. L'achat et la remise des chaises sont en préparation, et la collecte continue.
+ELLE: Pour y participer, vous pouvez envoyer votre contribution au 08 40 23 85 92, au nom du Prédicateur Reagan Mbumba. Je répète : 08 40 23 85 92. Toutes les informations sont aussi sur la page Solidarité du site jesuiskcciste.com.
+[TRANSITION]
+
+ELLE: En musique, la ville portuaire de Matadi a vibré au rythme du concert de Glodie Massamba. Micro en main, entouré de musiciens et de choristes venus de Kinshasa et d'ailleurs, l'artiste a offert au public un vrai moment de partage.
+LUI: Un rendez-vous qui confirme Matadi comme un carrefour de la musique congolaise. La musique rassemble, les talents se rencontrent, et la culture congolaise continue de faire entendre sa voix.
+[TRANSITION]
+
+LUI: Du côté de votre site, les nouveautés s'enchaînent. Sur jesuiskcciste.com, vous pouvez désormais suivre les cultes en direct, écouter les prédications en audio, échanger sur le forum, écrire en privé aux autres membres et vous retrouver en réunion vidéo. Le site s'installe aussi sur votre téléphone, comme une application. Et vous écoutez en ce moment même Radio Je suis KCCiste, avec chants et prédications en continu.
+ELLE: Pensez aussi à la chaîne YouTube Je suis KCCiste : abonnez-vous, activez la cloche, et partagez les vidéos autour de vous.
+[VIRGULE]
+
+ELLE: Le saviez-vous ? C'est le 12 avril 1958, à Boma, que les signes KCC sont apparus. Cette histoire, comme la profession de foi, les dix Paroles de l'Alliance et la vie du Prophète, est à lire sur le site, dans la rubrique Doctrine et histoire, en français, en anglais et en portugais.
+[TAPIS]
+
+LUI: Avant de nous quitter, le rappel des titres. À Kinshasa, la Suprématie promeut le Prédicateur Kinuani Munganga Tryphon premier Adjoint des laïcs, et retire au Prédicateur Mvuezolo Bavangila Albert ses fonctions de Président urbain des laïcs. Toujours à Kinshasa, le groupe Cœur de Louange Social soutient la section de Barumbu dans l'achat de sa parcelle. À Muanda, les fidèles de Pika Pende construisent leur paroisse grâce au Mvuilu.
+ELLE: Muanda en deuil après la mort de Papa Joli. Et la collecte de l'Opération cent chaises continue pour la paroisse de Ngidinga.
+LUI: C'était le journal de Je suis KCCiste, sous la rédaction du Prédicateur Reagan Mbumba. Pour nous transmettre vos informations, un seul numéro : 08 40 23 85 92. Merci de votre fidélité, et restez à l'écoute de Radio Je suis KCCiste.
+ENSEMBLE: Je suis KCCiste !
+[FIN TAPIS]
+[FIN]

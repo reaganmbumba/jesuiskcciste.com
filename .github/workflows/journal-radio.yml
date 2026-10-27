@@ -1,0 +1,33 @@
+name: Journal radio (voix)
+
+# Fabrique les voix du journal parlé de Radio Je suis KCCiste quand un texte
+# tools/journal-radio/*.txt est ajouté ou modifié sur une branche de travail,
+# puis les enregistre sur cette branche (tools/journal-radio/voix/).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['tools/journal-radio/*.txt', 'tools/journal-radio/*.py']
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install 'edge-tts>=6.1,<8'
+      - name: Fabriquer les voix
+        working-directory: tools/journal-radio
+        run: for f in *.txt; do python voix.py "$f"; done
+      - name: Enregistrer les voix sur la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/journal-radio/voix
+          git diff --cached --quiet || git commit -m "Voix du journal radio"
+          git push

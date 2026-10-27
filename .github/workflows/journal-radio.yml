@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
   push:
     branches: ['claude/**']
-    paths: ['tools/journal-radio/*.txt', 'tools/journal-radio/voix.py', 'tools/journal-radio/texte.py']
+    paths: ['tools/journal-radio/*.txt', 'tools/journal-radio/voix.py', 'tools/journal-radio/texte.py', '.github/workflows/journal-radio.yml']
 
 permissions:
   contents: write
@@ -30,4 +30,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tools/journal-radio/voix
           git diff --cached --quiet || git commit -m "Voix du journal radio"
-          git push
+          # la branche a pu avancer pendant la fabrication des voix
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

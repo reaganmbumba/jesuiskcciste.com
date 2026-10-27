@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mic, Music2, Phone, Radio } from 'lucide-react';
+import { Mic, Music2, Newspaper, Phone, Radio } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Field, Input } from '@/components/ui/Form';
@@ -69,7 +69,7 @@ export default function AdminRadio() {
   const section = (kind: RadioItem['kind'], enabled: boolean) => {
     const list = (catalog ?? []).filter((i) => i.kind === kind);
     if (loading) return <Skeleton className="h-24" />;
-    if (!list.length) return <p className="text-sm text-ink/60">{kind === 'song' ? 'Aucun chant à diffusion autorisée avec un fichier audio.' : 'Aucune prédication publiée avec un fichier audio.'}</p>;
+    if (!list.length) return <p className="text-sm text-ink/60">{kind === 'song' ? 'Aucun chant à diffusion autorisée avec un fichier audio.' : kind === 'news' ? 'Aucun journal de moins de 7 jours.' : 'Aucune prédication publiée avec un fichier audio.'}</p>;
     return (
       <ul className={enabled ? 'space-y-2' : 'pointer-events-none space-y-2 opacity-50'}>
         {list.map((i) => (
@@ -115,6 +115,11 @@ export default function AdminRadio() {
         <Checkbox label="Diffuser les prédications" description="Une prédication passe après chaque série de 3 chants." checked={r.sermons} onChange={(e) => setR({ ...r, sermons: e.currentTarget.checked })} />
         {section('sermon', r.sermons)}
         <p className="text-xs text-ink/55">Une nouvelle prédication publiée dans « Prédications audio » passe à l’antenne automatiquement.</p>
+      </CardBody></Card>
+      <Card><CardBody className="space-y-4">
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><Newspaper className="h-5 w-5 text-gold-600" />Journal parlé</h2>
+        <Checkbox label="Diffuser le journal" description="Le journal de la semaine ouvre chaque tour de radio, avant les chants et les prédications." checked={r.news} onChange={(e) => setR({ ...r, news: e.currentTarget.checked })} />
+        {section('news', r.news)}
       </CardBody></Card>
       <div className="flex justify-end"><Button onClick={() => save()} loading={saving}>Enregistrer les réglages</Button></div>
     </div>

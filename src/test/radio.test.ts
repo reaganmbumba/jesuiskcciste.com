@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { availableModes, buildRound, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
+import { availableModes, buildRound, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
 import type { AudioSermon, Track } from '@/types';
 
 const song = (id: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/${id}.mp3`, durationSeconds: null, imageUrl: null });
@@ -19,7 +19,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '' } });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '' } });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });
@@ -69,5 +69,21 @@ describe('Radio : émissions en direct et appels', () => {
     expect(parseCallUrl('')).toBeNull();
     expect(() => parseCallUrl('http://exemple.com')).toThrow('call');
     expect(newCallRoomUrl('meet.jit.si', () => 0)).toBe('https://meet.jit.si/RadioJeSuisKCCiste-aaaaaaaa#config.startWithVideoMuted=true');
+  });
+
+  it('ouvre chaque tour avec le journal parlé de la semaine', () => {
+    const j = { id: 'j1', date: '2026-10-27T06:00:00Z', title: 'Journal', audioUrl: '/j.mp3', durationSeconds: 480 };
+    const news = currentNews([j], new Date('2026-10-28T10:00:00Z'))!;
+    expect(news.key).toBe('news:j1');
+    expect(currentNews([j], new Date('2026-11-05T10:00:00Z'))).toBeNull();
+    expect(currentNews([j], new Date('2026-10-26T10:00:00Z'))).toBeNull();
+    const all = [news, song('a'), song('b'), talk('p')];
+    expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
+    expect(onAir(all, radioSettingsOf({ radio: { songs: true, sermons: true, news: false, excluded: [] } }), 'all').some((i) => i.kind === 'news')).toBe(false);
+    for (let seed = 1; seed < 20; seed++) {
+      const round = buildRound(all, seeded(seed), 'song:a');
+      expect(round[0].key).toBe('news:j1');
+      expect(round[1].key).not.toBe('song:a');
+    }
   });
 });

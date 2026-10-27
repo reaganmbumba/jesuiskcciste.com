@@ -6,5 +6,5 @@
 export interface Journal { id: string; date: string; title: string; audioUrl: string; durationSeconds: number }
 
 export const JOURNAUX: Journal[] = [
-  { id: '2026-10-27', date: '2026-10-27T06:00:00Z', title: 'Le journal du mardi 27 octobre 2026', audioUrl: '/audio/journal/journal-2026-10-27.mp3', durationSeconds: 437 },
+  { id: '2026-10-27', date: '2026-10-26T23:00:00Z', title: 'Le journal du mardi 27 octobre 2026', audioUrl: '/audio/journal/journal-2026-10-27.mp3', durationSeconds: 437 },
 ];

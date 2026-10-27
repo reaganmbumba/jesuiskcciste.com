@@ -12,7 +12,7 @@ SR = 44100
 ICI = os.path.dirname(os.path.abspath(__file__))
 TAPIS_GAIN = .13  # tapis musical bien en dessous des voix
 CHANTS = os.path.join(ICI, "..", "..", "public", "audio")
-EXTRAIT_DEBUT, EXTRAIT_DUREE, EXTRAIT_FONDU = 25.0, 45.0, 2.5  # secondes
+EXTRAIT_DEBUT, EXTRAIT_DUREE, EXTRAIT_FONDU = 25.0, 60.0, 3.0  # secondes
 
 
 def fichier_chant(titre):

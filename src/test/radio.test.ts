@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { availableModes, buildRound, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
+import { antenna, availableModes, buildRound, nextShow, scheduledShow, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
 import type { AudioSermon, Track } from '@/types';
 
 const song = (id: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/${id}.mp3`, durationSeconds: null, imageUrl: null });
@@ -90,5 +90,17 @@ describe('Radio : émissions en direct et appels', () => {
     expect(kinds).toEqual(['news', 'song', 'song', 'song', 'news', 'song', 'song', 'song', 'news', 'song']);
     const mixed = buildRound([news, ...'abcdef'.split('').map(song), talk('p')], seeded(3)).map((i) => i.kind);
     expect(mixed).toEqual(['news', 'song', 'song', 'song', 'news', 'sermon', 'song', 'song', 'song']);
+  });
+  it('passe l’émission programmée à l’heure dite, au même moment pour tous', () => {
+    const shows = [{ id: 'm', title: 'Musique', startsAt: '2026-10-27T10:30:00Z', audioUrl: '/audio/emissions/m.mp3', durationSeconds: 900 }];
+    const off = radioSettingsOf({}).live;
+    expect(scheduledShow(shows, new Date('2026-10-27T10:29:59Z'))).toBeNull();
+    expect(nextShow(shows, new Date('2026-10-27T05:00:00Z'))?.id).toBe('m');
+    expect(nextShow(shows, new Date('2026-10-26T05:00:00Z'))).toBeNull();
+    expect(antenna(off, shows, new Date('2026-10-27T10:30:00Z'))?.url).toBe('/audio/emissions/m.mp3');
+    expect(antenna(off, shows, new Date('2026-10-27T10:35:00Z'))?.url).toBe('/audio/emissions/m.mp3#t=300');
+    expect(antenna(off, shows, new Date('2026-10-27T10:45:00Z'))).toBeNull();
+    const live = { url: 'https://stream.zeno.fm/x', title: 'Direct', onAir: true, startedAt: null, callUrl: '' };
+    expect(antenna(live, shows, new Date('2026-10-27T10:35:00Z'))?.title).toBe('Direct');
   });
 });

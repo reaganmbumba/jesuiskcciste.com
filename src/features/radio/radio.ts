@@ -4,6 +4,7 @@ import { camelize } from '@/utils/case';
 import { listPublicSermons } from '@/features/sermons/sermons';
 import type { SiteSettings } from '@/config/site';
 import { JOURNAUX, type Journal } from '@/content/journaux';
+import { EMISSIONS, type Emission } from '@/content/emissions';
 import type { AudioSermon, Track } from '@/types';
 
 /**
@@ -105,6 +106,36 @@ export function isLiveOn(live: RadioLive, now = new Date()): boolean {
   if (!live.startedAt) return true;
   const started = new Date(live.startedAt).getTime();
   return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
+}
+
+/** L'émission programmée à l'antenne en ce moment, s'il y en a une. */
+export function scheduledShow(list: Emission[] = EMISSIONS, now = new Date()): Emission | null {
+  const t = now.getTime();
+  return list.find((e) => {
+    const start = new Date(e.startsAt).getTime();
+    return t >= start && t < start + e.durationSeconds * 1000;
+  }) ?? null;
+}
+
+/** La prochaine émission programmée dans les `withinHours` heures (pour l'annoncer). */
+export function nextShow(list: Emission[] = EMISSIONS, now = new Date(), withinHours = 24): Emission | null {
+  const t = now.getTime();
+  return [...list]
+    .filter((e) => { const s = new Date(e.startsAt).getTime(); return s > t && s - t <= withinHours * 3600000; })
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] ?? null;
+}
+
+/**
+ * Ce qui passe « en direct » : l'émission en direct de l'administration en
+ * priorité, sinon l'émission programmée, prise au point où elle en est
+ * (tous les auditeurs entendent le même moment). Null si rien.
+ */
+export function antenna(live: RadioLive, list: Emission[] = EMISSIONS, now = new Date()): RadioLive | null {
+  if (isLiveOn(live, now)) return live;
+  const e = scheduledShow(list, now);
+  if (!e) return null;
+  const offset = Math.floor((now.getTime() - new Date(e.startsAt).getTime()) / 1000);
+  return { url: offset > 2 ? `${e.audioUrl}#t=${offset}` : e.audioUrl, title: e.title, onAir: true, startedAt: e.startsAt, callUrl: '' };
 }
 
 export function liveItem(live: RadioLive): RadioItem {

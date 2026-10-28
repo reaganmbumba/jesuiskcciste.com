@@ -143,6 +143,9 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
                   )}
                 </div>
               ))}
+              {can(profile, 'admin.access') && (
+                <Link to="/admin" className="flex items-center gap-3 rounded-2xl bg-night px-4 py-3 text-sm font-semibold text-white"><Shield className="h-5 w-5 text-gold" aria-hidden /> {t('nav.admin')}</Link>
+              )}
               <Link to="/application" className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-gold-50 px-4 py-3 text-sm font-semibold text-night"><Smartphone className="h-5 w-5 text-gold-600" aria-hidden /> {tx('Installer l’application sur mon téléphone', 'Install the app on my phone', 'Instalar a aplicação no meu telemóvel')}</Link>
               <div className="flex gap-2 border-t border-night/10 pt-4">
                 {profile ? (

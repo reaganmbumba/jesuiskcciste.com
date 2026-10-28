@@ -128,7 +128,9 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
 function MemberShell() {
   const { tx } = useI18n();
   const unread = useUnreadMessages();
+  const { profile } = useAuth();
   const items = MEMBER_MENU.map((i) => (i.to === '/espace/messages' ? { ...i, label: tx('Messages privés', 'Private messages', 'Mensagens privadas'), badge: unread } : i));
+  if (can(profile, 'admin.access')) items.push({ to: '/admin', label: 'Administration', icon: ShieldCheck });
   return <DashboardLayout items={items} title="Mon espace" />;
 }
 

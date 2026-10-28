@@ -36,6 +36,8 @@ export interface RadioItem {
   url: string;
   durationSeconds: number | null;
   imageUrl: string | null;
+  /** Ne passe plus à partir de cette date (bande-annonce d'une émission). */
+  until?: string;
 }
 
 export interface RadioLive {
@@ -186,6 +188,13 @@ export function currentNews(list: Journal[] = JOURNAUX, now = new Date()): Radio
   return { key: newsKey(j.id), kind: 'news', title: j.title, subtitle: 'Rédaction Je suis KCCiste', url: j.audioUrl, durationSeconds: j.durationSeconds || null, imageUrl: null };
 }
 
+/** Bande-annonce de la prochaine émission programmée (dans les 24 h), jusqu'à son début. */
+export function currentTeaser(list: Emission[] = EMISSIONS, now = new Date()): RadioItem | null {
+  const e = nextShow(list.filter((x) => x.teaserUrl), now);
+  if (!e?.teaserUrl) return null;
+  return { key: newsKey(`annonce-${e.id}`), kind: 'news', title: `Bande-annonce : ${e.title}`, subtitle: 'Radio Je suis KCCiste', url: e.teaserUrl, durationSeconds: e.teaserSeconds ?? null, imageUrl: null, until: e.startsAt };
+}
+
 export function songItem(t: Track, artistName?: string): RadioItem | null {
   if (!t.audioUrl || t.broadcastRights !== 'authorized') return null;
   return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null };
@@ -207,15 +216,16 @@ export async function loadRadioCatalog(): Promise<RadioItem[]> {
   const name = (id: string) => artists.find((a) => a.id === id)?.name;
   const songs = tracks.map((t) => songItem(t, name(t.artistId))).filter((x): x is RadioItem => !!x);
   const talks = sermons.map(sermonItem).filter((x): x is RadioItem => !!x);
-  const news = currentNews();
-  return [...(news ? [news] : []), ...songs, ...talks];
+  const news = [currentNews(), currentTeaser()].filter((x): x is RadioItem => !!x);
+  return [...news, ...songs, ...talks];
 }
 
 /** Ce qui est réellement diffusé, selon les réglages et le choix de l'auditeur. */
-export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: RadioMode): RadioItem[] {
+export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: RadioMode, now = new Date()): RadioItem[] {
   const off = new Set(settings.excluded);
   return catalog.filter((i) => {
     if (off.has(i.key)) return false;
+    if (i.until && now.getTime() >= new Date(i.until).getTime()) return false;
     if (i.kind === 'song') return settings.songs && mode !== 'sermons';
     if (i.kind === 'news') return settings.news && mode !== 'songs';
     return settings.sermons && mode !== 'songs';

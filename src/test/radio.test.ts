@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { antenna, availableModes, buildRound, nextShow, scheduledShow, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
+import { antenna, availableModes, buildRound, currentTeaser, nextShow, scheduledShow, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
 import type { AudioSermon, Track } from '@/types';
 
 const song = (id: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/${id}.mp3`, durationSeconds: null, imageUrl: null });
@@ -102,5 +102,17 @@ describe('Radio : émissions en direct et appels', () => {
     expect(antenna(off, shows, new Date('2026-10-27T10:45:00Z'))).toBeNull();
     const live = { url: 'https://stream.zeno.fm/x', title: 'Direct', onAir: true, startedAt: null, callUrl: '' };
     expect(antenna(live, shows, new Date('2026-10-27T10:35:00Z'))?.title).toBe('Direct');
+  });
+
+  it('passe la bande-annonce avant l\'émission, puis plus du tout', () => {
+    const show = { id: 'm', title: 'Musique', startsAt: '2026-10-28T18:00:00Z', audioUrl: '/m.mp3', durationSeconds: 900, teaserUrl: '/a.mp3', teaserSeconds: 60 };
+    const t = currentTeaser([show], new Date('2026-10-28T06:00:00Z'))!;
+    expect(t.kind).toBe('news');
+    expect(t.url).toBe('/a.mp3');
+    expect(currentTeaser([{ ...show, teaserUrl: undefined }], new Date('2026-10-28T06:00:00Z'))).toBeNull();
+    expect(currentTeaser([show], new Date('2026-10-28T18:05:00Z'))).toBeNull();
+    const settings = radioSettingsOf({});
+    expect(onAir([t], settings, 'all', new Date('2026-10-28T17:59:00Z'))).toHaveLength(1);
+    expect(onAir([t], settings, 'all', new Date('2026-10-28T18:00:00Z'))).toHaveLength(0);
   });
 });

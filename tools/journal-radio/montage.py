@@ -62,6 +62,8 @@ def main(texte, sortie):
                 t += .45  # respiration entre deux phrases
             fichiers = ["elle", "lui"] if e["qui"] == "ENSEMBLE" else [e["qui"].lower()]
             sons = [charger(os.path.join(voix_dir, f"{e['n']:03d}-{q}.mp3")) for q in fichiers]
+            if os.environ.get("TEMPS"):  # repères pour découper une bande-annonce
+                print(f"{t:7.1f} s  {e['qui']}: {e['texte'][:60]}")
             for s in sons:
                 piste = poser(piste, s, t, 1 / len(sons) ** .5)
             t += max(len(s) for s in sons) / SR
@@ -79,6 +81,8 @@ def main(texte, sortie):
         elif r == "EXTRAIT":
             son = extrait(e["chant"])
             t += .6
+            if os.environ.get("TEMPS"):
+                print(f"{t:7.1f} s  [EXTRAIT {e['chant']}]")
             piste = poser(piste, son, t, .8)
             t += len(son) / SR + .4
         elif r == "SILENCE":

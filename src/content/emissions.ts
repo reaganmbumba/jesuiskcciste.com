@@ -9,4 +9,5 @@ export interface Emission { id: string; title: string; startsAt: string; audioUr
 
 export const EMISSIONS: Emission[] = [
   { id: 'musique-2026-10-27', startsAt: '2026-10-27T10:30:00Z', title: 'Du ghetto au monde : la musique KCCiste', audioUrl: '/audio/emissions/emission-musique-2026-10-27.mp3', durationSeconds: 902 },
+  { id: 'jeunes-prophete-2026-10-29', startsAt: '2026-10-29T17:00:00Z', title: 'La jeunesse parle du Prophète', audioUrl: '/audio/emissions/emission-jeunes-prophete.mp3', durationSeconds: 1685 },
 ];

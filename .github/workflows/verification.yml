@@ -1,0 +1,26 @@
+name: Vérification
+
+# Vérifie chaque branche de travail : types, tests et build de production.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: ['claude/**']
+    paths-ignore: ['tools/journal-radio/**', 'docs/**', '**.md']
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

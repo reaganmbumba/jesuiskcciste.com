@@ -69,7 +69,7 @@ export const usd = (n: number) => `${n.toLocaleString('fr-FR')} $`;
 export function newReference(): string {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   const bytes = new Uint8Array(6);
-  (globalThis.crypto ?? { getRandomValues: (a: Uint8Array) => a.map(() => Math.floor(Math.random() * 256)) }).getRandomValues(bytes);
+  crypto.getRandomValues(bytes);
   return `PGN-${Array.from(bytes, (b) => chars[b % chars.length]).join('')}`;
 }
 
@@ -83,7 +83,7 @@ export function whatsappNumber(phone: string): string {
 
 /** Texte de la commande, repris dans WhatsApp et dans l'e-mail. */
 export function orderMessage(reference: string, o: OrderInput): string {
-  const lines = [
+  const lines: (string | null)[] = [
     `🛍️ Nouvelle commande de pagnes KCC — ${reference}`,
     '',
     ...o.items.map((i) => `• ${i.quantity} × ${i.label}`),
@@ -92,14 +92,14 @@ export function orderMessage(reference: string, o: OrderInput): string {
     '',
     `Nom : ${o.fullName.trim()}`,
     `Téléphone : ${o.phone.trim()}`,
-    o.email.trim() ? `E-mail : ${o.email.trim()}` : '',
+    o.email.trim() ? `E-mail : ${o.email.trim()}` : null,
     `Ville : ${o.city.trim()}, ${o.country.trim()}`,
     o.delivery === 'livraison' ? `Livraison : ${o.address.trim() || 'adresse à préciser'}` : 'Retrait sur place',
-    o.note.trim() ? `Remarque : ${o.note.trim()}` : '',
+    o.note.trim() ? `Remarque : ${o.note.trim()}` : null,
     '',
     'Envoyé depuis jesuiskcciste.com/boutique/pagnes',
   ];
-  return lines.filter((l, idx) => l !== '' || (idx > 0 && lines[idx - 1] !== '')).join('\n');
+  return lines.filter((l): l is string => l !== null).join('\n');
 }
 
 export function whatsappOrderUrl(sellerPhone: string, message: string): string {

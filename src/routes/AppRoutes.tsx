@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
-  LayoutGrid, FileText, Radio, Headphones,
+  LayoutGrid, FileText, Radio, Headphones, Shirt,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -89,6 +89,8 @@ const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
 const AdminPageTexts = lazy(() => import('@/pages/admin/AdminPageTexts'));
+const AdminPagneOrders = lazy(() => import('@/pages/admin/AdminPagneOrders'));
+const PagnesPage = lazy(() => import('@/pages/public/PagnesPage'));
 
 const MEMBER_MENU: SideItem[] = [
   { to: '/espace', label: 'Tableau de bord', icon: LayoutDashboard, end: true },
@@ -115,6 +117,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/formations', label: 'Formations et examens', icon: BookOpenCheck, permission: 'courses.manage_own' },
   { to: '/admin/certificats', label: 'Certificats', icon: Award, permission: 'certificates.manage' },
   { to: '/admin/medias', label: 'Musique : chants et albums', icon: Music2, permission: 'music.manage' },
+  { to: '/admin/commandes-pagnes', label: 'Commandes de pagnes', icon: Shirt, permission: 'settings.manage' },
   { to: '/admin/projets', label: 'Projets et contributions', icon: HandHeart, permission: 'projects.manage' },
   { to: '/admin/apotres', label: 'Révérends Apôtres', icon: Medal, permission: 'settings.manage' },
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
@@ -181,6 +184,8 @@ export function AppRoutes() {
         <Route element={<RequireAuth />}>
           <Route path="academie/examens/:quizId" element={<ExamPage />} />
         </Route>
+        <Route path="boutique/pagnes" element={<PagnesPage />} />
+        <Route path="pagnes" element={<PagnesPage />} />
         <Route path="musique" element={<MusicPage />} />
         <Route path="musique/artistes" element={<ArtistsPage />} />
         <Route path="bibliotheque" element={<LibraryPage />} />
@@ -226,6 +231,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="certificates.manage" />}><Route path="certificats" element={<AdminCertificates />} /></Route>
           <Route element={<RequirePermission permission="music.manage" />}><Route path="medias" element={<AdminMedia />} /></Route>
           <Route element={<RequirePermission permission="projects.manage" />}><Route path="projets" element={<AdminProjects />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="commandes-pagnes" element={<AdminPagneOrders />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="apotres" element={<AdminApostles />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="directs" element={<AdminLivestreams />} /></Route>

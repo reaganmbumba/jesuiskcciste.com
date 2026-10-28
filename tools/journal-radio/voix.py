@@ -12,13 +12,23 @@ from texte import a_dire, lire
 VOIX = {
     "ELLE": ["fr-FR-VivienneMultilingualNeural", "fr-FR-DeniseNeural"],
     "LUI": ["fr-FR-RemyMultilingualNeural", "fr-FR-HenriNeural"],
+    # Les voix « Multilingual » lisent le français sans accent étranger.
+    "ANIMATEUR": ["fr-FR-RemyMultilingualNeural", "fr-FR-HenriNeural"],
+    "JONATHAN": ["fr-FR-HenriNeural", ("fr-FR-RemyMultilingualNeural", "+6Hz")],
+    "SAMUEL": ["en-US-AndrewMultilingualNeural", ("fr-FR-HenriNeural", "-6Hz")],
+    "DANIEL": ["en-US-BrianMultilingualNeural", ("fr-FR-HenriNeural", "+8Hz")],
+    "JOSUE": ["de-DE-FlorianMultilingualNeural", ("fr-FR-RemyMultilingualNeural", "-8Hz")],
+    "ESTHER": ["fr-FR-DeniseNeural", ("fr-FR-VivienneMultilingualNeural", "+6Hz")],
+    "RUTH": ["fr-FR-VivienneMultilingualNeural", ("fr-FR-DeniseNeural", "-6Hz")],
+    "DEBORA": ["en-US-AvaMultilingualNeural", "en-US-EmmaMultilingualNeural", ("fr-FR-DeniseNeural", "+10Hz")],
 }
 
 
 async def dire(texte: str, qui: str, sortie: str) -> None:
-    for i, voix in enumerate(VOIX[qui]):
+    for voix in VOIX[qui]:
+        voix, hauteur = voix if isinstance(voix, tuple) else (voix, "+0Hz")
         try:
-            await edge_tts.Communicate(texte, voix, rate="+4%").save(sortie)
+            await edge_tts.Communicate(texte, voix, rate="+4%", pitch=hauteur).save(sortie)
             if os.path.getsize(sortie) > 1000:
                 return
         except Exception as e:  # voix indisponible : on passe à la suivante
@@ -34,6 +44,8 @@ async def main(chemin: str) -> None:
             continue
         for qui in (["ELLE", "LUI"] if e["qui"] == "ENSEMBLE" else [e["qui"]]):
             sortie = os.path.join(dossier, f"{e['n']:03d}-{qui.lower()}.mp3")
+            if os.path.exists(sortie):  # déjà fabriquée (supprimer le dossier pour tout refaire)
+                continue
             await dire(a_dire(e["texte"]), qui, sortie)
             print(sortie)
 

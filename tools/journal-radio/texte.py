@@ -16,7 +16,7 @@ PRONONCIATION = [
     (r"\bNgidinga\b", "Nguidinnga"),
     (r"\bDizolele\b", "Dizolélé"),
     (r"\bMpungu\b", "Mpoungou"),
-    (r"\bWafiduzwa\b", "Wafidouzwa"),
+    (r"\bWafidu[sz]wa\b", "Wafidouzwa"),
     (r"\bKinuani\b", "Kinouani"),
     (r"\bMunganga\b", "Moungannga"),
     (r"\bTryphon\b", "Triphon"),
@@ -26,10 +26,36 @@ PRONONCIATION = [
     (r"\bZeba\b", "Zéba"),
     (r"\bBuamano\b", "Bouamano"),
     (r"\bLufu\b", "Loufou"),
+    # Émission « La jeunesse parle du Prophète » : lieux et paroles en kikongo
+    (r"\bK, C, C\b", "Ka, Cé, Cé"),
+    (r"\bNlemba\b", "Nlèmba"),
+    (r"\bNlundu\b", "Nloundou"),
+    (r"\bLuozi\b", "Louozi"),
+    (r"\bLuangu\b", "Louanngou"),
+    (r"\bKinkenge\b", "Kinnkènnguè"),
+    (r"\bSeke-Banza\b", "Sékè-Bannza"),
+    (r"\bKinzao-Mvuete\b", "Kinnzao-Mvouétè"),
+    (r"\bKimbuandi\b", "Kimmbouanndi"),
+    (r"\bTeli\b", "Téli"),
+    (r"\bMupepe\b", "Moupépé"),
+    (r"\bUnkeba\b", "Ounnkéba"),
+    (r"\bBukavu\b", "Boukavou"),
+    (r"\bLubumbashi\b", "Loubboumbachi"),
+    (r"Ngeye wena bamvela tadi", "Nguéyé wéna bamvéla tadi"),
+    (r"Ngeye kuasololo kua mutu ko", "Nguéyé kouassololo koua moutou ko"),
+    (r"Salu ka kiena kia muntu ko", "Salou ka kiéna kia mounntou ko"),
+    (r"Nkanda Wambote Wampa", "Nkannda Wammboté Wammpa"),
+    (r"« Nkanda »", "« Nkannda »"), (r"« Wambote »", "« Wammboté »"), (r"« Wampa »", "« Wammpa »"),
+    (r"Mena mu bibila, mena mu kia", "Ména mou bibila, ména mou kia"),
+    (r"Yawhe Libanga", "Yawé Libannga"),
+    (r"Simba ngai makasi", "Simmba ngaï makassi"),
+    (r"ordonnance 128-80", "ordonnance cent vingt-huit, quatre-vingts"),
     (r"08 40 23 85 92", "zéro huit, quarante, vingt-trois, quatre-vingt-cinq, quatre-vingt-douze"),
 ]
 
-VOIX = ("ELLE", "LUI", "ENSEMBLE")
+VOIX = ("ELLE", "LUI", "ENSEMBLE",
+        # émission « La jeunesse parle du Prophète » : un animateur, quatre jeunes hommes, trois jeunes femmes
+        "ANIMATEUR", "JONATHAN", "SAMUEL", "DANIEL", "JOSUE", "ESTHER", "RUTH", "DEBORA")
 REPERES = ("OUVERTURE", "TAPIS", "FIN TAPIS", "VIRGULE", "TRANSITION", "SILENCE", "FIN")
 
 

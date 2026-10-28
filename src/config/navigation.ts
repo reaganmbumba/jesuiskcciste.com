@@ -14,6 +14,7 @@ export const MAIN_NAV: NavGroup[] = [
       { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Se réunir en visioconférence', 'Meet by video call', 'Reunir-se por videoconferência') },
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
       { label: l('Messages privés', 'Private messages', 'Mensagens privadas'), to: '/espace/messages', description: l('Écrire à un autre membre', 'Write to another member', 'Escrever a outro membro') },
+      { label: l('Boutique : pagnes KCC', 'Shop: KCC fabrics', 'Loja: panos KCC'), to: '/boutique/pagnes', description: l('Commander vos pagnes à 25 $', 'Order your fabrics at $25', 'Encomendar panos a 25 $') },
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('La liste officielle, par pays', 'The official list, by country', 'A lista oficial, por país') },
       { label: l('Sections', 'Sections', 'Secções'), to: '/sections', description: l('Les sections rattachées', 'Affiliated sections', 'As secções associadas') },
       { label: l('À propos de l’Église', 'About the Church', 'Sobre a Igreja'), to: '/a-propos', description: l('Présentation officielle', 'Official presentation', 'Apresentação oficial') },

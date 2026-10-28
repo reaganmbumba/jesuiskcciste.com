@@ -554,3 +554,25 @@ export interface ArticleLikes {
   likes: number;
   liked: boolean;
 }
+
+// ——— Boutique : commandes de pagnes ———
+export type PagneOrderStatus = 'nouvelle' | 'contactee' | 'payee' | 'livree' | 'annulee';
+export interface PagneOrder {
+  id: UUID;
+  reference: string;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  city: string;
+  country: string;
+  address?: string | null;
+  delivery: 'livraison' | 'retrait';
+  items: { model: string; label: string; quantity: number }[];
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  note?: string | null;
+  status: PagneOrderStatus;
+  adminNote?: string | null;
+  createdAt?: string;
+}

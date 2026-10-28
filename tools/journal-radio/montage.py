@@ -11,6 +11,26 @@ from texte import lire
 SR = 44100
 ICI = os.path.dirname(os.path.abspath(__file__))
 TAPIS_GAIN = .13  # tapis musical bien en dessous des voix
+CHANTS = os.path.join(ICI, "..", "..", "public", "audio")
+EXTRAIT_DEBUT, EXTRAIT_DUREE, EXTRAIT_FONDU = 25.0, 60.0, 3.0  # secondes
+
+
+def fichier_chant(titre):
+    """« Profession de foi (en portugais) » → public/audio/profession-de-foi-portugais.mp3"""
+    import re, unicodedata
+    s = unicodedata.normalize("NFKD", titre).encode("ascii", "ignore").decode().lower()
+    s = re.sub(r"\(en ([a-z]+)\)", r"\1", s)
+    return os.path.join(CHANTS, re.sub(r"[^a-z0-9]+", "-", s).strip("-") + ".mp3")
+
+
+def extrait(titre):
+    pcm = subprocess.run(["ffmpeg", "-v", "error", "-ss", str(EXTRAIT_DEBUT), "-t", str(EXTRAIT_DUREE), "-i", fichier_chant(titre),
+                          "-ac", "1", "-ar", str(SR), "-f", "f32le", "-"], capture_output=True, check=True).stdout
+    s = np.frombuffer(pcm, dtype="<f4").astype(np.float64)
+    f = int(EXTRAIT_FONDU * SR)
+    s[:f] *= np.linspace(0, 1, f)
+    s[-f:] *= np.linspace(1, 0, f)
+    return s
 
 
 def charger(chemin):
@@ -42,6 +62,8 @@ def main(texte, sortie):
                 t += .45  # respiration entre deux phrases
             fichiers = ["elle", "lui"] if e["qui"] == "ENSEMBLE" else [e["qui"].lower()]
             sons = [charger(os.path.join(voix_dir, f"{e['n']:03d}-{q}.mp3")) for q in fichiers]
+            if os.environ.get("TEMPS"):  # repères pour découper une bande-annonce
+                print(f"{t:7.1f} s  {e['qui']}: {e['texte'][:60]}")
             for s in sons:
                 piste = poser(piste, s, t, 1 / len(sons) ** .5)
             t += max(len(s) for s in sons) / SR
@@ -56,6 +78,13 @@ def main(texte, sortie):
             t += .35
             piste = poser(piste, son, t, .7 if r == "VIRGULE" else .85)
             t += (.9 if r == "VIRGULE" else 2.2)
+        elif r == "EXTRAIT":
+            son = extrait(e["chant"])
+            t += .6
+            if os.environ.get("TEMPS"):
+                print(f"{t:7.1f} s  [EXTRAIT {e['chant']}]")
+            piste = poser(piste, son, t, .8)
+            t += len(son) / SR + .4
         elif r == "SILENCE":
             t += 1.6
         elif r == "TAPIS":

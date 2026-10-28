@@ -1,4 +1,4 @@
-# Émission spéciale de Radio Je suis KCCiste, mardi 27 octobre 2026, 11 h 30 (heure de Kinshasa).
+# Émission spéciale de Radio Je suis KCCiste, mercredi 28 octobre 2026, 19 h (heure de Kinshasa).
 # « Du ghetto au monde : la musique KCCiste » — 15 minutes environ.
 # ELLE = présentatrice, LUI = présentateur. Les lignes entre crochets sont l'habillage sonore.
 # [EXTRAIT ...] = passage d'un chant du site (environ 30 secondes, fondu en entrée et en sortie).
@@ -6,7 +6,7 @@
 [OUVERTURE]
 ELLE: Radio Je suis KCCiste. Émission spéciale.
 LUI: Paix à vous, à toutes et à tous, chers auditeurs, en République démocratique du Congo, en Angola, en Europe, en Amérique et partout où bat un cœur KCCiste.
-ELLE: Paix à vous. Il est onze heures trente à Kinshasa, et pendant un quart d'heure, nous allons parler de ce qui nous fait vibrer à chaque culte : la musique KCCiste.
+ELLE: Paix à vous. Il est dix-neuf heures à Kinshasa, et pendant un quart d'heure, nous allons parler de ce qui nous fait vibrer à chaque culte : la musique KCCiste.
 LUI: Son histoire, son évolution, et surtout une question que beaucoup de musiciens se posent aujourd'hui : comment notre musique peut-elle sortir du ghetto pour devenir internationale ?
 ELLE: Au programme : les racines, d'abord. Ensuite, la nouvelle génération. Puis ce qui retient encore notre musique entre quatre murs. Et enfin, les chemins pour la porter au monde.
 [TRANSITION]

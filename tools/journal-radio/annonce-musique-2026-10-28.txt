@@ -1,0 +1,7 @@
+# Bande-annonce de l'émission « Du ghetto au monde : la musique KCCiste », diffusée le mercredi 28 octobre 2026 à 19 h (heure de Kinshasa).
+# Assemblée par annonce.py avec des passages de l'émission elle-même.
+ELLE: Ce soir, sur Radio Je suis KCCiste…
+LUI: Une émission spéciale : « Du ghetto au monde : la musique KCCiste ».
+ELLE: Son histoire, la nouvelle génération, et une grande question : comment faire sortir notre musique du ghetto, pour la porter au monde ?
+LUI: Rendez-vous ce soir, à dix-neuf heures, heure de Kinshasa.
+ELLE: Sur Radio Je suis KCCiste, et sur jesuiskcciste.com. Paix à vous !

@@ -7,7 +7,7 @@ import asyncio, os, sys
 
 import edge_tts
 
-from texte import a_dire, lire
+from texte import a_dire, lire, voix_de
 
 VOIX = {
     "ELLE": ["fr-FR-VivienneMultilingualNeural", "fr-FR-DeniseNeural"],
@@ -42,7 +42,7 @@ async def main(chemin: str) -> None:
     for e in lire(chemin):
         if e["type"] != "voix":
             continue
-        for qui in (["ELLE", "LUI"] if e["qui"] == "ENSEMBLE" else [e["qui"]]):
+        for qui in voix_de(e["qui"]):
             sortie = os.path.join(dossier, f"{e['n']:03d}-{qui.lower()}.mp3")
             if os.path.exists(sortie):  # déjà fabriquée (supprimer le dossier pour tout refaire)
                 continue

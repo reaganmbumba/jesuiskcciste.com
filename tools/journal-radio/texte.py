@@ -55,7 +55,13 @@ PRONONCIATION = [
 
 VOIX = ("ELLE", "LUI", "ENSEMBLE",
         # émission « La jeunesse parle du Prophète » : un animateur, quatre jeunes hommes, trois jeunes femmes
-        "ANIMATEUR", "JONATHAN", "SAMUEL", "DANIEL", "JOSUE", "ESTHER", "RUTH", "DEBORA")
+        "ANIMATEUR", "JONATHAN", "SAMUEL", "DANIEL", "JOSUE", "ESTHER", "RUTH", "DEBORA", "TOUS")
+GROUPES = {"ENSEMBLE": ["ELLE", "LUI"], "TOUS": ["ANIMATEUR", "JONATHAN", "SAMUEL", "DANIEL", "JOSUE", "ESTHER", "RUTH", "DEBORA"]}
+
+
+def voix_de(qui: str) -> list[str]:
+    """Voix à fabriquer pour une ligne : « ENSEMBLE » et « TOUS » parlent à plusieurs."""
+    return GROUPES.get(qui, [qui])
 REPERES = ("OUVERTURE", "TAPIS", "FIN TAPIS", "VIRGULE", "TRANSITION", "SILENCE", "FIN")
 
 
@@ -82,8 +88,12 @@ def lire(chemin: str) -> list[dict]:
             elements.append({"type": "repere", "nom": nom})
             continue
         qui, _, texte = ligne.partition(":")
-        if qui.strip() not in VOIX:
+        # « NOM+: » coupe la parole à la ligne précédente ; « NOM++: » parle en même temps qu'elle
+        qui = qui.strip()
+        chevauche = len(qui) - len(qui.rstrip("+"))
+        qui = qui.rstrip("+")
+        if qui not in VOIX:
             raise ValueError(f"Ligne sans voix : {ligne}")
         n += 1
-        elements.append({"type": "voix", "qui": qui.strip(), "texte": texte.strip(), "n": n})
+        elements.append({"type": "voix", "qui": qui, "texte": texte.strip(), "n": n, "chevauche": chevauche})
     return elements

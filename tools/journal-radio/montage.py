@@ -6,13 +6,14 @@ import os, subprocess, sys
 
 import numpy as np
 
-from texte import lire
+from texte import lire, voix_de
 
 SR = 44100
 ICI = os.path.dirname(os.path.abspath(__file__))
 TAPIS_GAIN = .13  # tapis musical bien en dessous des voix
 CHANTS = os.path.join(ICI, "..", "..", "public", "audio")
 EXTRAIT_DEBUT, EXTRAIT_DUREE, EXTRAIT_FONDU = 25.0, 60.0, 3.0  # secondes
+RESPIRATION = float(os.environ.get("RESPIRATION", .45))  # silence entre deux répliques
 
 
 def fichier_chant(titre):
@@ -55,16 +56,21 @@ def main(texte, sortie):
     voix_dir = os.path.join(ICI, "voix", nom)
     hab = {n: charger(os.path.join(ICI, "habillage", n + ".wav")) for n in ("indicatif", "virgule", "transition", "fin", "tapis")}
     piste, tapis = np.zeros(SR), np.zeros(SR)
-    t, precedent, tapis_debut = .3, None, None
+    t, precedent, tapis_debut, debut_precedent = .3, None, None, 0.0
     for e in lire(texte):
         if e["type"] == "voix":
-            if precedent == "voix":
-                t += .45  # respiration entre deux phrases
-            fichiers = ["elle", "lui"] if e["qui"] == "ENSEMBLE" else [e["qui"].lower()]
-            sons = [charger(os.path.join(voix_dir, f"{e['n']:03d}-{q}.mp3")) for q in fichiers]
-            for s in sons:
-                piste = poser(piste, s, t, 1 / len(sons) ** .5)
-            t += max(len(s) for s in sons) / SR
+            sons = [charger(os.path.join(voix_dir, f"{e['n']:03d}-{q.lower()}.mp3")) for q in voix_de(e["qui"])]
+            duree = max(len(s) for s in sons) / SR
+            if e.get("chevauche") == 2 and precedent == "voix":  # en même temps que la ligne précédente
+                debut = debut_precedent + .15
+            elif e.get("chevauche") == 1 and precedent == "voix":  # coupe la parole juste avant la fin
+                debut = max(debut_precedent + .3, t - .35)
+            else:
+                debut = t + (RESPIRATION if precedent == "voix" else 0)
+            for i, s in enumerate(sons):  # à plusieurs, chacun démarre un peu décalé, comme de vraies voix
+                piste = poser(piste, s, debut + .07 * i, 1 / len(sons) ** .5)
+            debut_precedent = debut
+            t = max(t, debut + duree)
             precedent = "voix"
             continue
         r = e["nom"]

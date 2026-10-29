@@ -154,7 +154,7 @@ export default function HomePage() {
   const word = useWordOfDay();
   const { contact } = useSiteSettings().settings;
 
-  const anns = useAsync(() => listPublishedAnnouncements({ signedIn, limit: 3 }), [signedIn]);
+  const anns = useAsync(() => listPublishedAnnouncements({ signedIn, limit: 5 }), [signedIn]);
   const events = useAsync(() => Promise.all([listUpcomingEvents({ signedIn, limit: 6 }), parishesRepo.all()]), [signedIn]);
   const upcoming = events.data?.[0] ?? [];
   const parishName = (id: string | null | undefined) => events.data?.[1].find((p) => p.id === id)?.name;
@@ -194,9 +194,9 @@ export default function HomePage() {
                   <Link to="/actualites" className="inline-flex items-center gap-1 text-sm font-semibold text-night-500 hover:text-gold-700">{tx('Toutes les actualités', 'All news', 'Todas as notícias')} <ArrowRight className="h-4 w-4" /></Link>
                 </div>
                 {anns.error ? <ErrorState error={anns.error} onRetry={anns.reload} /> : anns.loading ? (
-                  <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((k) => <Skeleton key={k} className="h-80" />)}</div>
+                  <div className="grid gap-4 md:grid-cols-6">{[0, 1, 2, 3, 4].map((k) => <Skeleton key={k} className={cn('h-80', k < 2 ? 'md:col-span-3' : 'md:col-span-2')} />)}</div>
                 ) : anns.data?.length ? (
-                  <div className="grid gap-4 md:grid-cols-3">{anns.data.map((a, k) => <NewsCard key={a.id} a={a} fallback={GALLERY[k % GALLERY.length]} />)}</div>
+                  <div className="grid gap-4 md:grid-cols-6">{anns.data.map((a, k) => <div key={a.id} className={cn('flex', k < 2 ? 'md:col-span-3' : 'md:col-span-2', '[&>a]:flex-1')}><NewsCard a={a} fallback={GALLERY[k % GALLERY.length]} /></div>)}</div>
                 ) : <EmptyState title={tx('Aucune annonce publiée pour le moment.', 'No announcements yet.', 'Ainda não há anúncios publicados.')} />}
               </div>
               <aside className="flex flex-col overflow-hidden rounded-3xl border border-gold/25 bg-gold-50 shadow-soft xl:col-span-4" aria-labelledby="word-title">

@@ -34,6 +34,13 @@ const at = (iso: string) => new Date(iso).toISOString();
 
 const ANNOUNCEMENTS: { id: string; date: string; category: L; title: L; summary: L; content: L; image: string; video?: string; gallery?: string[]; pinned?: boolean; always?: boolean }[] = [
   {
+    id: 'pagne-kcc-vente', date: '2026-10-29T02:00:00Z', pinned: true, always: true, image: '/images/galerie/mamans-pagne-kcc.jpg',
+    category: L("Communauté", "Community", "Comunidade"),
+    title: L("Le pagne KCC est en vente à 25 dollars", "The KCC cloth is on sale for 25 dollars", "O pano KCC está à venda por 25 dólares"),
+    summary: L("Portez fièrement les couleurs du KCC : le pagne est disponible à 25 dollars. Commandez en quelques secondes sur jesuiskcciste.com/pagne-kcc.", "Wear the KCC colours with pride: the cloth is available for 25 dollars. Order in seconds at jesuiskcciste.com/pagne-kcc.", "Use com orgulho as cores do KCC: o pano está disponível por 25 dólares. Encomende em segundos em jesuiskcciste.com/pagne-kcc."),
+    content: L("Le pagne aux couleurs du KCC est disponible à 25 dollars.\n\nCOMMENT COMMANDER\n\nRendez-vous sur jesuiskcciste.com/pagne-kcc, indiquez votre nom, votre numéro, la quantité souhaitée et votre ville ou paroisse. Touchez « Envoyer sur WhatsApp » : votre commande nous parvient directement et nous vous recontactons pour la livraison.\n\nContact : +243 840 238 592 (WhatsApp).", "The cloth in KCC colours is available for 25 dollars.\n\nHOW TO ORDER\n\nGo to jesuiskcciste.com/pagne-kcc, enter your name, your number, the quantity you want and your city or parish. Tap “Send on WhatsApp”: your order reaches us directly and we will contact you about delivery.\n\nContact: +243 840 238 592 (WhatsApp).", "O pano nas cores do KCC está disponível por 25 dólares.\n\nCOMO ENCOMENDAR\n\nVá a jesuiskcciste.com/pagne-kcc, indique o seu nome, o seu número, a quantidade desejada e a sua cidade ou paróquia. Toque em «Enviar pelo WhatsApp»: a sua encomenda chega-nos diretamente e contactamo-lo para a entrega.\n\nContacto: +243 840 238 592 (WhatsApp)."),
+  },
+  {
     id: 'compte-rendu-trimestriel', date: '2026-10-29T01:00:00Z', pinned: true, always: true, image: '/images/hero-communaute.jpg',
     category: L("Vie de l’Église", "Church life", "Vida da Igreja"),
     title: L("Suggestion : un compte rendu aux fidèles chaque trimestre", "Suggestion: a report to the faithful every quarter", "Sugestão: um relatório aos fiéis a cada trimestre"),

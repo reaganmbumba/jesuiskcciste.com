@@ -62,7 +62,9 @@ function Debate({ topic }: { topic: DebateTopic }) {
         <div className="max-w-2xl space-y-4">
           <div className="rounded-3xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gold-200"><Headphones className="h-4 w-4" aria-hidden />{tx('Écoutez le sujet', 'Listen to the topic', 'Ouça o tema')}</p>
-            <audio src={topic.audio} controls preload="metadata" className="w-full" />
+            {topic.video
+              ? <video src={topic.video} poster={topic.image} controls playsInline preload="metadata" className="w-full rounded-2xl" />
+              : <audio src={topic.audio} controls preload="metadata" className="w-full" />}
           </div>
           <ShareAudio topic={topic} />
           <p className="text-[15px] leading-relaxed text-white/70">{pick(topic.intro)}</p>
@@ -273,8 +275,9 @@ function ShareAudio({ topic }: { topic: DebateTopic }) {
   async function shareAudio() {
     setBusy(true);
     try {
-      const blob = await fetch(topic.audio).then((r) => { if (!r.ok) throw new Error('audio'); return r.blob(); });
-      const file = new File([blob], `${topic.id}.mp3`, { type: 'audio/mpeg' });
+      const src = topic.video ?? topic.audio;
+      const blob = await fetch(src).then((r) => { if (!r.ok) throw new Error('media'); return r.blob(); });
+      const file = topic.video ? new File([blob], `${topic.id}.mp4`, { type: 'video/mp4' }) : new File([blob], `${topic.id}.mp3`, { type: 'audio/mpeg' });
       if (navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], text });
         return;
@@ -291,7 +294,7 @@ function ShareAudio({ topic }: { topic: DebateTopic }) {
   return (
     <div className="flex flex-wrap gap-2">
       <button type="button" onClick={shareAudio} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-night disabled:opacity-60">
-        <MessageCircle className="h-4 w-4" aria-hidden />{busy ? tx('Préparation…', 'Preparing…', 'A preparar…') : tx('Partager l’audio sur WhatsApp', 'Share the audio on WhatsApp', 'Partilhar o áudio no WhatsApp')}
+        <MessageCircle className="h-4 w-4" aria-hidden />{busy ? tx('Préparation…', 'Preparing…', 'A preparar…') : topic.video ? tx('Partager la vidéo sur WhatsApp', 'Share the video on WhatsApp', 'Partilhar o vídeo no WhatsApp') : tx('Partager l’audio sur WhatsApp', 'Share the audio on WhatsApp', 'Partilhar o áudio no WhatsApp')}
       </button>
       <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#1877F2] px-4 py-2.5 text-sm font-semibold text-white">
         <Facebook className="h-4 w-4" aria-hidden />Facebook

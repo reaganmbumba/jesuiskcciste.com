@@ -69,9 +69,9 @@ function setMeta(html: string, attr: string, key: string, value: string) {
 
 const base = readFileSync(join(DIST, 'index.html'), 'utf8');
 
-interface Meta { title: string; description: string; image?: string | null; audio?: string | null }
+interface Meta { title: string; description: string; image?: string | null; audio?: string | null; video?: string | null }
 
-function render(path: string, { title, description, image, audio }: Meta) {
+function render(path: string, { title, description, image, audio, video }: Meta) {
   const url = SITE + path;
   const desc = description.replace(/\s+/g, ' ').trim().slice(0, 300);
   let html = base
@@ -97,6 +97,11 @@ function render(path: string, { title, description, image, audio }: Meta) {
   if (audio) {
     const src = new URL(audio, SITE).toString();
     html = html.replace('</head>', `    <meta property="og:audio" content="${esc(src)}" />\n    <meta property="og:audio:secure_url" content="${esc(src)}" />\n    <meta property="og:audio:type" content="audio/mpeg" />\n  </head>`);
+  }
+  // Vidéo du contenu (image + son) : Facebook peut la lire directement dans le fil.
+  if (video) {
+    const src = new URL(video, SITE).toString();
+    html = html.replace('</head>', `    <meta property="og:video" content="${esc(src)}" />\n    <meta property="og:video:secure_url" content="${esc(src)}" />\n    <meta property="og:video:type" content="video/mp4" />\n    <meta property="og:video:width" content="1280" />\n    <meta property="og:video:height" content="854" />\n  </head>`);
   }
   const file = join(DIST, `${path.slice(1)}.html`);
   mkdirSync(dirname(file), { recursive: true });
@@ -136,7 +141,7 @@ for (const p of galleryPhotos) {
 }
 // Débats audio : titre « 🎧 Écoutez… », image avec bouton ▶ et audio du sujet.
 for (const t of DEBATE_TOPICS) {
-  render(`/debats/${t.id}`, { title: `🎧 Écoutez : ${t.title.fr} — animé par ${t.host}`, description: `${t.intro.fr} Groupe WhatsApp « ${t.whatsappGroup} ».`, image: t.shareImage, audio: t.audio });
+  render(`/debats/${t.id}`, { title: `🎧 Écoutez : ${t.title.fr} — animé par ${t.host}`, description: `${t.intro.fr} Groupe WhatsApp « ${t.whatsappGroup} ».`, image: t.shareImage, audio: t.audio, video: t.video });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

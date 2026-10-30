@@ -12,6 +12,8 @@ export interface DebateTopic {
   title: Tri;
   intro: Tri;
   audio: string;
+  /** Vidéo facultative (image + son du sujet) : affichée et partagée à la place de l'audio. */
+  video?: string;
   image: string;
   /** Image d'aperçu 1200×630 avec bouton ▶ pour WhatsApp et Facebook. */
   shareImage: string;
@@ -38,6 +40,7 @@ export const DEBATE_TOPICS: DebateTopic[] = [
       pt: 'Ouça o tema apresentado pela Maman Mam’s e dê a sua opinião: grave uma mensagem de voz, envie um áudio ou escreva o seu comentário.',
     },
     audio: '/audio/debats/sujet-30-octobre-2026.mp3',
+    video: '/videos/debats/sujet-du-jour-30-octobre-2026.mp4',
     image: '/images/debats/je-suis-kcciste-3-mariage.jpg',
     shareImage: '/images/debats/partage-sujet-30-octobre-2026.jpg',
     host: HOST,

@@ -36,7 +36,7 @@ export const DEBATE_TOPICS: DebateTopic[] = [
       pt: 'Ouça o tema apresentado pela Maman Mam’s e dê a sua opinião: grave uma mensagem de voz, envie um áudio ou escreva o seu comentário.',
     },
     audio: '/audio/debats/sujet-30-octobre-2026.mp3',
-    image: '/images/actualites/rubrique-suggestion.jpg',
+    image: '/images/debats/je-suis-kcciste-3-mariage.jpg',
     host: HOST,
     hostRole: HOST_ROLE,
     whatsappGroup: 'Je suis KCCiste 3 Mariage',

@@ -25,7 +25,7 @@ export default function DebatesPage() {
           {DEBATE_TOPICS.map((t) => (
             <li key={t.id}>
               <Link to={`/debats/${t.id}`} className="group flex h-full flex-col overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
-                <img src={t.image} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" />
+                <img src={t.image} alt="" loading="lazy" className="aspect-[3/2] w-full object-cover" />
                 <div className="flex flex-1 flex-col p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600">{formatDate(t.date, locale)}</p>
                   <h2 className="mt-1 font-display text-2xl font-medium text-night">{pick(t.title)}</h2>

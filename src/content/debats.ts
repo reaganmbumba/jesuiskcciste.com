@@ -13,6 +13,8 @@ export interface DebateTopic {
   intro: Tri;
   audio: string;
   image: string;
+  /** Image d'aperçu 1200×630 avec bouton ▶ pour WhatsApp et Facebook. */
+  shareImage: string;
   host: string;
   hostRole: Tri;
   whatsappGroup: string;
@@ -37,6 +39,7 @@ export const DEBATE_TOPICS: DebateTopic[] = [
     },
     audio: '/audio/debats/sujet-30-octobre-2026.mp3',
     image: '/images/debats/je-suis-kcciste-3-mariage.jpg',
+    shareImage: '/images/debats/partage-sujet-30-octobre-2026.jpg',
     host: HOST,
     hostRole: HOST_ROLE,
     whatsappGroup: 'Je suis KCCiste 3 Mariage',

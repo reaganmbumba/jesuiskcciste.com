@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { Eye, EyeOff, FileAudio, Headphones, Keyboard, MessageSquare, Mic, Send, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Facebook, FileAudio, Headphones, Keyboard, MessageCircle, MessageSquare, Mic, Send, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -58,7 +58,16 @@ function Debate({ topic }: { topic: DebateTopic }) {
 
   return (
     <>
-      <PageHeader eyebrow={tx('Débats audio', 'Audio debates', 'Debates em áudio')} title={pick(topic.title)} description={pick(topic.intro)} image={topic.image} />
+      <PageHeader eyebrow={tx('Débats audio — animé par', 'Audio debate — hosted by', 'Debate em áudio — animado por') + ' ' + topic.host} title={pick(topic.title)} metaDescription={pick(topic.intro)} image={topic.shareImage} share={false}>
+        <div className="max-w-2xl space-y-4">
+          <div className="rounded-3xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-gold-200"><Headphones className="h-4 w-4" aria-hidden />{tx('Écoutez le sujet', 'Listen to the topic', 'Ouça o tema')}</p>
+            <audio src={topic.audio} controls preload="metadata" className="w-full" />
+          </div>
+          <ShareAudio topic={topic} />
+          <p className="text-[15px] leading-relaxed text-white/70">{pick(topic.intro)}</p>
+        </div>
+      </PageHeader>
       <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_1.1fr] lg:py-14">
         <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <div className="overflow-hidden rounded-3xl bg-night text-white shadow-lift">
@@ -72,10 +81,6 @@ function Debate({ topic }: { topic: DebateTopic }) {
                 </div>
               </div>
               <p className="text-sm text-white/70">{pick(topic.hostRole)}</p>
-              <div>
-                <p className="mb-2 flex items-center gap-2 text-sm font-semibold"><Headphones className="h-4 w-4 text-gold" aria-hidden />{tx('Écouter le sujet', 'Listen to the topic', 'Ouvir o tema')}</p>
-                <audio src={topic.audio} controls preload="metadata" className="w-full" />
-              </div>
               <p className="text-xs text-white/50">{formatDate(topic.date, locale)}</p>
             </div>
           </div>
@@ -251,4 +256,49 @@ function durationOf(url: string): Promise<number | null> {
     window.setTimeout(() => done(null), 4000);
     a.src = url;
   });
+}
+
+/**
+ * Partage de l'audio lui-même : sur téléphone, la feuille de partage envoie le fichier MP3
+ * (il arrive dans WhatsApp comme un audio à écouter), accompagné du lien pour répondre.
+ * Sans partage de fichier possible, on envoie le lien, dont l'aperçu montre le bouton ▶.
+ */
+function ShareAudio({ topic }: { topic: DebateTopic }) {
+  const { tx, pick } = useI18n();
+  const { notify } = useToast();
+  const [busy, setBusy] = useState(false);
+  const url = `${window.location.origin}/debats/${topic.id}`;
+  const text = `🎧 ${pick(topic.title)} — ${tx('animé par', 'hosted by', 'animado por')} ${topic.host}\n${tx('Écoutez et donnez votre avis en vocal :', 'Listen and share your view by voice:', 'Ouça e dê a sua opinião por voz:')} ${url}`;
+
+  async function shareAudio() {
+    setBusy(true);
+    try {
+      const blob = await fetch(topic.audio).then((r) => { if (!r.ok) throw new Error('audio'); return r.blob(); });
+      const file = new File([blob], `${topic.id}.mp3`, { type: 'audio/mpeg' });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text });
+        return;
+      }
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button type="button" onClick={shareAudio} disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-night disabled:opacity-60">
+        <MessageCircle className="h-4 w-4" aria-hidden />{busy ? tx('Préparation…', 'Preparing…', 'A preparar…') : tx('Partager l’audio sur WhatsApp', 'Share the audio on WhatsApp', 'Partilhar o áudio no WhatsApp')}
+      </button>
+      <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-[#1877F2] px-4 py-2.5 text-sm font-semibold text-white">
+        <Facebook className="h-4 w-4" aria-hidden />Facebook
+      </a>
+      <button type="button" onClick={() => { void navigator.clipboard?.writeText(url).then(() => notify(tx('Lien copié.', 'Link copied.', 'Ligação copiada.'))); }} className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20">
+        {tx('Copier le lien', 'Copy link', 'Copiar ligação')}
+      </button>
+    </div>
+  );
 }

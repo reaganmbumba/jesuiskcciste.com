@@ -62,7 +62,7 @@ function Debate({ topic }: { topic: DebateTopic }) {
       <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_1.1fr] lg:py-14">
         <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <div className="overflow-hidden rounded-3xl bg-night text-white shadow-lift">
-            <img src={topic.image} alt="" className="aspect-[16/9] w-full object-cover" />
+            <img src={topic.image} alt={tx('Je suis KCCiste 3 Mariage — Sujet du jour', 'Je suis KCCiste 3 Mariage — Topic of the day', 'Je suis KCCiste 3 Mariage — Tema do dia')} className="w-full" />
             <div className="space-y-4 p-6">
               <div className="flex items-center gap-3">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-lg font-bold text-night" aria-hidden>M</div>

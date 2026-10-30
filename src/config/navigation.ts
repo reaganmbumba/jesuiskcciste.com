@@ -11,6 +11,7 @@ export const MAIN_NAV: NavGroup[] = [
     key: 'nav.community', to: '/communaute', children: [
       { label: l('Communauté KCCiste', 'KCCist community', 'Comunidade KCCista'), to: '/communaute', description: l('Vie et organisation de la communauté', 'Life and organisation of the community', 'Vida e organização da comunidade') },
       { label: l('Forum de discussion', 'Discussion forum', 'Fórum de discussão'), to: '/forum', description: l('Sujets et commentaires des membres', 'Topics and members’ comments', 'Temas e comentários dos membros') },
+      { label: l('Débats audio', 'Audio debates', 'Debates em áudio'), to: '/debats', description: l('Écouter le sujet et répondre en vocal', 'Listen to the topic and reply by voice', 'Ouvir o tema e responder por voz') },
       { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Se réunir en visioconférence', 'Meet by video call', 'Reunir-se por videoconferência') },
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
       { label: l('Messages privés', 'Private messages', 'Mensagens privadas'), to: '/espace/messages', description: l('Écrire à un autre membre', 'Write to another member', 'Escrever a outro membro') },

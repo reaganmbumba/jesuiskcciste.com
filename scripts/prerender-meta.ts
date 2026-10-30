@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/content/editorial';
 import { demoAudioSermons } from '@/services/demo/data';
 import { galleryPhotos, photoKey } from '@/content/galerie';
+import { DEBATE_TOPICS } from '@/content/debats';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
@@ -41,6 +42,7 @@ const PAGES: Record<string, [string, string]> = {
   '/communaute': ['Un seul peuple, partout dans le monde', 'Découvrez l’organisation de la communauté et retrouvez les vôtres.'],
   '/paroisses': ['Paroisses', 'Les paroisses enregistrées sur JE SUIS KCCiste, en RD Congo et dans la diaspora.'],
   '/forum': ['Forum de discussion', 'Des sujets proposés par l’administration, commentés par les membres inscrits avec leur nom et leur paroisse.'],
+  '/debats': ['Débats audio', 'Écoutez le sujet du jour animé par Maman Mam’s et donnez votre avis en vocal, en audio ou par écrit.'],
   '/reunions': ['Réunions en vidéo', 'Se réunir en visioconférence, comme sur Zoom, pour partager des sujets entre membres de la communauté KCCiste.'],
   '/sections': ['Sections', 'Chaque paroisse peut organiser ses sections : jeunesse, chorales, mamans, diaspora…'],
   '/actualites': ['Actualités et annonces', 'Les dernières nouvelles et annonces de la communauté KCCiste.'],
@@ -67,9 +69,9 @@ function setMeta(html: string, attr: string, key: string, value: string) {
 
 const base = readFileSync(join(DIST, 'index.html'), 'utf8');
 
-interface Meta { title: string; description: string; image?: string | null }
+interface Meta { title: string; description: string; image?: string | null; audio?: string | null }
 
-function render(path: string, { title, description, image }: Meta) {
+function render(path: string, { title, description, image, audio }: Meta) {
   const url = SITE + path;
   const desc = description.replace(/\s+/g, ' ').trim().slice(0, 300);
   let html = base
@@ -90,6 +92,11 @@ function render(path: string, { title, description, image }: Meta) {
     html = setMeta(html, 'property', 'og:image:alt', title);
     html = html.replace(/\s*<meta property="og:image:(width|height)" content="[^"]*" \/>/g, '');
     html = html.replace(/(<meta property="og:type" content=")[^"]*(")/, '$1article$2');
+  }
+  // Audio du contenu : lu par Facebook (og:audio) ; l'image porte un bouton ▶ pour WhatsApp.
+  if (audio) {
+    const src = new URL(audio, SITE).toString();
+    html = html.replace('</head>', `    <meta property="og:audio" content="${esc(src)}" />\n    <meta property="og:audio:secure_url" content="${esc(src)}" />\n    <meta property="og:audio:type" content="audio/mpeg" />\n  </head>`);
   }
   const file = join(DIST, `${path.slice(1)}.html`);
   mkdirSync(dirname(file), { recursive: true });
@@ -125,6 +132,11 @@ for (const s of demoAudioSermons) {
 // Photos de la galerie livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
 for (const p of galleryPhotos) {
   render(`/galerie/photo/${photoKey(p.src)}`, { title: p.caption.fr, description: PAGES['/galerie'][1], image: p.src });
+  count += 1;
+}
+// Débats audio : titre « 🎧 Écoutez… », image avec bouton ▶ et audio du sujet.
+for (const t of DEBATE_TOPICS) {
+  render(`/debats/${t.id}`, { title: `🎧 Écoutez : ${t.title.fr} — animé par ${t.host}`, description: `${t.intro.fr} Groupe WhatsApp « ${t.whatsappGroup} ».`, image: t.shareImage, audio: t.audio });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

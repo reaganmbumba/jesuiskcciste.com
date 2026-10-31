@@ -19,6 +19,7 @@ import * as pt from '@/content/doctrine.pt';
 import type { Announcement } from '@/types';
 import { formatDate, formatTime } from '@/utils/format';
 import { cn } from '@/utils/format';
+import { FullImage } from '@/components/ui/FullImage';
 import { usePageTexts } from '@/features/content/pageTexts';
 import { HomeLiveBlock } from '@/features/livestreams/LivestreamUi';
 import { HomeRadioBlock } from '@/features/radio/RadioUi';
@@ -124,7 +125,7 @@ function NewsCard({ a, fallback }: { a: Announcement; fallback: string }) {
   const { tx, locale } = useI18n();
   return (
     <Link to={`/actualites/${a.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-night/[0.06] bg-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
-      <img src={a.imageUrl || fallback} alt="" loading="lazy" className="h-40 w-full object-cover" />
+      <FullImage src={a.imageUrl || fallback} className="h-40 w-full" />
       <div className="flex flex-1 flex-col p-4">
         <span className="w-fit rounded-md bg-gold-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{a.category}</span>
         <time dateTime={a.publishedAt} className="mt-2 text-xs text-ink/50">{formatDate(a.publishedAt, locale)}</time>

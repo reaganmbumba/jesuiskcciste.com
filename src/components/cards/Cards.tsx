@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarDays, Clock, GraduationCap, MapPin, Megaphone, Pin, Signal } from 'lucide-react';
 import type { Announcement, Course, KccEvent, Parish, SolidarityProject } from '@/types';
 import { Badge } from '@/components/ui/Badge';
+import { FullImage } from '@/components/ui/FullImage';
 import { ProgressBar } from '@/components/ui/Misc';
 import { useI18n } from '@/i18n';
 import { formatCurrency, formatDate, formatTime, percent } from '@/utils/format';
@@ -31,7 +32,7 @@ export function AnnouncementCard({ a }: { a: Announcement }) {
   return (
     <Link to={`/actualites/${a.id}`} className="group flex flex-col overflow-hidden rounded-3xl border border-night/[0.06] bg-white p-2 shadow-soft card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
       <div className="overflow-hidden rounded-[1.25rem]">
-        {a.imageUrl ? <img src={a.imageUrl} alt="" loading="lazy" className="h-48 w-full object-cover transition duration-700 group-hover:scale-105" /> : <CoverArt seed={a.id} icon={<Megaphone />} className="h-44" />}
+        {a.imageUrl ? <FullImage src={a.imageUrl} className="h-48 w-full" imgClassName="transition duration-700 group-hover:scale-105" /> : <CoverArt seed={a.id} icon={<Megaphone />} className="h-44" />}
       </div>
       <div className="flex flex-1 flex-col p-4 pt-5">
         <div className="mb-3 flex flex-wrap items-center gap-2">

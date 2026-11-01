@@ -37,12 +37,34 @@ function RiteTexts({ texts }: { texts: RiteText[] }) {
           ))}
         </div>
       )}
-      {others.map((t) => (
+      {others.map((t) => (t.detail && t.parts ? (
+        <div key={t.title} className="rounded-2xl border border-gold/30 bg-white p-5 shadow-soft md:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gold-700">{t.title}</p>
+          <div className="mt-2 space-y-1.5 text-[15px] leading-relaxed text-ink/70">{t.lines.map((l, i) => <p key={i}>{l}</p>)}</div>
+          <div lang={langCode(t.lang)} className="mt-4 divide-y divide-night/[0.06] rounded-xl border border-night/[0.06]">
+            {t.parts.map((p, i) => (p.lines.length ? (
+              <details key={i} className="group px-4 py-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-night marker:hidden">
+                  <span>{p.title}</span>
+                  <span className="text-gold-700 transition group-open:rotate-45" aria-hidden>+</span>
+                </summary>
+                <div className="mt-3 space-y-1 text-[15px] leading-relaxed text-ink/85">
+                  {p.lines.map((l, j) => (l === '—' ? <hr key={j} className="my-3 border-night/10" />
+                    : /^(Refrain|Aleluya|Alleluia|Mvutu)/.test(l) ? <p key={j} className="font-semibold text-night">{l}</p>
+                    : l.startsWith('N.B.') ? <p key={j} className="rounded-lg bg-mist px-3 py-2 text-sm text-ink/70">{l}</p>
+                    : /^\d\. /.test(l) ? <p key={j} className="font-semibold text-gold-700">{l}</p>
+                    : <p key={j}>{l}</p>))}
+                </div>
+              </details>
+            ) : <p key={i} className="px-4 py-3 font-semibold text-night/70">{p.title}</p>))}
+          </div>
+        </div>
+      ) : (
         <div key={t.title} className="rounded-2xl border border-night/[0.06] bg-white p-5 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-wide text-gold-700">{t.title}</p>
           <div className="mt-2 space-y-1.5 text-[15px] leading-relaxed text-ink/85">{t.lines.map((l, i) => <p key={i}>{l}</p>)}</div>
         </div>
-      ))}
+      )))}
     </div>
   );
 }

@@ -31,7 +31,7 @@ const PAGES: Record<string, [string, string]> = {
   '/doctrine': ['Doctrine et histoire de l’Église', 'Le message du KCC, la profession de foi, les Paroles de l’Alliance, la liturgie et les grandes dates de l’Église Bon Nouveau Message.'],
   '/cantiques': ['Recueil de cantiques', 'Les cantiques de l’Église Bon Nouveau Message, en lingala et en kikongo. Cherchez par titre ou par parole.'],
   '/catechisme': ['Le Catéchisme du KCCisme', 'Questions et réponses sur les croyances, l’enseignement, les fêtes, les sacrements et l’Alliance.'],
-  '/liturgie': ['Rites et célébrations', 'Le déroulement officiel des cultes et des sacrements de l’Église Bon Nouveau Message, avec leurs prières.'],
+  '/liturgie': ['Rites et célébrations : le programme des Actes d’Alliance sur votre téléphone', 'Le déroulement officiel des cultes et des sacrements de l’Église Bon Nouveau Message, avec leurs prières. Actes d’Alliance en français et en kikongo : prières, lectures et cantiques.'],
   '/appel-du-prophete': ['L’appel du Prophète', 'Du 8 mars 1955 au début de 1957 : apparitions, signes et épreuves par lesquels l’Éternel a appelé et préparé DIZOLELE-MPUNGU WAFIDUSWA Isaac.'],
   '/predications': ['Prédications', 'Des prédications audio à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église.'],
   '/galerie': ['Galerie photo de l’Église', 'Cultes, mamans, temples et archives anciennes de l’Église Bon Nouveau Message (fonds d’archives de la communauté).'],
@@ -113,8 +113,10 @@ const sermonSummary = (s: { preacherTitle?: string | null; preacherName: string;
   [[s.preacherTitle, s.preacherName].filter(Boolean).join(' '), s.parish, s.bibleText].filter(Boolean).join(' · ');
 
 let count = 0;
+/** Image d'aperçu propre à certaines rubriques (sinon l'image habituelle du site). */
+const PAGE_IMAGES: Record<string, string> = { '/liturgie': '/images/actualites/actes-alliance-en-ligne.jpg' };
 for (const [path, [title, description]] of Object.entries(PAGES)) {
-  render(path, { title, description });
+  render(path, { title, description, image: PAGE_IMAGES[path] });
   count += 1;
 }
 for (const a of editorialAnnouncements('fr')) {

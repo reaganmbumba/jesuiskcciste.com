@@ -12,6 +12,8 @@ import { useAsync } from '@/hooks/useAsync';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { useI18n } from '@/i18n';
 import type { Apostle } from '@/types';
+import { findApostleBiography } from '@/content/apotres-biographies';
+import { BiographyBody } from '@/features/apostles/ApostleBiography';
 
 /** Profil d'un Révérend Apôtre : photo, identité, paroisse encadrée, consécration. */
 export default function ApostleProfilePage() {
@@ -60,7 +62,8 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
     { icon: CalendarDays, label: tx('Date de consécration', 'Consecration date', 'Data de consagração'), value: a.consecrationDate || unknown },
     { icon: Hourglass, label: deceased ? tx('Naissance et décès', 'Birth and death', 'Nascimento e falecimento') : tx('Année de naissance', 'Year of birth', 'Ano de nascimento'), value: deceased && a.deathDate ? `${a.birthYear ? `${a.birthYear} – ` : ''}${tx('décédé le', 'died on', 'falecido a')} ${a.deathDate}` : years || unknown },
   ];
-  const incomplete = !a.place || !a.consecrationDate || !years || !a.bio;
+  const biography = findApostleBiography(a.fullName);
+  const incomplete = !a.place || !a.consecrationDate || !years || (!a.bio && !biography);
 
   return (
     <article className="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-night/[0.06] bg-white shadow-lift">
@@ -87,6 +90,8 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
       </dl>
 
       {a.bio && <div className="prose-kcc border-t border-night/[0.06] px-6 py-6">{a.bio.split(/\n{2,}/).map((p, i) => <p key={i}>{p}</p>)}</div>}
+
+      {biography && <div className="border-t border-night/[0.06] px-6 py-8"><p className="mb-6 text-xs font-semibold uppercase tracking-[0.14em] text-gold-600">{tx('Biographie', 'Biography', 'Biografia')}</p><BiographyBody bio={biography} showFacts={false} /></div>}
 
       <div className="flex flex-col gap-3 border-t border-night/[0.06] bg-mist/60 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink/70">

@@ -116,9 +116,13 @@ const sermonSummary = (s: { preacherTitle?: string | null; preacherName: string;
 
 let count = 0;
 /** Image d'aperçu propre à certaines rubriques (sinon l'image habituelle du site). */
-const PAGE_IMAGES: Record<string, string> = { '/liturgie': '/images/actualites/actes-alliance-en-ligne.jpg' };
+const PAGE_IMAGES: Record<string, string> = {
+  '/liturgie': '/images/actualites/actes-alliance-en-ligne.jpg',
+  // La biographie la plus récente illustre la rubrique.
+  '/apotres/biographies': APOSTLE_BIOGRAPHIES.find((b) => b.image)?.image ?? '',
+};
 for (const [path, [title, description]] of Object.entries(PAGES)) {
-  render(path, { title, description, image: PAGE_IMAGES[path] });
+  render(path, { title, description, image: PAGE_IMAGES[path] || undefined });
   count += 1;
 }
 for (const a of editorialAnnouncements('fr')) {

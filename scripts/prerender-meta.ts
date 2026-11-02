@@ -145,7 +145,7 @@ for (const p of galleryPhotos) {
 }
 // Biographies des Révérends Apôtres.
 for (const b of APOSTLE_BIOGRAPHIES) {
-  render(`/apotres/biographies/${b.slug}`, { title: b.title.fr, description: b.sections[0].paragraphs[0].fr });
+  render(`/apotres/biographies/${b.slug}`, { title: b.title.fr, description: b.sections[0].paragraphs[0].fr, image: b.image });
   count += 1;
 }
 // Débats audio : titre « 🎧 Écoutez… », image avec bouton ▶ et audio du sujet.

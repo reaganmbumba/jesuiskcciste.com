@@ -13,6 +13,8 @@ export interface ApostleBiography {
   /** Nom tel qu'il est publié dans la biographie. */
   name: string;
   match: string[];
+  /** Photo(s) d'accompagnement, affichée en tête de la biographie et dans l'aperçu de partage. */
+  image?: string;
   title: Tri;
   /** Repères affichés en tête (naissance, consécration…). */
   facts: { label: Tri; value: Tri }[];
@@ -29,6 +31,7 @@ export const APOSTLE_BIOGRAPHIES: ApostleBiography[] = [
     slug: 'nsongo-bernard',
     name: 'N’SONGO Bernard',
     match: ['NSONGO', 'BERNARD'],
+    image: '/images/apotres/nsongo-bernard.jpg',
     title: T('Le Révérend Apôtre N’SONGO Bernard', 'Reverend Apostle N’SONGO Bernard', 'O Reverendo Apóstolo N’SONGO Bernard'),
     facts: [
       { label: T('Naissance', 'Born', 'Nascimento'), value: T('15 mai 1948 à Vunda (Kongo-Central)', '15 May 1948 in Vunda (Kongo-Central)', '15 de maio de 1948 em Vunda (Kongo-Central)') },

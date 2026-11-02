@@ -35,7 +35,7 @@ function BiographyList() {
             return (
               <li key={b.slug}>
                 <Link to={`/apotres/biographies/${b.slug}`} className="group flex h-full gap-5 rounded-3xl border border-night/[0.06] bg-white p-5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
-                  {a ? <ApostlePortrait apostle={a} className="h-24 w-24 shrink-0 text-2xl" /> : <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-gold-100 text-gold-700"><UserRound className="h-10 w-10" aria-hidden /></div>}
+                  {b.image ? <img src={b.image} alt="" loading="lazy" className="h-24 w-32 shrink-0 rounded-2xl object-cover object-right" /> : a ? <ApostlePortrait apostle={a} className="h-24 w-24 shrink-0 text-2xl" /> : <div className="grid h-24 w-24 shrink-0 place-items-center rounded-full bg-gold-100 text-gold-700"><UserRound className="h-10 w-10" aria-hidden /></div>}
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gold-600">{tx('Révérend Apôtre', 'Reverend Apostle', 'Reverendo Apóstolo')}</p>
                     <h2 className="mt-1 font-display text-2xl font-semibold text-night">{b.name}</h2>
@@ -61,7 +61,7 @@ function Biography({ slug }: { slug: string }) {
   const a = linked(bio.slug);
   return (
     <>
-      <PageHeader eyebrow={tx('Biographie', 'Biography', 'Biografia')} title={pick(bio.title)} metaDescription={pick(bio.sections[0].paragraphs[0])} image={a?.photoUrl}>
+      <PageHeader eyebrow={tx('Biographie', 'Biography', 'Biografia')} title={pick(bio.title)} metaDescription={pick(bio.sections[0].paragraphs[0])} image={bio.image ?? a?.photoUrl}>
         <Link to="/apotres/biographies" className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white"><ArrowLeft className="h-4 w-4" aria-hidden />{tx('Toutes les biographies', 'All biographies', 'Todas as biografias')}</Link>
       </PageHeader>
       <article className="container-page max-w-3xl py-12">

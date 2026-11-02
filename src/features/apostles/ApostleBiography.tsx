@@ -7,6 +7,7 @@ export function BiographyBody({ bio, showFacts = true }: { bio: ApostleBiography
   const { pick } = useI18n();
   return (
     <div className="space-y-8">
+      {bio.image && <img src={bio.image} alt={bio.name} loading="lazy" className="w-full rounded-3xl shadow-lift" />}
       {showFacts && (
         <dl className="grid gap-3 sm:grid-cols-3">
           {bio.facts.map((f) => (

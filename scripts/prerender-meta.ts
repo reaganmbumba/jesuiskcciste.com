@@ -19,6 +19,7 @@ import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/con
 import { demoAudioSermons } from '@/services/demo/data';
 import { galleryPhotos, photoKey } from '@/content/galerie';
 import { DEBATE_TOPICS } from '@/content/debats';
+import { APOSTLE_BIOGRAPHIES } from '@/content/apotres-biographies';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
@@ -35,6 +36,7 @@ const PAGES: Record<string, [string, string]> = {
   '/appel-du-prophete': ['L’appel du Prophète', 'Du 8 mars 1955 au début de 1957 : apparitions, signes et épreuves par lesquels l’Éternel a appelé et préparé DIZOLELE-MPUNGU WAFIDUSWA Isaac.'],
   '/predications': ['Prédications', 'Des prédications audio à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église.'],
   '/galerie': ['Galerie photo de l’Église', 'Cultes, mamans, temples et archives anciennes de l’Église Bon Nouveau Message (fonds d’archives de la communauté).'],
+  '/apotres/biographies': ['Biographies des Révérends Apôtres', 'La vie, la conversion et le service des Révérends Apôtres de l’Église Bon Nouveau Message.'],
   '/apotres': ['Les Révérends Apôtres', 'Tous les Révérends Apôtres de l’Église Bon Nouveau Message, en vie et décédés. Vous avez la photo d’un apôtre ? Envoyez-la.'],
   '/videos': ['Vidéos', 'Les vidéos de la communauté sur notre chaîne YouTube « Je suis KCCiste ». Chaque abonnement et chaque partage aide la chaîne à grandir.'],
   '/direct': ['Cultes en direct', 'Suivez en direct les cultes et les grandes fêtes de l’Église Bon Nouveau Message sur la chaîne YouTube « Je suis KCCiste », avec le compte à rebours avant le début.'],
@@ -139,6 +141,11 @@ for (const s of demoAudioSermons) {
 // Photos de la galerie livrées avec le site (celles ajoutées dans l'administration passent par le Worker).
 for (const p of galleryPhotos) {
   render(`/galerie/photo/${photoKey(p.src)}`, { title: p.caption.fr, description: PAGES['/galerie'][1], image: p.src });
+  count += 1;
+}
+// Biographies des Révérends Apôtres.
+for (const b of APOSTLE_BIOGRAPHIES) {
+  render(`/apotres/biographies/${b.slug}`, { title: b.title.fr, description: b.sections[0].paragraphs[0].fr });
   count += 1;
 }
 // Débats audio : titre « 🎧 Écoutez… », image avec bouton ▶ et audio du sujet.

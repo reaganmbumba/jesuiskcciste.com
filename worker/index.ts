@@ -14,6 +14,8 @@
  * En cas d'erreur ou de contenu introuvable, on sert le site normalement.
  */
 
+import { findApostleBiography } from '../src/content/apotres-biographies';
+
 interface Fetcher { fetch(input: Request | string | URL, init?: RequestInit): Promise<Response> }
 interface Env { ASSETS: Fetcher; SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string }
 
@@ -40,7 +42,11 @@ const ROUTES: { re: RegExp; table: string; key: 'id' | 'slug'; select: string; f
   { re: /^\/predications\/audio\/([^/]+)$/, table: 'audio_sermons', key: 'id', select: 'title,preacher_name,preacher_title,parish,bible_text,preacher_photo_url', filter: '&published=eq.true',
     meta: (r) => simple(r.title, [[r.preacher_title, r.preacher_name].filter(Boolean).join(' '), r.parish, r.bible_text].filter(Boolean).join(' · '), r.preacher_photo_url) },
   { re: /^\/apotres\/([^/]+)$/, table: 'apostles', key: 'id', select: 'title,full_name,place,bio,photo_url', filter: '',
-    meta: (r) => simple(r.full_name && `${r.title ?? ''} ${r.full_name}`.trim(), [r.place, r.bio].filter(Boolean).join(' · '), r.photo_url) },
+    // Sans photo enregistrée, on prend celle de sa biographie (rubrique Biographies des apôtres).
+    meta: (r) => {
+      const bio = r.full_name ? findApostleBiography(r.full_name) : undefined;
+      return simple(r.full_name && `${r.title ?? ''} ${r.full_name}`.trim(), [r.place, r.bio, bio?.sections[0]?.paragraphs[0]?.fr].filter(Boolean).join(' · '), r.photo_url || bio?.image);
+    } },
   // Photo de la galerie (table site_content) retrouvée par le nom de son fichier : /galerie/photo/<clé>.
   { re: /^\/galerie\/photo\/([^/]+)$/, table: 'site_content', key: 'slug', select: 'src:data->>src,caption:data->caption->>fr', filter: '&collection=eq.gallery&published=eq.true',
     where: (v) => `data->>src=ilike.*/${v}.*`,

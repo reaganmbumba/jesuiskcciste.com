@@ -21,7 +21,7 @@ export default function ApostleProfilePage() {
   const { tx } = useI18n();
   const { data: a, loading, error, reload } = useAsync(() => apostlesRepo.get(id), [id]);
   const [mode, setMode] = useState<ProposeMode | null>(null);
-  usePageMeta({ title: a ? `${a.title} ${a.fullName}` : tx('Les Révérends Apôtres', 'The Reverend Apostles', 'Os Reverendos Apóstolos'), description: a?.bio ?? undefined, image: a?.photoUrl });
+  usePageMeta({ title: a ? `${a.title} ${a.fullName}` : tx('Les Révérends Apôtres', 'The Reverend Apostles', 'Os Reverendos Apóstolos'), description: a?.bio ?? undefined, image: a?.photoUrl || (a ? findApostleBiography(a.fullName)?.image : undefined) });
 
   const back = (
     <Link to="/apotres" className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white">
@@ -74,7 +74,7 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
         {a.status !== 'unknown' && (
           <Badge tone={deceased ? 'neutral' : 'green'} className="mt-3">{deceased ? tx('Décédé', 'Deceased', 'Falecido') : tx('En vie', 'Living', 'Vivo')}</Badge>
         )}
-        <ShareButtons size="sm" url={`/apotres/${a.id}`} title={`${a.title} ${a.fullName}`} image={a.photoUrl} className="mt-5 justify-center" />
+        <ShareButtons size="sm" url={`/apotres/${a.id}`} title={`${a.title} ${a.fullName}`} image={a.photoUrl || biography?.image} className="mt-5 justify-center" />
       </div>
 
       <dl className="grid border-t border-night/[0.06] sm:grid-cols-3">

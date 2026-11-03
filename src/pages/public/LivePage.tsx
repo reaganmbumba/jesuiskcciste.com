@@ -60,6 +60,18 @@ export default function LivePage() {
 
         <HowToWatch />
 
+        <section className="mt-12 flex flex-col gap-5 rounded-3xl bg-night p-6 text-white sm:flex-row sm:items-center sm:p-8" aria-labelledby="studio-title">
+          <img src="/images/logo-kcc.png" alt="" className="h-16 w-16 shrink-0" />
+          <div className="flex-1">
+            <h2 id="studio-title" className="font-display text-2xl font-medium text-gold-300">{tx('Studio vidéo Je suis KCCiste', 'Je suis KCCiste video studio', 'Estúdio de vídeo Je suis KCCiste')}</h2>
+            <p className="mt-1 text-sm text-white/80">{tx('Caméra, images et vidéos, logo KCC, bandeaux et écrans d’ouverture : préparez et enregistrez vos émissions depuis le téléphone, puis publiez-les sur YouTube ou diffusez-les en direct.', 'Camera, images and videos, KCC logo, banners and opening screens: prepare and record your programmes from your phone, then publish them on YouTube or stream them live.', 'Câmara, imagens e vídeos, logótipo KCC, faixas e ecrãs de abertura: prepare e grave os seus programas a partir do telemóvel e depois publique-os no YouTube ou transmita-os em direto.')}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <ButtonLink to="/studio" reloadDocument icon={<Video className="h-4 w-4" />}>{tx('Ouvrir le studio', 'Open the studio', 'Abrir o estúdio')}</ButtonLink>
+            <ButtonLink to="/teleprompteur" reloadDocument variant="light">{tx('Téléprompteur', 'Teleprompter', 'Teleponto')}</ButtonLink>
+          </div>
+        </section>
+
         {past.length > 0 && (
           <section className="mt-12" aria-labelledby="past-lives">
             <h2 id="past-lives" className="mb-4 font-display text-2xl font-medium text-night">{tx('Rediffusions', 'Replays', 'Retransmissões')}</h2>

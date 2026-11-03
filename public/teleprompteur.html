@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Téléprompteur KCC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Studio sombre : aperçu vidéo à gauche, console de réglages à droite. Accent doré repris du logo KCC. */
+:root{
+  --bg:#0e0f12; --panel:#16181d; --panel2:#1d2027; --line:#2a2e37;
+  --fg:#eceae4; --muted:#9a9ca4; --gold:#d9b25a; --gold2:#f2d488; --rec:#e5484d; --ok:#3fb27f;
+  --ui:"Archivo",system-ui,sans-serif; --read:"Atkinson Hyperlegible",Verdana,sans-serif; --logo:"Cinzel",Georgia,serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui)}
+button,select,input,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 360px;height:100%}
+@media (max-width:900px){.app{grid-template-columns:1fr;height:auto}}
+
+/* --- Scène --- */
+.stage-wrap{display:flex;flex-direction:column;min-width:0;padding:16px;gap:12px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--logo);font-weight:700;letter-spacing:.08em;color:var(--gold2);font-size:17px}
+.brand small{font-family:var(--ui);font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-size:11px;margin-left:8px}
+.spacer{flex:1}
+.status{display:flex;gap:10px;align-items:center;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;display:inline-flex;align-items:center;gap:6px}
+.pill.live{color:var(--rec);border-color:var(--rec)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.live .dot{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+.meter{width:70px;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--gold) 70%,var(--rec))}
+
+.stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#000;border-radius:10px;overflow:hidden}
+.frame{position:relative;max-width:100%;max-height:100%}
+canvas#out{display:block;width:100%;height:100%;max-height:calc(100vh - 150px);object-fit:contain}
+@media (max-width:900px){canvas#out{max-height:70vh}}
+.grid{position:absolute;inset:0;pointer-events:none;background:
+  linear-gradient(to right,transparent 33.2%,rgba(255,255,255,.28) 33.3%,transparent 33.4%,transparent 66.6%,rgba(255,255,255,.28) 66.7%,transparent 66.8%),
+  linear-gradient(to bottom,transparent 33.2%,rgba(255,255,255,.28) 33.3%,transparent 33.4%,transparent 66.6%,rgba(255,255,255,.28) 66.7%,transparent 66.8%)}
+.safe{position:absolute;inset:5%;border:1px dashed rgba(255,255,255,.25);pointer-events:none}
+
+/* Prompteur (non enregistré dans la vidéo) */
+.prompter{position:absolute;left:50%;transform:translateX(-50%);top:0;height:46%;overflow:hidden;
+  background:linear-gradient(rgba(0,0,0,.78),rgba(0,0,0,.6));border-radius:0 0 12px 12px;cursor:ns-resize}
+.prompter .scroll{padding:0 6%;will-change:transform}
+.prompter .text{font-family:var(--read);font-weight:700;line-height:1.35;color:#fff;white-space:pre-wrap;text-align:center;padding-top:40%;padding-bottom:120%}
+.prompter.flip .text{transform:scaleX(-1)}
+.prompter .marker{position:absolute;left:0;right:0;top:30%;height:2px;background:var(--gold);opacity:.8;pointer-events:none}
+.prompter .marker:before,.prompter .marker:after{content:"";position:absolute;top:-6px;border:7px solid transparent}
+.prompter .marker:before{left:0;border-left-color:var(--gold)}
+.prompter .marker:after{right:0;border-right-color:var(--gold)}
+.prompter .fade{position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(transparent,rgba(0,0,0,.85));pointer-events:none}
+.countdown{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--logo);font-size:min(28vw,200px);color:var(--gold2);text-shadow:0 4px 30px #000;pointer-events:none}
+
+.transport{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--gold)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+.btn.gold{background:var(--gold);color:#1a1405;border-color:var(--gold)}
+.btn.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn.sm{padding:5px 10px;font-size:12px}
+.kbd{color:var(--muted);font-size:12px}
+.kbd b{font-weight:600;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--fg)}
+
+/* --- Console --- */
+aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+@media (max-width:900px){aside{border-left:0;border-top:1px solid var(--line)}}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:12px 4px;cursor:pointer;color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--gold2);border-bottom-color:var(--gold)}
+.pane{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:16px;flex:1}
+.group{display:flex;flex-direction:column;gap:10px}
+.group h3{margin:0;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.row{display:grid;grid-template-columns:96px 1fr 44px;gap:10px;align-items:center}
+.row label{color:var(--fg);font-size:13px}
+.row output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+input[type=range]{width:100%;accent-color:var(--gold)}
+select,input[type=text],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:200px;resize:vertical;font-family:var(--read);line-height:1.5}
+.check{display:flex;align-items:center;gap:8px;cursor:pointer}
+.check input{accent-color:var(--gold);width:16px;height:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:12px}
+.chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg.three{grid-template-columns:repeat(3,1fr)}
+.note{color:var(--muted);font-size:12px;margin:0}
+.notice{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px}
+.result{display:flex;flex-direction:column;gap:8px}
+.result video{width:100%;border-radius:8px;background:#000}
+a.btn{text-decoration:none;text-align:center}
+@media (prefers-reduced-motion:reduce){.pill.live .dot{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="stage-wrap">
+    <div class="topbar">
+      <div class="brand">KCC <small>Studio Prompteur</small></div>
+      <div class="spacer"></div>
+      <div class="status">
+        <span class="pill" id="srcPill"><span class="dot"></span><span id="srcTxt">Aucune source</span></span>
+        <span class="meter" title="Niveau micro"><i id="meter"></i></span>
+        <span class="pill" id="recPill"><span class="dot"></span><span id="recTime">00:00</span></span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="frame" id="frame">
+        <canvas id="out" width="1280" height="720"></canvas>
+        <div class="grid" id="gridOv" hidden></div>
+        <div class="safe" id="safeOv" hidden></div>
+        <div class="prompter" id="prompter">
+          <div class="scroll" id="scroll"><div class="text" id="ptext"></div></div>
+          <div class="marker"></div><div class="fade"></div>
+        </div>
+        <div class="countdown" id="countdown" hidden></div>
+      </div>
+    </div>
+
+    <div class="transport">
+      <button class="btn gold" id="camBtn">Activer la caméra</button>
+      <button class="btn sm" id="flipCamBtn" hidden>⇄ Avant / arrière</button>
+      <button class="btn" id="playBtn">▶ Lire le texte</button>
+      <button class="btn sm" id="restartBtn">⟲ Début</button>
+      <button class="btn sm" id="slowBtn">− Vitesse</button>
+      <button class="btn sm" id="fastBtn">+ Vitesse</button>
+      <div class="spacer"></div>
+      <button class="btn rec" id="recBtn">● Enregistrer</button>
+    </div>
+    <div class="notice" id="alertBox" hidden></div>
+    <p class="kbd"><b>Espace</b> lecture/pause · <b>↑</b><b>↓</b> vitesse · <b>R</b> retour au début · <b>Molette</b> défiler à la main · <b>F</b> plein écran</p>
+  </section>
+
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="t-prompt">Texte</button>
+      <button role="tab" aria-selected="false" data-tab="t-image">Image</button>
+      <button role="tab" aria-selected="false" data-tab="t-logo">Logo</button>
+      <button role="tab" aria-selected="false" data-tab="t-rec">Sortie</button>
+    </div>
+
+    <!-- TEXTE -->
+    <div class="pane" id="t-prompt">
+      <div class="group">
+        <h3>Script</h3>
+        <textarea id="script"></textarea>
+      </div>
+      <div class="group">
+        <h3>Lecture</h3>
+        <div class="row"><label for="speed">Vitesse</label><input type="range" id="speed" min="1" max="15" value="4"><output id="speedV">4</output></div>
+        <div class="row"><label for="fsize">Taille</label><input type="range" id="fsize" min="24" max="96" value="46"><output id="fsizeV">46</output></div>
+        <div class="row"><label for="pwidth">Largeur</label><input type="range" id="pwidth" min="40" max="100" value="80"><output id="pwidthV">80%</output></div>
+        <div class="row"><label for="pheight">Hauteur</label><input type="range" id="pheight" min="20" max="100" value="46"><output id="pheightV">46%</output></div>
+        <label class="check"><input type="checkbox" id="showPrompt" checked> Afficher le prompteur</label>
+        <label class="check"><input type="checkbox" id="flipText"> Texte inversé (vitre de prompteur)</label>
+        <label class="check"><input type="checkbox" id="countOn" checked> Compte à rebours 3-2-1 avant lecture</label>
+        <p class="note">Le texte reste près du haut de l'écran, à côté de l'objectif : vos yeux restent dans l'axe. Il n'apparaît pas dans la vidéo enregistrée.</p>
+      </div>
+    </div>
+
+    <!-- IMAGE -->
+    <div class="pane" id="t-image" hidden>
+      <div class="group">
+        <h3>Préréglages</h3>
+        <div class="chips" id="presets"></div>
+      </div>
+      <div class="group">
+        <h3>Lumière et couleur</h3>
+        <div class="row"><label for="bright">Exposition</label><input type="range" id="bright" min="50" max="160" value="100"><output></output></div>
+        <div class="row"><label for="contrast">Contraste</label><input type="range" id="contrast" min="50" max="160" value="100"><output></output></div>
+        <div class="row"><label for="sat">Saturation</label><input type="range" id="sat" min="0" max="200" value="100"><output></output></div>
+        <div class="row"><label for="temp">Température</label><input type="range" id="temp" min="-100" max="100" value="0"><output></output></div>
+        <div class="row"><label for="hue">Teinte</label><input type="range" id="hue" min="-30" max="30" value="0"><output></output></div>
+      </div>
+      <div class="group">
+        <h3>Rendu</h3>
+        <div class="row"><label for="smooth">Lissage peau</label><input type="range" id="smooth" min="0" max="100" value="0"><output></output></div>
+        <div class="row"><label for="vignette">Vignettage</label><input type="range" id="vignette" min="0" max="100" value="15"><output></output></div>
+        <div class="row"><label for="zoom">Zoom</label><input type="range" id="zoom" min="100" max="200" value="100"><output></output></div>
+        <label class="check"><input type="checkbox" id="mirror"> Effet miroir</label>
+        <button class="btn sm" id="resetImg">Réinitialiser l'image</button>
+      </div>
+      <div class="group">
+        <h3>Aides au cadrage (non enregistrées)</h3>
+        <label class="check"><input type="checkbox" id="gridOn"> Grille des tiers</label>
+        <label class="check"><input type="checkbox" id="safeOn"> Zone de sécurité</label>
+      </div>
+    </div>
+
+    <!-- LOGO -->
+    <div class="pane" id="t-logo" hidden>
+      <div class="group">
+        <h3>Logo dans la vidéo</h3>
+        <label class="check"><input type="checkbox" id="logoOn" checked> Afficher le logo</label>
+        <div class="seg" id="logoPos">
+          <button class="chip" data-pos="tl">↖ Haut G</button>
+          <button class="chip" data-pos="tr" aria-pressed="true">↗ Haut D</button>
+          <button class="chip" data-pos="bl">↙ Bas G</button>
+          <button class="chip" data-pos="br">↘ Bas D</button>
+        </div>
+        <div class="row"><label for="logoSize">Taille</label><input type="range" id="logoSize" min="6" max="30" value="13"><output></output></div>
+        <div class="row"><label for="logoOp">Opacité</label><input type="range" id="logoOp" min="20" max="100" value="90"><output></output></div>
+        <label class="btn sm" style="text-align:center">Remplacer par une image (PNG)…<input type="file" id="logoFile" accept="image/*" hidden></label>
+        <button class="btn sm" id="logoReset">Revenir au logo KCC doré</button>
+      </div>
+      <div class="group">
+        <h3>Bandeau titre (bas de l'écran)</h3>
+        <label class="check"><input type="checkbox" id="ltOn" checked> Afficher le bandeau</label>
+        <input type="text" id="ltName" value="Église Bon Nouveau Message" aria-label="Ligne principale">
+        <input type="text" id="ltSub" value="KCC · Annonce de la semaine" aria-label="Ligne secondaire">
+      </div>
+    </div>
+
+    <!-- SORTIE -->
+    <div class="pane" id="t-rec" hidden>
+      <div class="group">
+        <h3>Sources</h3>
+        <select id="camSel" aria-label="Caméra"><option>Caméra par défaut</option></select>
+        <select id="micSel" aria-label="Micro"><option>Micro par défaut</option></select>
+        <label class="btn sm" style="text-align:center">Utiliser une vidéo existante…<input type="file" id="vidFile" accept="video/*" hidden></label>
+      </div>
+      <div class="group">
+        <h3>Format</h3>
+        <div class="seg three" id="aspect">
+          <button class="chip" data-a="16:9" aria-pressed="true">16:9 YouTube</button>
+          <button class="chip" data-a="9:16">9:16 Statut</button>
+          <button class="chip" data-a="1:1">1:1 Carré</button>
+        </div>
+        <select id="quality" aria-label="Qualité">
+          <option value="720">HD 720p</option>
+          <option value="1080" selected>Full HD 1080p</option>
+        </select>
+      </div>
+      <div class="group">
+        <h3>Enregistrement</h3>
+        <p class="note" id="fmtNote"></p>
+        <div class="result" id="result" hidden>
+          <video id="playback" controls playsinline></video>
+          <a class="btn gold" id="dlLink" download>Télécharger la vidéo</a>
+        </div>
+      </div>
+      <div class="notice">Sur téléphone, ouvrez la page dans Chrome (Android) ou Safari (iPhone) et autorisez la caméra et le micro. Le logo, le bandeau et les réglages d'image sont gravés dans la vidéo ; le texte du prompteur et la grille ne le sont pas.</div>
+    </div>
+  </aside>
+</div>
+
+<video id="src" playsinline muted autoplay style="position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0"></video>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('out'), ctx = cv.getContext('2d');
+const vid = $('src');
+
+const S = {
+  speed:4, fsize:46, pwidth:80, pheight:46,
+  bright:100, contrast:100, sat:100, temp:0, hue:0, smooth:0, vignette:15, zoom:100, mirror:false,
+  logoOn:true, logoPos:'tr', logoSize:13, logoOp:90, logoImg:null,
+  ltOn:true, aspect:'16:9', quality:1080
+};
+
+const DEFAULT_SCRIPT = `Bien-aimés frères et sœurs, paix à vous tous.
+
+Je vous salue au nom de l'Église Bon Nouveau Message KCC.
+
+Cette semaine, nous vous invitons au culte de dimanche, dès neuf heures. Venez avec vos familles et vos amis.
+
+Les répétitions de la chorale ont lieu samedi après-midi. Tous les choristes sont attendus à l'heure.
+
+Restons unis dans la prière et dans l'amour fraternel.
+
+Que Yahweh vous bénisse et vous garde.
+
+Merci, et à dimanche.`;
+
+/* ---------- Onglets ---------- */
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.pane').forEach(p => p.hidden = p.id !== b.dataset.tab);
+});
+
+/* ---------- Curseurs ---------- */
+const fmt = { temp:v=>(v>0?'+':'')+v, hue:v=>v+'°', zoom:v=>(v/100).toFixed(2)+'×', pwidth:v=>v+'%', pheight:v=>v+'%' };
+function bindRange(id){
+  const el = $(id), out = el.parentElement.querySelector('output');
+  const upd = () => { S[id] = +el.value; if(out) out.textContent = (fmt[id]||(v=>v))(+el.value); layoutPrompter(); };
+  el.addEventListener('input', upd); upd();
+}
+['speed','fsize','pwidth','pheight','bright','contrast','sat','temp','hue','smooth','vignette','zoom','logoSize','logoOp'].forEach(bindRange);
+$('mirror').onchange = e => S.mirror = e.target.checked;
+$('logoOn').onchange = e => S.logoOn = e.target.checked;
+$('ltOn').onchange = e => S.ltOn = e.target.checked;
+$('gridOn').onchange = e => $('gridOv').hidden = !e.target.checked;
+$('safeOn').onchange = e => $('safeOv').hidden = !e.target.checked;
+$('showPrompt').onchange = e => $('prompter').hidden = !e.target.checked;
+$('flipText').onchange = e => $('prompter').classList.toggle('flip', e.target.checked);
+
+function setRange(id, v){ const el=$(id); el.value=v; el.dispatchEvent(new Event('input')); }
+
+/* ---------- Préréglages ---------- */
+const PRESETS = {
+  'Naturel':      {bright:100,contrast:100,sat:100,temp:0,hue:0,vignette:15,smooth:0},
+  'Lumineux':     {bright:115,contrast:105,sat:108,temp:5,hue:0,vignette:5,smooth:15},
+  'Chaud doré':   {bright:105,contrast:108,sat:112,temp:35,hue:-3,vignette:30,smooth:15},
+  'Cinéma':       {bright:96,contrast:118,sat:85,temp:12,hue:0,vignette:45,smooth:10},
+  'Studio froid': {bright:104,contrast:110,sat:92,temp:-25,hue:2,vignette:20,smooth:10},
+  'Noir & blanc': {bright:102,contrast:125,sat:0,temp:0,hue:0,vignette:40,smooth:0},
+};
+const pc = $('presets');
+Object.keys(PRESETS).forEach((n,i) => {
+  const b = document.createElement('button'); b.className='chip'; b.textContent=n; b.setAttribute('aria-pressed', i===0);
+  b.onclick = () => { pc.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed', x===b)); Object.entries(PRESETS[n]).forEach(([k,v])=>setRange(k,v)); };
+  pc.appendChild(b);
+});
+$('resetImg').onclick = () => pc.firstChild.click() || setRange('zoom',100);
+
+/* ---------- Logo ---------- */
+document.querySelectorAll('#logoPos .chip').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#logoPos .chip').forEach(x=>x.setAttribute('aria-pressed', x===b)); S.logoPos = b.dataset.pos;
+});
+$('logoFile').onchange = e => { const f=e.target.files[0]; if(!f) return; const im=new Image(); im.onload=()=>S.logoImg=im; im.src=URL.createObjectURL(f); };
+$('logoReset').onclick = () => { S.logoImg = null; $('logoFile').value=''; };
+
+/* ---------- Format ---------- */
+function setCanvasSize(){
+  const q = S.quality, long = q===1080?1920:1280;
+  if(S.aspect==='16:9'){ cv.width=long; cv.height=q; }
+  else if(S.aspect==='9:16'){ cv.width=q; cv.height=long; }
+  else { cv.width=q; cv.height=q; }
+  $('frame').style.aspectRatio = cv.width+'/'+cv.height;
+  layoutPrompter();
+}
+document.querySelectorAll('#aspect .chip').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#aspect .chip').forEach(x=>x.setAttribute('aria-pressed', x===b)); S.aspect=b.dataset.a; setCanvasSize();
+});
+$('quality').onchange = e => { S.quality=+e.target.value; setCanvasSize(); };
+
+/* ---------- Sources ---------- */
+let camStream=null, micStream=null, audioCtx=null, analyser=null, facing='user', useFacing=true;
+async function startCamera(){
+  stopStreams();
+  const camId = $('camSel').value, micId = $('micSel').value;
+  try{ audioCtx = audioCtx || new AudioContext(); audioCtx.resume(); }catch(e){}
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    setSrc('Caméra indisponible', false);
+    $('fmtNote').textContent = "Ce navigateur ne donne pas accès à la caméra ici. Ouvrez la page dans Chrome (Android) ou Safari (iPhone), à l'adresse https://jesuiskcciste.com/teleprompteur.";
+    alertBox($('fmtNote').textContent); return;
+  }
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video:{ deviceId: !useFacing && camId && camId.length>20 ? {exact:camId}:undefined, facingMode: useFacing ? facing : undefined, width:{ideal:1920}, height:{ideal:1080}, frameRate:{ideal:30} },
+      audio:{ deviceId: micId && micId.length>20 ? {exact:micId}:undefined, echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+    });
+  }catch(err){
+    setSrc('Caméra refusée', false);
+    $('fmtNote').textContent = "Impossible d'ouvrir la caméra. Touchez le cadenas à côté de l'adresse, autorisez Caméra et Micro, puis réessayez. Si une autre application (WhatsApp, appareil photo) utilise la caméra, fermez-la.";
+    alertBox($('fmtNote').textContent); return;
+  }
+  vid.srcObject = camStream; vid.muted = true; await vid.play();
+  micStream = new MediaStream(camStream.getAudioTracks());
+  setupMeter(micStream);
+  const t = camStream.getVideoTracks()[0].getSettings();
+  setSrc(`Caméra ${t.width||''}×${t.height||''}`, true);
+  $('camBtn').textContent = 'Relancer la caméra'; $('flipCamBtn').hidden = false; alertBox('');
+  listDevices();
+}
+function stopStreams(){ if(camStream) camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+async function listDevices(){
+  const devs = await navigator.mediaDevices.enumerateDevices();
+  const fill = (sel, kind, label) => {
+    const cur = sel.value; sel.innerHTML='';
+    devs.filter(d=>d.kind===kind).forEach((d,i)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||`${label} ${i+1}`; sel.appendChild(o); });
+    if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+  };
+  fill($('camSel'),'videoinput','Caméra'); fill($('micSel'),'audioinput','Micro');
+}
+$('camSel').onchange = () => { useFacing=false; startCamera(); }; $('micSel').onchange = startCamera;
+$('flipCamBtn').onclick = () => { useFacing=true; facing = facing==='user' ? 'environment' : 'user'; startCamera(); };
+function alertBox(t){ const b=$('alertBox'); b.textContent=t; b.hidden=!t; }
+$('camBtn').onclick = startCamera;
+$('vidFile').onchange = e => {
+  const f = e.target.files[0]; if(!f) return; stopStreams();
+  vid.srcObject = null; vid.src = URL.createObjectURL(f); vid.loop = true; vid.muted = false; vid.play();
+  setSrc('Vidéo importée', true);
+};
+function setSrc(txt, ok){ $('srcTxt').textContent = txt; $('srcPill').style.color = ok ? 'var(--ok)' : ''; }
+
+function setupMeter(stream){
+  try{
+    audioCtx = audioCtx || new AudioContext();
+    if(!stream.getAudioTracks().length) return;
+    const srcN = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 512; srcN.connect(analyser);
+  }catch(e){}
+}
+const abuf = new Uint8Array(512);
+function updMeter(){
+  if(!analyser) return;
+  analyser.getByteTimeDomainData(abuf);
+  let m=0; for(const v of abuf) m=Math.max(m,Math.abs(v-128));
+  $('meter').style.width = Math.min(100, m/128*160)+'%';
+}
+
+/* ---------- Rendu vidéo ---------- */
+function drawLogo(W,H){
+  const size = Math.min(W,H) * S.logoSize/100, m = Math.min(W,H)*0.045;
+  const x = S.logoPos.includes('l') ? m : W - m - size;
+  const y = S.logoPos.includes('t') ? m : H - m - size - (S.ltOn && S.logoPos.includes('b') ? H*0.16 : 0);
+  ctx.save(); ctx.globalAlpha = S.logoOp/100;
+  if(S.logoImg){
+    const r = S.logoImg.width/S.logoImg.height, w = r>=1?size:size*r, h = r>=1?size/r:size;
+    ctx.drawImage(S.logoImg, x+(size-w)/2, y+(size-h)/2, w, h);
+  }else{
+    const cx=x+size/2, cy=y+size/2, r=size/2;
+    const g = ctx.createLinearGradient(x,y,x+size,y+size);
+    g.addColorStop(0,'#f7e08f'); g.addColorStop(.45,'#c99a3b'); g.addColorStop(.7,'#f3d684'); g.addColorStop(1,'#a87a25');
+    ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=size*0.08;
+    ctx.beginPath(); ctx.arc(cx,cy,r*0.94,0,Math.PI*2); ctx.lineWidth=size*0.05; ctx.strokeStyle=g; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,r*0.84,0,Math.PI*2); ctx.lineWidth=size*0.012; ctx.stroke();
+    ctx.fillStyle=g; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font = `700 ${size*0.34}px Cinzel, Georgia, serif`;
+    ctx.fillText('KCC', cx, cy+size*0.02);
+  }
+  ctx.restore();
+}
+function drawLowerThird(W,H){
+  const name = $('ltName').value.trim(), sub = $('ltSub').value.trim();
+  if(!name && !sub) return;
+  const u = Math.min(W,H), m = u*0.05, h = u*0.15, y = H - m - h;
+  ctx.save();
+  ctx.font = `600 ${u*0.048}px Archivo, sans-serif`; const w1 = ctx.measureText(name).width;
+  ctx.font = `400 ${u*0.032}px Archivo, sans-serif`; const w2 = ctx.measureText(sub).width;
+  const w = Math.min(W - 2*m, Math.max(w1,w2) + u*0.09);
+  const bg = ctx.createLinearGradient(m,0,m+w,0); bg.addColorStop(0,'rgba(10,10,14,.82)'); bg.addColorStop(1,'rgba(10,10,14,.55)');
+  ctx.fillStyle = bg; ctx.fillRect(m, y, w, h);
+  ctx.fillStyle = '#d9b25a'; ctx.fillRect(m, y, u*0.012, h);
+  ctx.textBaseline='alphabetic'; ctx.fillStyle='#fff';
+  ctx.font = `600 ${u*0.048}px Archivo, sans-serif`; ctx.fillText(name, m+u*0.04, y+h*0.48, w-u*0.06);
+  ctx.fillStyle='#f2d488';
+  ctx.font = `400 ${u*0.032}px Archivo, sans-serif`; ctx.fillText(sub, m+u*0.04, y+h*0.82, w-u*0.06);
+  ctx.restore();
+}
+function draw(){
+  const W=cv.width, H=cv.height;
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  const ready = vid.readyState >= 2 && vid.videoWidth;
+  if(ready){
+    const vw=vid.videoWidth, vh=vid.videoHeight, sc=Math.max(W/vw,H/vh)*S.zoom/100;
+    const dw=vw*sc, dh=vh*sc, dx=(W-dw)/2, dy=(H-dh)/2;
+    const base = `brightness(${S.bright}%) contrast(${S.contrast}%) saturate(${S.sat}%) hue-rotate(${S.hue}deg)`;
+    ctx.save();
+    if(S.mirror){ ctx.translate(W,0); ctx.scale(-1,1); }
+    ctx.filter = base; ctx.drawImage(vid,dx,dy,dw,dh);
+    if(S.smooth>0){ ctx.globalAlpha = S.smooth/100*0.55; ctx.filter = base+` blur(${(W/1280)*3.5}px)`; ctx.drawImage(vid,dx,dy,dw,dh); }
+    ctx.restore();
+  }else{
+    const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+    g.addColorStop(0,'#2a2620'); g.addColorStop(1,'#0b0b0d'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(236,234,228,.55)'; ctx.textAlign='center'; ctx.font=`500 ${Math.min(W,H)*0.035}px Archivo, sans-serif`;
+    ctx.fillText('Cliquez sur « Activer la caméra » pour commencer', W/2, H*0.62); ctx.textAlign='start';
+  }
+  if(S.temp){
+    ctx.save(); ctx.globalCompositeOperation='soft-light';
+    ctx.fillStyle = S.temp>0 ? `rgba(255,150,40,${S.temp/100*0.7})` : `rgba(40,130,255,${-S.temp/100*0.7})`;
+    ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  if(S.vignette){
+    const r = Math.hypot(W,H)/2, vg = ctx.createRadialGradient(W/2,H/2,r*0.45,W/2,H/2,r);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,`rgba(0,0,0,${S.vignette/100*0.85})`);
+    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  }
+  if(S.ltOn) drawLowerThird(W,H);
+  if(S.logoOn) drawLogo(W,H);
+  updMeter(); tickPrompter(); tickRec();
+  requestAnimationFrame(draw);
+}
+
+/* ---------- Prompteur ---------- */
+const ptext=$('ptext'), scrollEl=$('scroll'), prompter=$('prompter');
+$('script').value = DEFAULT_SCRIPT; ptext.textContent = DEFAULT_SCRIPT;
+$('script').addEventListener('input', e => ptext.textContent = e.target.value);
+let pos=0, playing=false, lastT=0, counting=false;
+function layoutPrompter(){
+  const fw = $('frame').clientWidth || 800;
+  ptext.style.fontSize = (S.fsize * fw/1100) + 'px';
+  prompter.style.width = S.pwidth + '%';
+  prompter.style.height = S.pheight + '%';
+}
+function tickPrompter(){
+  const now = performance.now(), dt = lastT ? (now-lastT)/1000 : 0; lastT = now;
+  if(playing){
+    pos += S.speed * 14 * dt * ((S.fsize*($('frame').clientWidth||800)/1100)/46);
+    const max = scrollEl.scrollHeight - prompter.clientHeight*0.3;
+    if(pos >= max){ pos = max; setPlaying(false); }
+  }
+  scrollEl.style.transform = `translateY(${-pos}px)`;
+}
+function setPlaying(p){ playing=p; $('playBtn').textContent = p ? '❚❚ Pause' : '▶ Lire le texte'; }
+function togglePlay(){
+  if(counting) return;
+  if(playing) return setPlaying(false);
+  if($('countOn').checked && pos===0){
+    counting=true; const cd=$('countdown'); let n=3; cd.hidden=false; cd.textContent=n;
+    const iv=setInterval(()=>{ n--; if(n>0) cd.textContent=n; else { clearInterval(iv); cd.hidden=true; counting=false; setPlaying(true); } },1000);
+  } else setPlaying(true);
+}
+function restart(){ pos=0; setPlaying(false); }
+$('playBtn').onclick = togglePlay; $('restartBtn').onclick = restart;
+$('slowBtn').onclick = () => setRange('speed', Math.max(1,S.speed-1));
+$('fastBtn').onclick = () => setRange('speed', Math.min(15,S.speed+1));
+let touchY=null;
+prompter.addEventListener('touchstart', e => { touchY = e.touches[0].clientY; }, {passive:true});
+prompter.addEventListener('touchmove', e => { if(touchY===null) return; e.preventDefault(); const y=e.touches[0].clientY; pos=Math.max(0,pos+(touchY-y)); touchY=y; }, {passive:false});
+prompter.addEventListener('touchend', () => touchY=null);
+prompter.addEventListener('wheel', e => { e.preventDefault(); pos = Math.max(0, pos + e.deltaY*0.6); }, {passive:false});
+document.addEventListener('keydown', e => {
+  if(e.target.matches('textarea,input[type=text],select')) return;
+  if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+  else if(e.code==='ArrowUp'){ e.preventDefault(); $('fastBtn').click(); }
+  else if(e.code==='ArrowDown'){ e.preventDefault(); $('slowBtn').click(); }
+  else if(e.key==='r'||e.key==='R') restart();
+  else if(e.key==='f'||e.key==='F'){ const st=$('stage'); document.fullscreenElement ? document.exitFullscreen() : st.requestFullscreen?.().catch(()=>{}); }
+});
+window.addEventListener('resize', layoutPrompter);
+document.addEventListener('fullscreenchange', () => setTimeout(layoutPrompter,50));
+
+/* ---------- Enregistrement ---------- */
+let rec=null, chunks=[], recStart=0;
+const MIME = ['video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+  .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+const EXT = MIME.includes('mp4') ? 'mp4' : 'webm';
+$('fmtNote').textContent = MIME ? `Fichier ${EXT.toUpperCase()}, 30 images/s, débit élevé. Le son vient du micro choisi.` : "Ce navigateur ne permet pas l'enregistrement. Utilisez Chrome ou Edge.";
+function tickRec(){
+  if(!rec) return;
+  const s = Math.floor((performance.now()-recStart)/1000);
+  $('recTime').textContent = String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+$('recBtn').onclick = () => {
+  if(rec){ rec.stop(); return; }
+  if(!MIME) return;
+  const out = cv.captureStream(30);
+  const aud = camStream ? camStream.getAudioTracks() : (vid.captureStream ? vid.captureStream().getAudioTracks() : []);
+  aud.forEach(t => out.addTrack(t));
+  chunks=[];
+  rec = new MediaRecorder(out, { mimeType:MIME, videoBitsPerSecond: S.quality===1080 ? 12e6 : 6e6, audioBitsPerSecond:192000 });
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
+    const blob = new Blob(chunks, {type:MIME.split(';')[0]}), url = URL.createObjectURL(blob);
+    $('playback').src = url; $('dlLink').href = url;
+    const d = new Date(), stamp = d.toISOString().slice(0,16).replace(/[:T]/g,'-');
+    $('dlLink').download = `KCC-video-${stamp}.${EXT}`;
+    $('result').hidden = false;
+    rec=null; $('recPill').classList.remove('live'); $('recBtn').textContent='● Enregistrer';
+    document.querySelector('[data-tab="t-rec"]').click();
+  };
+  rec.start(1000); recStart = performance.now();
+  $('recPill').classList.add('live'); $('recBtn').textContent='■ Arrêter';
+  if(!playing) togglePlay();
+};
+
+/* ---------- Démarrage ---------- */
+if(window.innerHeight > window.innerWidth && window.innerWidth < 700){ document.querySelector('#aspect [data-a="9:16"]').click(); setRange('fsize',40); }
+setCanvasSize();
+document.fonts && document.fonts.load('700 40px Cinzel');
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

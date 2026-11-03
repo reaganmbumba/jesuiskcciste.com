@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1530">
+<title>Studio Je suis KCCiste</title>
+<meta name="description" content="Studio vidéo Je suis KCCiste : caméra, images et vidéos, habillage aux couleurs KCC, enregistrement sur téléphone et partage vers YouTube.">
+<meta property="og:title" content="Studio Je suis KCCiste">
+<meta property="og:description" content="Préparez et enregistrez vos directs aux couleurs de Je suis KCCiste.">
+<meta property="og:image" content="https://jesuiskcciste.com/images/partage-jesuiskcciste.jpg">
+<link rel="icon" href="/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+/* Régie sombre : la scène à gauche, la console à droite. Bleu nuit et or, comme le logo KCC. */
+:root{
+  --bg:#0b0e16; --panel:#121725; --panel2:#1a2133; --line:#283049;
+  --fg:#eef0f5; --muted:#9aa2b5; --gold:#d9b25a; --gold2:#f3d27a; --navy:#0b1f5c;
+  --rec:#e5484d; --ok:#3fb27f;
+  --ui:"Archivo",system-ui,sans-serif; --logo:"Cinzel",Georgia,serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--ui);-webkit-tap-highlight-color:transparent}
+button,select,input,textarea{font:inherit;color:inherit}
+[hidden]{display:none!important}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:100vh}
+@media (max-width:960px){.app{grid-template-columns:1fr}}
+
+.main{display:flex;flex-direction:column;gap:12px;padding:14px;min-width:0}
+.topbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand img{width:34px;height:34px}
+.brand b{font-family:var(--logo);letter-spacing:.06em;color:var(--gold2);font-size:17px}
+.brand small{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.spacer{flex:1}
+.status{display:flex;gap:8px;align-items:center;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);border-radius:999px;padding:3px 10px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pill.on{color:var(--ok);border-color:var(--ok)}
+.pill.rec{color:#fff;background:var(--rec);border-color:var(--rec)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.rec .dot{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.meter{width:64px;height:6px;background:var(--panel2);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--gold) 70%,var(--rec))}
+
+.stage{position:relative;background:#000;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:200px}
+canvas#out{display:block;max-width:100%;max-height:calc(100vh - 260px);width:auto;height:auto}
+.stage.port canvas#out{max-height:calc(100vh - 230px)}
+@media (max-width:960px){canvas#out,.stage.port canvas#out{max-height:62vh}}
+.hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:999px;padding:5px 14px;color:#fff;font-size:12.5px;pointer-events:none;white-space:nowrap}
+@media (hover:none){.kbd{display:none}}
+
+.scenes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+@media (max-width:700px){.scenes{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.scene{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.scene svg{width:40px;height:24px}
+.scene[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2);background:#1d1a10}
+.scene kbd{font:10px var(--ui);opacity:.6}
+
+.transport{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--gold)}
+.btn:focus-visible,.scene:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.chip:focus-visible{outline:2px solid var(--gold2);outline-offset:2px}
+.btn.gold{background:var(--gold);color:#1a1405;border-color:var(--gold)}
+.btn.rec{background:var(--rec);border-color:var(--rec);color:#fff}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.kbd{color:var(--muted);font-size:12px;margin:0}
+.kbd b{font-weight:600;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--fg)}
+
+aside{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;max-height:100vh;position:sticky;top:0}
+@media (max-width:960px){aside{border-left:0;border-top:1px solid var(--line);max-height:none;position:static}}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:13px 4px;cursor:pointer;color:var(--muted);font-weight:700;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--gold2);border-bottom-color:var(--gold)}
+.pane{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:18px;flex:1}
+.group{display:flex;flex-direction:column;gap:9px}
+.group h3{margin:0;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:8px}
+.group h3 .sw{margin-left:auto}
+.row{display:grid;grid-template-columns:100px 1fr 40px;gap:10px;align-items:center}
+.row output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+input[type=range]{width:100%;accent-color:var(--gold)}
+select,input[type=text],input[type=number],textarea{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:84px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{display:flex;align-items:center;gap:8px;cursor:pointer}
+.check input,.sw input{accent-color:var(--gold);width:17px;height:17px}
+.sw{display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--fg);font-size:12.5px;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:12.5px}
+.chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2)}
+.note{color:var(--muted);font-size:12px;margin:0}
+.notice{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:12.5px}
+.notice.err{border-left-color:var(--rec)}
+.notice ol{margin:6px 0 0;padding-left:18px}
+.notice li{margin:3px 0}
+.notice a{color:var(--gold2)}
+.media-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.media-item{position:relative;aspect-ratio:16/10;border-radius:8px;overflow:hidden;border:2px solid var(--line);cursor:pointer;background:#000;padding:0}
+.media-item[aria-pressed="true"]{border-color:var(--gold)}
+.media-item img,.media-item video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.media-item span{position:absolute;left:4px;bottom:4px;font-size:10px;background:#000a;padding:1px 5px;border-radius:4px}
+.media-item .x{position:absolute;right:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#000c;border:0;color:#fff;cursor:pointer;font-size:13px;line-height:22px;padding:0}
+.result{display:flex;flex-direction:column;gap:8px}
+.result video{width:100%;border-radius:8px;background:#000;max-height:260px}
+.copy{display:flex;gap:6px}
+.copy input{font-size:12px}
+
+/* Mode diffusion : seule l'image, plein écran */
+body.clean .topbar,body.clean .scenes,body.clean .transport,body.clean .kbd,body.clean aside,body.clean #alertBox{display:none!important}
+body.clean .app{grid-template-columns:1fr}
+body.clean .main{padding:0}
+body.clean .stage{position:fixed;inset:0;border-radius:0;z-index:5}
+body.clean canvas#out{max-height:100vh;max-width:100vw}
+.exit{position:fixed;top:10px;right:10px;z-index:6;opacity:0;transition:opacity .3s}
+body.clean .exit{display:inline-flex}
+body.clean .exit:hover,body.clean .exit:focus{opacity:1}
+
+/* Habillage pour OBS (?habillage=1) */
+body.overlay{background:transparent}
+body.overlay .app{display:block}
+body.overlay .main{padding:0}
+body.overlay .stage{background:transparent;border-radius:0;position:fixed;inset:0}
+body.overlay canvas#out{width:100vw;height:100vh;max-height:none;max-width:none}
+@media (prefers-reduced-motion:reduce){.pill.rec .dot{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="main">
+    <div class="topbar">
+      <a class="brand" href="/" title="Retour au site"><img src="/images/logo-kcc.png" alt=""><span><b>Je suis KCCiste</b><small>Studio vidéo</small></span></a>
+      <div class="spacer"></div>
+      <div class="status">
+        <span class="pill" id="camPill"><span class="dot"></span><span id="camTxt">Caméra éteinte</span></span>
+        <span class="meter" title="Niveau du micro"><i id="meter"></i></span>
+        <span class="pill" id="recPill"><span class="dot"></span><span id="recTxt">Prêt</span></span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="out" width="1280" height="720" aria-label="Aperçu de la vidéo"></canvas>
+      <div class="hint" id="hint">Touchez « Activer la caméra » pour commencer</div>
+    </div>
+
+    <div class="scenes" id="scenes" role="group" aria-label="Scènes"></div>
+
+    <div class="transport">
+      <button class="btn gold" id="camBtn">📷 Activer la caméra</button>
+      <button class="btn sm" id="flipBtn" hidden>⇄ Avant / arrière</button>
+      <label class="btn sm">🖼️ Ajouter images / vidéos<input type="file" id="mediaFile" accept="image/*,video/*" multiple hidden></label>
+      <div class="spacer"></div>
+      <button class="btn sm" id="shotBtn" title="Photo de l'image actuelle, pour la miniature YouTube">📸 Miniature</button>
+      <button class="btn sm" id="cleanBtn" title="Image seule en plein écran, pour la diffusion">⛶ Mode diffusion</button>
+      <button class="btn sm" id="pauseBtn" disabled>❚❚ Pause</button>
+      <button class="btn rec" id="recBtn">● Enregistrer</button>
+    </div>
+    <div class="notice err" id="alertBox" hidden></div>
+    <p class="kbd"><b>1</b>–<b>7</b> scènes · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
+  </section>
+
+  <aside>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="t-hab">Habillage</button>
+      <button role="tab" aria-selected="false" data-tab="t-med">Médias</button>
+      <button role="tab" aria-selected="false" data-tab="t-son">Son</button>
+      <button role="tab" aria-selected="false" data-tab="t-dif">Diffuser</button>
+    </div>
+
+    <!-- HABILLAGE -->
+    <div class="pane" id="t-hab">
+      <div class="group">
+        <h3>Format de la vidéo</h3>
+        <div class="chips" id="fmtChips">
+          <button class="chip" data-fmt="land" aria-pressed="true">▭ Paysage 16:9 · YouTube</button>
+          <button class="chip" data-fmt="port" aria-pressed="false">▯ Portrait 9:16 · Statut, Shorts</button>
+        </div>
+        <div class="chips" id="qChips">
+          <button class="chip" data-q="720" aria-pressed="true">720p (léger)</button>
+          <button class="chip" data-q="1080" aria-pressed="false">1080p (haute qualité)</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Titre de l'émission <label class="sw"><input type="checkbox" id="titleOn" checked> afficher</label></h3>
+        <input type="text" id="title" maxlength="80" value="Le journal Je suis KCCiste">
+      </div>
+
+      <div class="group">
+        <h3>Logo et badge</h3>
+        <label class="check"><input type="checkbox" id="logoOn" checked> Logo KCC et « Je suis KCCiste »</label>
+        <div class="chips" id="badgeChips">
+          <button class="chip" data-badge="live" aria-pressed="true">● EN DIRECT</button>
+          <button class="chip" data-badge="rec" aria-pressed="false">Enregistré</button>
+          <button class="chip" data-badge="none" aria-pressed="false">Sans badge</button>
+        </div>
+        <label class="check"><input type="checkbox" id="clockOn" checked> Heure à côté du badge</label>
+      </div>
+
+      <div class="group">
+        <h3>Bandeau nom <label class="sw"><input type="checkbox" id="ltOn"> afficher <kbd>N</kbd></label></h3>
+        <div class="two"><input type="text" id="ltName" maxlength="60" placeholder="Nom" value="Prédicateur Reagan MBUMBA"><input type="text" id="ltRole" maxlength="70" placeholder="Fonction" value="Rédaction · Je suis KCCiste"></div>
+        <p class="note">Intervenants (un par ligne : Nom | Fonction). Touchez un nom pour l'afficher 10 secondes.</p>
+        <textarea id="people">Prédicateur Reagan MBUMBA | Rédaction · Je suis KCCiste
+Maman Mam's | Animatrice des débats</textarea>
+        <div class="chips" id="peopleChips"></div>
+      </div>
+
+      <div class="group">
+        <h3>Texte à l'écran <label class="sw"><input type="checkbox" id="cardOn"> afficher <kbd>T</kbd></label></h3>
+        <textarea id="cardText" maxlength="260" placeholder="Verset, citation, annonce…">« Quels que soient les miracles qu'il opère, un homme ne peut être Dieu. »</textarea>
+        <input type="text" id="cardRef" maxlength="80" placeholder="Référence" value="Oracle du 15 avril 2003">
+      </div>
+
+      <div class="group">
+        <h3>Bandeau défilant <label class="sw"><input type="checkbox" id="tickerOn"> afficher <kbd>D</kbd></label></h3>
+        <textarea id="ticker" maxlength="400">Bienvenue sur le direct Je suis KCCiste · Abonnez-vous à la chaîne YouTube Je suis KCCiste · Toutes les actualités sur www.jesuiskcciste.com</textarea>
+        <div class="row"><label for="tickerSpeed">Vitesse</label><input type="range" id="tickerSpeed" min="20" max="160" value="70"><output></output></div>
+      </div>
+
+      <div class="group">
+        <h3>Écrans d'ouverture, de pause et de fin</h3>
+        <input type="text" id="introSub" maxlength="80" value="Le direct commence dans un instant">
+        <div class="two">
+          <input type="number" id="cdMin" min="1" max="60" value="5" aria-label="Minutes du compte à rebours">
+          <button class="btn sm" id="cdBtn">⏱ Lancer le compte à rebours</button>
+        </div>
+        <input type="text" id="pauseText" maxlength="80" value="Nous revenons dans un instant">
+        <input type="text" id="endText" maxlength="80" value="Merci d'avoir suivi ce direct">
+      </div>
+    </div>
+
+    <!-- MÉDIAS -->
+    <div class="pane" id="t-med" hidden>
+      <div class="group">
+        <h3>Images et vidéos</h3>
+        <p class="note">Ajoutez des photos, des affiches ou des vidéos depuis la galerie du téléphone. Le média choisi s'affiche dans les scènes « Caméra + média », « Média + caméra » et « Média ».</p>
+        <label class="btn">🖼️ Ajouter depuis le téléphone<input type="file" id="mediaFile2" accept="image/*,video/*" multiple hidden></label>
+        <div class="media-list" id="mediaList"></div>
+        <p class="note" id="mediaEmpty">Aucun média pour le moment.</p>
+        <button class="btn sm" id="screenBtn" hidden>🖥️ Partager l'écran de l'ordinateur</button>
+      </div>
+      <div class="group" id="vidCtl" hidden>
+        <h3>Vidéo choisie</h3>
+        <div class="transport"><button class="btn sm" id="vidPlay">▶ Lire</button><button class="btn sm" id="vidRestart">⟲ Début</button><label class="check"><input type="checkbox" id="vidLoop" checked> En boucle</label></div>
+      </div>
+      <div class="group">
+        <h3>Médaillon de la caméra</h3>
+        <div class="chips" id="pipChips">
+          <button class="chip" data-pip="br" aria-pressed="true">↘ Bas droite</button>
+          <button class="chip" data-pip="bl" aria-pressed="false">↙ Bas gauche</button>
+          <button class="chip" data-pip="tr" aria-pressed="false">↗ Haut droite</button>
+          <button class="chip" data-pip="tl" aria-pressed="false">↖ Haut gauche</button>
+        </div>
+        <div class="row"><label for="pipSize">Taille</label><input type="range" id="pipSize" min="18" max="45" value="28"><output></output></div>
+        <label class="check"><input type="checkbox" id="pipRound" checked> Médaillon rond</label>
+      </div>
+      <div class="group">
+        <h3>Caméra</h3>
+        <label class="check"><input type="checkbox" id="mirror" checked> Effet miroir pour la caméra avant</label>
+        <div class="row"><label for="zoom">Zoom</label><input type="range" id="zoom" min="100" max="200" value="100"><output></output></div>
+        <div class="row"><label for="bright">Luminosité</label><input type="range" id="bright" min="70" max="140" value="100"><output></output></div>
+        <select id="camSel" aria-label="Choisir la caméra" hidden></select>
+      </div>
+    </div>
+
+    <!-- SON -->
+    <div class="pane" id="t-son" hidden>
+      <div class="group">
+        <h3>Volumes</h3>
+        <div class="row"><label for="micVol">Micro</label><input type="range" id="micVol" min="0" max="200" value="100"><output></output></div>
+        <div class="row"><label for="mediaVol">Vidéos</label><input type="range" id="mediaVol" min="0" max="150" value="100"><output></output></div>
+        <div class="row"><label for="musicVol">Musique</label><input type="range" id="musicVol" min="0" max="100" value="25"><output></output></div>
+        <select id="micSel" aria-label="Choisir le micro" hidden></select>
+      </div>
+      <div class="group">
+        <h3>Musique de fond</h3>
+        <p class="note">Une musique douce sous la voix, pour l'ouverture ou les pauses. Elle est mélangée dans l'enregistrement.</p>
+        <label class="btn sm">🎵 Choisir une musique<input type="file" id="musicFile" accept="audio/*" hidden></label>
+        <div class="transport" id="musicCtl" hidden><button class="btn sm" id="musicPlay">▶ Lire</button><span class="note" id="musicName"></span></div>
+        <label class="check"><input type="checkbox" id="musicDuck" checked> Baisser la musique pendant les scènes avec caméra</label>
+      </div>
+      <div class="notice">Pour éviter l'écho, portez des écouteurs si vous voulez entendre le son des vidéos pendant l'enregistrement.</div>
+      <label class="check"><input type="checkbox" id="monitor"> Entendre les vidéos et la musique</label>
+    </div>
+
+    <!-- DIFFUSER -->
+    <div class="pane" id="t-dif" hidden>
+      <div class="result" id="result" hidden>
+        <h3 class="note" style="text-transform:uppercase;letter-spacing:.13em;font-weight:700">Dernier enregistrement</h3>
+        <video id="resVideo" controls playsinline></video>
+        <div class="transport">
+          <a class="btn gold" id="dlBtn" download>⬇ Enregistrer sur le téléphone</a>
+          <button class="btn" id="shareBtn" hidden>↗ Partager (YouTube, WhatsApp…)</button>
+        </div>
+        <p class="note" id="resInfo"></p>
+      </div>
+
+      <div class="group">
+        <h3>1 · Enregistrer puis publier sur YouTube</h3>
+        <div class="notice"><ol>
+          <li>Touchez <b>● Enregistrer</b>, faites votre émission, puis <b>■ Arrêter</b>.</li>
+          <li>Touchez <b>⬇ Enregistrer sur le téléphone</b> : la vidéo va dans vos téléchargements.</li>
+          <li>Touchez <b>↗ Partager</b> et choisissez <b>YouTube</b> (ou WhatsApp, Facebook).</li>
+          <li>Pour la miniature YouTube, choisissez une belle image et touchez <b>📸 Miniature</b>.</li>
+        </ol></div>
+      </div>
+
+      <div class="group">
+        <h3>2 · Direct YouTube depuis le téléphone</h3>
+        <div class="notice">Un site internet ne peut pas envoyer lui-même l'image à YouTube. On passe par une application de direct qui diffuse l'écran du téléphone.<ol>
+          <li>Installez une application de direct qui sait « diffuser l'écran » vers YouTube (par exemple Prism Live Studio ou Streamlabs) et reliez-la à la chaîne Je suis KCCiste.</li>
+          <li>Dans l'application, choisissez la diffusion de l'écran, puis revenez ici.</li>
+          <li>Touchez <b>⛶ Mode diffusion</b> : seule l'image du studio reste à l'écran, en plein écran. Touchez deux fois l'écran pour revenir aux réglages.</li>
+        </ol></div>
+      </div>
+
+      <div class="group">
+        <h3>3 · Direct YouTube depuis un ordinateur (OBS)</h3>
+        <div class="notice">Dans OBS Studio, ajoutez une <b>Source navigateur</b> avec le lien ci-dessous (1920 × 1080). Elle pose l'habillage Je suis KCCiste (logo, badge, titre, bandeaux) par-dessus votre caméra, sur fond transparent. Le lien reprend les textes réglés ici : recopiez-le après chaque changement.</div>
+        <div class="copy"><input type="text" id="ovUrl" readonly aria-label="Lien de l'habillage pour OBS"><button class="btn sm" id="ovCopy">Copier</button></div>
+      </div>
+
+      <div class="group">
+        <h3>Liens utiles</h3>
+        <div class="transport">
+          <a class="btn sm" href="https://studio.youtube.com/channel/UCg4Hdo9XEX8OI7MQH64iX2g/livestreaming" target="_blank" rel="noopener">YouTube Studio · Direct</a>
+          <a class="btn sm" href="/direct">Page Direct du site</a>
+          <a class="btn sm" href="/admin/directs">Programmer un direct</a>
+          <a class="btn sm" href="/teleprompteur">Téléprompteur</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+<button class="btn sm exit" id="exitClean">✕ Quitter le mode diffusion</button>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const cv = $('out'), ctx = cv.getContext('2d');
+const params = new URLSearchParams(location.search);
+const OVERLAY = params.get('habillage') === '1';
+const YT = 'youtube.com/@Jesuiskcciste';
+const SITE = 'www.jesuiskcciste.com';
+
+/* ---------- Réglages (gardés sur ce téléphone) ---------- */
+const S = {
+  fmt:'land', q:720, scene:'intro', title:'', titleOn:true, logoOn:true, badge:'live', clockOn:true,
+  ltOn:false, ltName:'', ltRole:'', people:'', cardOn:false, cardText:'', cardRef:'',
+  tickerOn:false, ticker:'', tickerSpeed:70, introSub:'', cdMin:5, pauseText:'', endText:'',
+  pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
+  micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
+};
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck'];
+function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
+function load(){
+  // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
+  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(k=>S[k]=$(k).value);
+  try{ const o=JSON.parse(localStorage.getItem('kcc-studio')||'{}'); KEEP.forEach(k=>{ if(o[k]!==undefined) S[k]=o[k]; }); }catch(e){}
+  if(OVERLAY){
+    const map={t:'title',n:'ltName',r:'ltRole',c:'cardText',cr:'cardRef',k:'ticker'};
+    S.titleOn=S.ltOn=S.cardOn=S.tickerOn=false;
+    for(const [p,k] of Object.entries(map)){ if(params.has(p)){ S[k]=params.get(p); const on={t:'titleOn',n:'ltOn',c:'cardOn',k:'tickerOn'}[p]; if(on) S[on]=true; } }
+    S.badge=params.get('b')||'live'; S.logoOn=params.get('l')!=='0'; S.clockOn=params.get('h')!=='0';
+    S.fmt=params.get('f')==='port'?'port':'land'; S.q=1080; S.scene='overlay';
+  }
+}
+
+/* ---------- Images de la marque ---------- */
+const logo = new Image(); logo.src = '/images/logo-kcc.png';
+
+/* ---------- Sources ---------- */
+const camV = document.createElement('video'); camV.muted = true; camV.playsInline = true;
+let camStream = null, facing = 'user', camOn = false;
+const media = []; let active = -1;       // {kind:'img'|'vid'|'screen', el, name, url}
+let audioCtx = null, dest = null, micGain = null, mediaGain = null, musicGain = null, monitorGain = null, analyser = null, micSrc = null;
+const music = new Audio(); music.loop = true; let musicNode = null;
+
+function audio(){
+  if(audioCtx) return audioCtx;
+  const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+  audioCtx = new AC();
+  dest = audioCtx.createMediaStreamDestination();
+  micGain = audioCtx.createGain(); mediaGain = audioCtx.createGain(); musicGain = audioCtx.createGain(); monitorGain = audioCtx.createGain();
+  analyser = audioCtx.createAnalyser(); analyser.fftSize = 512;
+  micGain.connect(dest); micGain.connect(analyser);
+  mediaGain.connect(dest); musicGain.connect(dest);
+  mediaGain.connect(monitorGain); musicGain.connect(monitorGain); monitorGain.connect(audioCtx.destination);
+  applyVolumes();
+  return audioCtx;
+}
+function applyVolumes(){
+  if(!audioCtx) return;
+  const t = audioCtx.currentTime;
+  micGain.gain.setTargetAtTime(S.micVol/100, t, .05);
+  mediaGain.gain.setTargetAtTime(S.mediaVol/100, t, .05);
+  const camScene = ['cam','camMedia','mediaPip'].includes(S.scene);
+  musicGain.gain.setTargetAtTime(S.musicVol/100 * (S.musicDuck && camScene ? .35 : 1), t, .3);
+  monitorGain.gain.setTargetAtTime(S.monitor ? 1 : 0, t, .05);
+}
+
+async function startCamera(){
+  alertBox('');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    alertBox("Ce navigateur ne permet pas d'utiliser la caméra. Ouvrez la page dans Chrome (Android) ou Safari (iPhone), à l'adresse https://jesuiskcciste.com/studio."); return;
+  }
+  audio(); try{ await audioCtx.resume(); }catch(e){}
+  const camId = $('camSel').value, micId = $('micSel').value;
+  const vw = S.fmt==='port' ? {width:{ideal:1080},height:{ideal:1920}} : {width:{ideal:1920},height:{ideal:1080}};
+  const video = camId ? {deviceId:{exact:camId}, ...vw} : {facingMode:facing, ...vw};
+  const aud = {echoCancellation:true, noiseSuppression:true, autoGainControl:true, ...(micId?{deviceId:{exact:micId}}:{})};
+  try{
+    stopCamera();
+    camStream = await navigator.mediaDevices.getUserMedia({video, audio:aud});
+  }catch(e){
+    try{ camStream = await navigator.mediaDevices.getUserMedia({video:true, audio:true}); }
+    catch(e2){ alertBox("La caméra ou le micro est refusé. Autorisez-les dans les réglages du navigateur (icône du cadenas à côté de l'adresse), puis réessayez."); return; }
+  }
+  camV.srcObject = camStream; try{ await camV.play(); }catch(e){}
+  if(micSrc) try{ micSrc.disconnect(); }catch(e){}
+  if(camStream.getAudioTracks().length){ micSrc = audioCtx.createMediaStreamSource(camStream); micSrc.connect(micGain); }
+  camOn = true;
+  const s = camStream.getVideoTracks()[0]?.getSettings?.() || {};
+  if(s.facingMode) facing = s.facingMode;
+  $('camPill').className = 'pill on'; $('camTxt').textContent = 'Caméra ' + (facing==='environment' ? 'arrière' : 'avant');
+  $('camBtn').textContent = '📷 Couper la caméra'; $('flipBtn').hidden = false; $('hint').hidden = true;
+  listDevices();
+  if(S.scene==='intro') setScene('cam');
+}
+function stopCamera(){ if(camStream) camStream.getTracks().forEach(t=>t.stop()); camStream=null; camOn=false; }
+async function listDevices(){
+  try{
+    const ds = await navigator.mediaDevices.enumerateDevices();
+    const fill = (sel, kind, label) => {
+      const list = ds.filter(d=>d.kind===kind); if(list.length<2) return;
+      const cur = sel.value; sel.innerHTML = `<option value="">${label} (automatique)</option>` + list.map((d,i)=>`<option value="${d.deviceId}">${d.label||label+' '+(i+1)}</option>`).join('');
+      sel.value = cur; sel.hidden = false;
+    };
+    fill($('camSel'),'videoinput','Caméra'); fill($('micSel'),'audioinput','Micro');
+  }catch(e){}
+}
+
+function addFiles(files){
+  for(const f of files){
+    const url = URL.createObjectURL(f);
+    if(f.type.startsWith('image/')){
+      const im = new Image(); im.src = url; media.push({kind:'img', el:im, name:f.name, url});
+    }else if(f.type.startsWith('video/')){
+      const v = document.createElement('video'); v.src = url; v.playsInline = true; v.loop = $('vidLoop').checked; v.preload = 'auto';
+      v.addEventListener('loadeddata', renderMedia, {once:true});
+      const item = {kind:'vid', el:v, name:f.name, url}; media.push(item);
+      if(audio()){ try{ item.node = audioCtx.createMediaElementSource(v); item.node.connect(mediaGain); }catch(e){} }
+    }
+  }
+  if(active<0 && media.length) active = 0;
+  renderMedia();
+  if(media.length && ['intro','cam'].includes(S.scene) && !camOn) setScene('media');
+}
+function selectMedia(i){
+  const prev = media[active]; if(prev && prev.kind==='vid' && i!==active) prev.el.pause();
+  active = i; renderMedia();
+}
+function removeMedia(i){
+  const m = media[i]; if(m.kind==='vid') m.el.pause(); if(m.kind==='screen') m.stream.getTracks().forEach(t=>t.stop());
+  if(m.url) URL.revokeObjectURL(m.url);
+  media.splice(i,1); if(active>=media.length) active = media.length-1; renderMedia();
+}
+function renderMedia(){
+  const box = $('mediaList'); box.innerHTML = '';
+  media.forEach((m,i)=>{
+    const b = document.createElement('div'); b.className='media-item'; b.setAttribute('role','button'); b.tabIndex=0;
+    b.setAttribute('aria-pressed', i===active); b.title = m.name;
+    if(m.kind==='img'){ const im=document.createElement('img'); im.src=m.url; im.alt=''; b.appendChild(im); }
+    else { const c=document.createElement('canvas'); c.width=160; c.height=100; try{ const s=m.el; const r=Math.max(160/(s.videoWidth||16),100/(s.videoHeight||9)); c.getContext('2d').drawImage(s,(160-s.videoWidth*r)/2,(100-s.videoHeight*r)/2,s.videoWidth*r,s.videoHeight*r);}catch(e){} c.style.width='100%'; c.style.height='100%'; b.appendChild(c); }
+    const lab=document.createElement('span'); lab.textContent = m.kind==='img'?'Image':m.kind==='vid'?'Vidéo':'Écran'; b.appendChild(lab);
+    const x=document.createElement('button'); x.className='x'; x.textContent='✕'; x.setAttribute('aria-label','Retirer'); x.onclick=(e)=>{e.stopPropagation(); removeMedia(i);}; b.appendChild(x);
+    b.onclick=()=>selectMedia(i); b.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectMedia(i);} };
+    box.appendChild(b);
+  });
+  $('mediaEmpty').hidden = media.length>0;
+  const m = media[active]; $('vidCtl').hidden = !(m && m.kind==='vid');
+  if(m && m.kind==='vid') $('vidPlay').textContent = m.el.paused ? '▶ Lire' : '❚❚ Pause';
+}
+async function shareScreen(){
+  try{
+    const st = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30}, audio:true});
+    const v = document.createElement('video'); v.muted=true; v.playsInline=true; v.srcObject=st; await v.play();
+    const item = {kind:'screen', el:v, name:'Écran', stream:st}; media.push(item); active = media.length-1;
+    if(audio() && st.getAudioTracks().length){ item.node = audioCtx.createMediaStreamSource(st); item.node.connect(mediaGain); }
+    st.getVideoTracks()[0].addEventListener('ended', ()=>{ const i=media.indexOf(item); if(i>=0) removeMedia(i); });
+    renderMedia(); if(!['camMedia','mediaPip','media'].includes(S.scene)) setScene(camOn?'mediaPip':'media');
+  }catch(e){}
+}
+
+/* ---------- Scènes ---------- */
+const SCENES = [
+  {id:'intro', label:'Ouverture', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="20" cy="12" r="6" fill="none" stroke="currentColor"/>'},
+  {id:'cam', label:'Caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="currentColor" opacity=".35"/><circle cx="20" cy="10" r="4" fill="currentColor"/><path d="M12 22c1-5 15-5 16 0" fill="currentColor"/>'},
+  {id:'camMedia', label:'Caméra + média', icon:'<rect x="1" y="1" width="18" height="22" rx="2" fill="currentColor" opacity=".35"/><rect x="21" y="1" width="18" height="22" rx="2" fill="none" stroke="currentColor"/><circle cx="10" cy="10" r="3" fill="currentColor"/>'},
+  {id:'mediaPip', label:'Média + caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="31" cy="16" r="5" fill="currentColor" opacity=".6"/>'},
+  {id:'media', label:'Média', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M5 19l8-8 6 6 5-4 11 6z" fill="currentColor" opacity=".6"/>'},
+  {id:'pause', label:'Pause', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><rect x="15" y="7" width="3" height="10" fill="currentColor"/><rect x="22" y="7" width="3" height="10" fill="currentColor"/>'},
+  {id:'end', label:'Fin', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M13 12h14M22 7l5 5-5 5" stroke="currentColor" fill="none" stroke-width="2"/>'},
+];
+let prevScene = null, sceneT0 = 0;
+function setScene(id){
+  if(id===S.scene) return;
+  prevScene = S.scene; S.scene = id; sceneT0 = performance.now();
+  document.querySelectorAll('.scene').forEach(b=>b.setAttribute('aria-pressed', b.dataset.scene===id));
+  const m = media[active];
+  if(m && m.kind==='vid' && ['camMedia','mediaPip','media'].includes(id) && m.el.paused){ m.el.play().catch(()=>{}); renderMedia(); }
+  applyVolumes();
+}
+function buildScenes(){
+  $('scenes').innerHTML = SCENES.map((s,i)=>`<button class="scene" data-scene="${s.id}" aria-pressed="${s.id===S.scene}"><svg viewBox="0 0 40 24">${s.icon}</svg>${s.label}<kbd>${i+1}</kbd></button>`).join('');
+  document.querySelectorAll('.scene').forEach(b=>b.onclick=()=>setScene(b.dataset.scene));
+}
+
+/* ---------- Dessin ---------- */
+let W=1280, H=720, U=1;   // U : unité = 1 pour 720 px sur le petit côté
+function setSize(){
+  const short = S.q, long = Math.round(S.q*16/9);
+  [W,H] = S.fmt==='port' ? [short,long] : [long,short];
+  if(cv.width!==W || cv.height!==H){ cv.width=W; cv.height=H; }
+  U = Math.min(W,H)/720;
+  $('stage').classList.toggle('port', S.fmt==='port');
+}
+const F = (px, w=700, fam='Archivo') => `${w} ${Math.round(px*U)}px "${fam}", system-ui, sans-serif`;
+
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function srcSize(el){ return el instanceof HTMLVideoElement ? [el.videoWidth, el.videoHeight] : [el.naturalWidth||el.width, el.naturalHeight||el.height]; }
+function ready(el){ const [w,h]=srcSize(el); return w>0 && h>0 && (!(el instanceof HTMLImageElement) || el.complete); }
+function cover(el,x,y,w,h,{mirror=false,zoom=1}={}){
+  const [sw,sh]=srcSize(el); if(!sw) return;
+  const r = Math.max(w/sw, h/sh)*zoom, dw=sw*r, dh=sh*r;
+  ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  if(mirror){ ctx.translate(x+w,y); ctx.scale(-1,1); ctx.drawImage(el,(w-dw)/2,(h-dh)/2,dw,dh); }
+  else ctx.drawImage(el,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+  ctx.restore();
+}
+function contain(el,x,y,w,h){
+  const [sw,sh]=srcSize(el); if(!sw) return;
+  // Fond : la même image, agrandie, floutée et assombrie, pour ne jamais laisser de bandes noires.
+  ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  if('filter' in ctx){ ctx.filter='blur(24px) brightness(.45)'; cover(el,x,y,w,h,{zoom:1.15}); ctx.filter='none'; }
+  else { cover(el,x,y,w,h); ctx.fillStyle='rgba(0,0,0,.6)'; ctx.fillRect(x,y,w,h); }
+  const r=Math.min(w/sw,h/sh), dw=sw*r, dh=sh*r;
+  ctx.drawImage(el,x+(w-dw)/2,y+(h-dh)/2,dw,dh);
+  ctx.restore();
+}
+function camDraw(x,y,w,h){
+  if(camOn && ready(camV)){
+    ctx.save(); if(S.bright!==100) ctx.filter = `brightness(${S.bright/100})`;
+    cover(camV,x,y,w,h,{mirror:S.mirror && facing!=='environment', zoom:S.zoom/100}); ctx.restore();
+  }else{
+    ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+    const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,'#13244f'); g.addColorStop(1,'#0a1430'); ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle='rgba(243,210,122,.7)'; ctx.font=F(20,600); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Caméra éteinte', x+w/2, y+h/2); ctx.restore();
+  }
+}
+function mediaDraw(x,y,w,h){
+  const m = media[active];
+  if(m && ready(m.el)) contain(m.el,x,y,w,h);
+  else{
+    ctx.save(); ctx.fillStyle='#0d1836'; ctx.fillRect(x,y,w,h);
+    ctx.strokeStyle='rgba(243,210,122,.45)'; ctx.setLineDash([10*U,8*U]); ctx.lineWidth=2*U; ctx.strokeRect(x+14*U,y+14*U,w-28*U,h-28*U);
+    ctx.fillStyle='rgba(243,210,122,.8)'; ctx.font=F(19,600); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Ajoutez une image ou une vidéo', x+w/2, y+h/2); ctx.restore();
+  }
+}
+
+/* Fond de marque bleu nuit avec halos dorés discrets */
+function brandBg(t){
+  const g=ctx.createRadialGradient(W/2,H*.42,0,W/2,H*.42,Math.max(W,H)*.75);
+  g.addColorStop(0,'#1b3378'); g.addColorStop(.55,'#0b1f5c'); g.addColorStop(1,'#050b22');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.strokeStyle='rgba(243,210,122,.10)'; ctx.lineWidth=1.5*U;
+  for(let i=0;i<5;i++){ const r=(160+i*90)*U + Math.sin(t/1600+i)*6*U; ctx.beginPath(); ctx.arc(W/2,H*.42,r,0,Math.PI*2); ctx.stroke(); }
+  ctx.restore();
+  // fines particules dorées
+  ctx.save(); ctx.fillStyle='rgba(243,210,122,.55)';
+  for(let i=0;i<40;i++){ const px=(Math.sin(i*91.7)*.5+.5)*W, py=((Math.cos(i*47.3)*.5+.5)*H + t*0.012*(1+i%3))%H; ctx.globalAlpha=.25+.35*Math.abs(Math.sin(t/900+i)); ctx.beginPath(); ctx.arc(px,py,(1+i%3)*U,0,7); ctx.fill(); }
+  ctx.restore();
+}
+function drawLogoAt(cx,cy,size,glow){
+  if(!logo.complete || !logo.naturalWidth) return;
+  ctx.save(); if(glow){ ctx.shadowColor='rgba(243,210,122,.55)'; ctx.shadowBlur=30*U; }
+  ctx.drawImage(logo,cx-size/2,cy-size/2,size,size); ctx.restore();
+}
+function centerText(txt,y,font,color,maxW){
+  ctx.font=font; ctx.fillStyle=color; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const lines = wrap(txt, maxW||W*.84);
+  const lh = parseInt(font.match(/(\d+)px/)[1])*1.2;
+  lines.forEach((l,i)=>ctx.fillText(l, W/2, y + (i-(lines.length-1)/2)*lh));
+  return lines.length*lh;
+}
+function wrap(txt,maxW){
+  const words=String(txt).split(/\s+/), lines=[]; let cur='';
+  for(const w of words){ const t=cur?cur+' '+w:w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur); return lines;
+}
+let cdEnd = 0;
+function fmtTime(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+
+function sceneIntro(t){
+  brandBg(t); const port=S.fmt==='port';
+  drawLogoAt(W/2, H*(port?.30:.30), (port?260:210)*U, true);
+  ctx.save(); ctx.font=F(port?20:17,700); ctx.fillStyle='#f3d27a'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  if('letterSpacing' in ctx) ctx.letterSpacing = (6*U)+'px'; ctx.fillText('JE SUIS KCCISTE', W/2, H*(port?.43:.52)); ctx.restore();
+  centerText(S.title, H*(port?.50:.62), F(port?46:44,800), '#ffffff');
+  const left = cdEnd - Date.now();
+  if(cdEnd && left>0){
+    centerText(S.introSub, H*(port?.60:.74), F(22,500), '#c9d2ea');
+    centerText(fmtTime(left), H*(port?.68:.84), F(port?84:64,800,'Archivo'), '#f3d27a');
+  }else centerText(cdEnd ? 'Le direct commence' : S.introSub, H*(port?.60:.75), F(24,500), '#c9d2ea');
+  footerBrand();
+}
+function scenePause(t){
+  brandBg(t);
+  const pulse = 1 + Math.sin(t/500)*.03;
+  drawLogoAt(W/2, H*.38, 190*U*pulse, true);
+  centerText(S.pauseText, H*(S.fmt==='port'?.55:.64), F(42,800), '#ffffff');
+  centerText('Restez avec nous', H*(S.fmt==='port'?.61:.74), F(22,500), '#c9d2ea');
+  footerBrand();
+}
+function sceneEnd(t){
+  brandBg(t); const port=S.fmt==='port';
+  drawLogoAt(W/2, H*(port?.28:.27), 170*U, true);
+  centerText(S.endText, H*(port?.42:.50), F(44,800), '#ffffff');
+  centerText('Que Yahweh vous bénisse', H*(port?.48:.60), F(24,500,'Archivo'), '#f3d27a');
+  // Cartes d'abonnement
+  const bw=(port?560:520)*U, bh=64*U, gap=16*U, by=H*(port?.56:.68);
+  const cards=[['▶  Abonnez-vous sur YouTube', YT], ['🌐  Toutes les actualités', SITE]];
+  cards.forEach((c,i)=>{
+    const x = port ? (W-bw)/2 : W/2 + (i? gap/2 : -bw - gap/2) , y = port ? by + i*(bh+gap) : by;
+    const w = port ? bw : bw*.92;
+    ctx.save(); rr(port?x:x+(i?0:bw*.08),y,w,bh,14*U); ctx.fillStyle='rgba(5,11,34,.75)'; ctx.fill(); ctx.strokeStyle='rgba(243,210,122,.6)'; ctx.lineWidth=1.5*U; ctx.stroke();
+    ctx.textAlign='center'; ctx.textBaseline='middle'; const cx=(port?x:x+(i?0:bw*.08))+w/2;
+    ctx.font=F(15,600); ctx.fillStyle='#c9d2ea'; ctx.fillText(c[0], cx, y+bh*.32);
+    ctx.font=F(21,800); ctx.fillStyle='#f3d27a'; ctx.fillText(c[1], cx, y+bh*.68); ctx.restore();
+  });
+  footerBrand();
+}
+function footerBrand(){
+  ctx.save(); ctx.font=F(13,600); ctx.fillStyle='rgba(201,210,234,.75)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('PRESSE : JE SUIS KCCISTE  ·  '+SITE.toUpperCase(), W/2, H-(S.tickerOn?78:34)*U); ctx.restore();
+}
+function sceneCam(){ camDraw(0,0,W,H); }
+function sceneMedia(){ mediaDraw(0,0,W,H); }
+function sceneCamMedia(t){
+  brandBg(t); const port=S.fmt==='port', g=14*U, top=(port?132:(S.titleOn?66:20))*U, bot=(S.tickerOn?64:20)*U;
+  if(S.fmt==='port'){
+    const h=(H-top-bot-g)/2;
+    frame(()=>mediaDraw(g,top,W-2*g,h), g,top,W-2*g,h);
+    frame(()=>camDraw(g,top+h+g,W-2*g,h), g,top+h+g,W-2*g,h);
+  }else{
+    const h=H-top-bot, w=(W-3*g)/2;
+    frame(()=>camDraw(g,top,w,h), g,top,w,h);
+    frame(()=>mediaDraw(2*g+w,top,w,h), 2*g+w,top,w,h);
+  }
+}
+function frame(fn,x,y,w,h){
+  ctx.save(); rr(x,y,w,h,14*U); ctx.clip(); fn(); ctx.restore();
+  ctx.save(); rr(x,y,w,h,14*U); ctx.strokeStyle='rgba(243,210,122,.75)'; ctx.lineWidth=2.5*U; ctx.stroke(); ctx.restore();
+}
+function sceneMediaPip(){
+  mediaDraw(0,0,W,H);
+  const s = Math.min(W,H)*S.pipSize/100*(S.pipRound?1:1.1), w = S.pipRound ? s : s*(S.fmt==='port'?0.8:1.5), h = s;
+  const m=24*U, botExtra=(S.tickerOn?54:0)*U + (S.ltOn?0:0);
+  const x = S.pip.includes('l') ? m : W-m-w;
+  const y = S.pip.includes('t') ? m+(S.titleOn&&S.fmt==='port'?60*U:0)+(S.logoOn&&S.pip==='tr'?0:0) : H-m-h-botExtra;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=22*U;
+  ctx.beginPath(); if(S.pipRound) ctx.arc(x+w/2,y+h/2,w/2,0,7); else rr(x,y,w,h,16*U); ctx.fillStyle='#000'; ctx.fill(); ctx.restore();
+  ctx.save(); ctx.beginPath(); if(S.pipRound) ctx.arc(x+w/2,y+h/2,w/2,0,7); else rr(x,y,w,h,16*U); ctx.clip(); camDraw(x,y,w,h); ctx.restore();
+  ctx.save(); ctx.beginPath(); if(S.pipRound) ctx.arc(x+w/2,y+h/2,w/2,0,7); else rr(x,y,w,h,16*U); ctx.strokeStyle='#f3d27a'; ctx.lineWidth=4*U; ctx.stroke(); ctx.restore();
+}
+
+/* ---------- Habillage (logo, badge, titre, bandeaux) ---------- */
+function drawLogoCorner(){
+  const size=74*U, m=22*U, x=W-m-size, y=m;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=14*U;
+  if(logo.complete && logo.naturalWidth) ctx.drawImage(logo,x,y,size,size);
+  ctx.font=F(11.5,800); ctx.fillStyle='#f3d27a'; ctx.textAlign='center'; ctx.textBaseline='top';
+  if('letterSpacing' in ctx) ctx.letterSpacing=(1.5*U)+'px'; ctx.fillText('JE SUIS KCCISTE', x+size/2, y+size+6*U); ctx.restore();
+}
+function drawBadge(t){
+  if(S.badge==='none' && !S.clockOn) return;
+  const m=22*U, h=34*U; let x=m; const y=m;
+  ctx.save(); ctx.font=F(15,800); ctx.textBaseline='middle'; ctx.textAlign='left';
+  if(S.badge!=='none'){
+    const live = S.badge==='live', label = live ? 'EN DIRECT' : 'JE SUIS KCCISTE';
+    const w = ctx.measureText(label).width + (live?44:28)*U;
+    rr(x,y,w,h,7*U); ctx.fillStyle = live ? '#e5484d' : 'rgba(11,31,92,.9)'; ctx.fill();
+    if(!live){ ctx.strokeStyle='#f3d27a'; ctx.lineWidth=1.5*U; ctx.stroke(); }
+    if(live){ ctx.globalAlpha = .55+.45*Math.abs(Math.sin(t/450)); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(x+17*U,y+h/2,5.5*U,0,7); ctx.fill(); ctx.globalAlpha=1; }
+    ctx.fillStyle = live ? '#fff' : '#f3d27a'; ctx.fillText(label, x+(live?30:14)*U, y+h/2+1*U);
+    x += w + 8*U;
+  }
+  if(S.clockOn){
+    const d=new Date(), txt=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    const w=ctx.measureText(txt).width+24*U; rr(x,y,w,h,7*U); ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.fillText(txt, x+12*U, y+h/2+1*U);
+  }
+  ctx.restore();
+}
+function drawTitle(){
+  if(!S.title) return;
+  ctx.save(); ctx.font=F(S.fmt==='port'?19:20,800);
+  const port=S.fmt==='port', h=40*U, tw=Math.min(ctx.measureText(S.title).width, W*(port?.86:.5)), w=tw+44*U;
+  const x=(W-w)/2, y= port ? 72*U : 18*U;
+  rr(x,y,w,h,h/2); ctx.fillStyle='rgba(5,11,34,.78)'; ctx.fill(); ctx.strokeStyle='rgba(243,210,122,.7)'; ctx.lineWidth=1.5*U; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(S.title, W/2, y+h/2+1*U, tw); ctx.restore();
+}
+let ltShownAt = 0, ltAutoOff = 0;
+function drawLowerThird(t){
+  const k = Math.min(1,(t-ltShownAt)/450), e = 1-Math.pow(1-k,3);
+  const port=S.fmt==='port', m=port?28*U:40*U;
+  const bottom = H - (S.tickerOn?58:0)*U - (port?150:34)*U;
+  ctx.save(); ctx.font=F(port?30:28,800); const nw=ctx.measureText(S.ltName).width; ctx.font=F(port?18:17,600); const rw=ctx.measureText(S.ltRole).width;
+  const w=Math.min(Math.max(nw,rw)+56*U, W-2*m), h=(S.ltRole?86:58)*U, x=m - (1-e)*(w+m), y=bottom-h;
+  ctx.globalAlpha=e;
+  ctx.fillStyle='#d9b25a'; ctx.fillRect(x,y,8*U,h);
+  const g=ctx.createLinearGradient(x,0,x+w,0); g.addColorStop(0,'rgba(11,31,92,.96)'); g.addColorStop(1,'rgba(11,31,92,.82)');
+  ctx.fillStyle=g; ctx.fillRect(x+8*U,y,w-8*U,h);
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.font=F(port?30:28,800); ctx.fillStyle='#fff'; ctx.fillText(S.ltName, x+28*U, y+(S.ltRole?30:29)*U, w-40*U);
+  if(S.ltRole){ ctx.font=F(port?18:17,600); ctx.fillStyle='#f3d27a'; ctx.fillText(S.ltRole, x+28*U, y+62*U, w-40*U); }
+  ctx.restore();
+}
+function drawCard(){
+  if(!S.cardText) return;
+  const port=S.fmt==='port';
+  ctx.save(); ctx.font=F(port?32:30,600,'Archivo');
+  const maxW = W*(port?.78:.66), lines=wrap(S.cardText,maxW), lh=(port?32:30)*1.3*U;
+  const w=Math.min(W*.9, Math.max(...lines.map(l=>ctx.measureText(l).width))+80*U), h=lines.length*lh+(S.cardRef?78:52)*U;
+  const x=(W-w)/2, y= port ? H*.36 : H*.5 - h/2 - 30*U;
+  rr(x,y,w,h,16*U); ctx.fillStyle='rgba(5,11,34,.86)'; ctx.fill(); ctx.strokeStyle='rgba(243,210,122,.8)'; ctx.lineWidth=2*U; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  lines.forEach((l,i)=>ctx.fillText(l, W/2, y+30*U+lh/2+i*lh));
+  if(S.cardRef){ ctx.font=F(17,700); ctx.fillStyle='#f3d27a'; ctx.fillText('— '+S.cardRef+' —', W/2, y+h-28*U); }
+  ctx.restore();
+}
+let tickX = null, lastT = 0;
+function drawTicker(t,dt){
+  const h=50*U, y=H-h, lab='INFO';
+  ctx.save(); ctx.fillStyle='rgba(5,11,34,.92)'; ctx.fillRect(0,y,W,h);
+  ctx.fillStyle='#d9b25a'; ctx.fillRect(0,y,W,3*U);
+  ctx.font=F(19,600); const txt = S.ticker.replace(/\s+/g,' ').trim() + '     ◆     ';
+  const tw = ctx.measureText(txt).width; ctx.font=F(17,800); const lw=ctx.measureText(lab).width+34*U;
+  if(tickX===null) tickX = W;
+  tickX -= S.tickerSpeed*U*dt/1000; if(tickX < lw - tw) tickX += tw;
+  ctx.save(); ctx.beginPath(); ctx.rect(lw,y,W-lw,h); ctx.clip();
+  ctx.font=F(19,600); ctx.fillStyle='#fff'; ctx.textBaseline='middle';
+  for(let x=tickX; x<W; x+=tw) ctx.fillText(txt, x, y+h/2+2*U);
+  ctx.restore();
+  ctx.fillStyle='#d9b25a'; ctx.fillRect(0,y,lw,h); ctx.fillStyle='#0b1530'; ctx.font=F(17,800); ctx.textBaseline='middle'; ctx.textAlign='center'; ctx.fillText(lab, lw/2, y+h/2+2*U);
+  ctx.restore();
+}
+
+function drawScene(id,t){
+  switch(id){
+    case 'intro': sceneIntro(t); break;
+    case 'cam': sceneCam(t); break;
+    case 'camMedia': sceneCamMedia(t); break;
+    case 'mediaPip': sceneMediaPip(t); break;
+    case 'media': sceneMedia(t); break;
+    case 'pause': scenePause(t); break;
+    case 'end': sceneEnd(t); break;
+  }
+}
+function draw(){
+  const t = performance.now(), dt = lastT ? Math.min(100, t-lastT) : 16; lastT = t;
+  setSize();
+  ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.shadowBlur=0; ctx.filter='none';
+  if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+  if(OVERLAY){ ctx.clearRect(0,0,W,H); }
+  else{
+    ctx.globalAlpha=1;
+    const k = prevScene ? Math.min(1,(t-sceneT0)/500) : 1;
+    if(prevScene && k<1){ drawScene(prevScene,t); ctx.save(); ctx.globalAlpha=k; drawScene(S.scene,t); ctx.restore(); }
+    else { prevScene=null; drawScene(S.scene,t); }
+  }
+  const brand = !['intro','pause','end'].includes(S.scene);
+  if(brand && S.logoOn) drawLogoCorner();
+  if(brand) drawBadge(t);
+  if(brand && S.titleOn) drawTitle();
+  if(brand && S.cardOn) drawCard();
+  if(brand && S.ltOn) drawLowerThird(t);
+  if(S.tickerOn) drawTicker(t,dt);
+  if(ltAutoOff && Date.now()>ltAutoOff){ ltAutoOff=0; setLt(false); }
+  meter();
+}
+let meterBuf=null;
+function meter(){
+  if(!analyser) return; meterBuf = meterBuf || new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(meterBuf); let p=0; for(const v of meterBuf) p=Math.max(p,Math.abs(v-128));
+  $('meter').style.width = Math.min(100,p/128*160)+'%';
+}
+// Un minuteur régulier plutôt que requestAnimationFrame : l'image continue d'avancer quand l'écran est capturé par une application de direct.
+setInterval(draw, 1000/30);
+
+/* ---------- Enregistrement ---------- */
+const MIME = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+  .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
+let rec=null, chunks=[], recStart=0, recPaused=0, pausedAt=0, recTimer=0, lastUrl=null;
+function recElapsed(){ return (rec && rec.state==='paused' ? pausedAt : Date.now()) - recStart - recPaused; }
+function startRec(){
+  if(!window.MediaRecorder || !cv.captureStream){ alertBox("Ce navigateur ne sait pas enregistrer la vidéo. Utilisez Chrome sur Android ou un ordinateur, ou Safari à jour sur iPhone."); return; }
+  audio(); audioCtx.resume();
+  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  chunks=[];
+  try{ rec = new MediaRecorder(stream, MIME ? {mimeType:MIME, videoBitsPerSecond:S.q===1080?8e6:4.5e6, audioBitsPerSecond:160000} : undefined); }
+  catch(e){ rec = new MediaRecorder(stream); }
+  rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
+  rec.onstop = finishRec;
+  rec.start(1000); recStart=Date.now(); recPaused=0;
+  $('recBtn').textContent='■ Arrêter'; $('pauseBtn').disabled=false; $('pauseBtn').textContent='❚❚ Pause';
+  $('recPill').className='pill rec';
+  recTimer = setInterval(()=>{ $('recTxt').textContent = (rec.state==='paused'?'En pause · ':'● ') + fmtTime(recElapsed()); }, 250);
+  lockSize(true);
+}
+function togglePause(){
+  if(!rec) return;
+  if(rec.state==='recording'){ rec.pause(); pausedAt=Date.now(); $('pauseBtn').textContent='▶ Reprendre'; }
+  else if(rec.state==='paused'){ recPaused += Date.now()-pausedAt; rec.resume(); $('pauseBtn').textContent='❚❚ Pause'; }
+}
+function stopRec(){ if(rec && rec.state!=='inactive') rec.stop(); }
+function finishRec(){
+  clearInterval(recTimer); lockSize(false);
+  const type = (rec.mimeType || MIME || 'video/webm').split(';')[0];
+  const blob = new Blob(chunks,{type}); const ext = type.includes('mp4') ? 'mp4' : 'webm';
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const name = `JeSuisKCCiste-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
+  if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = URL.createObjectURL(blob);
+  $('resVideo').src = lastUrl; $('dlBtn').href = lastUrl; $('dlBtn').download = name;
+  $('resInfo').textContent = `${name} · ${(blob.size/1048576).toFixed(1)} Mo · ${fmtTime(recElapsed())}` + (ext==='webm' ? ' · format WebM, accepté par YouTube' : '');
+  $('result').hidden = false;
+  const file = new File([blob], name, {type});
+  const canShare = navigator.canShare && navigator.canShare({files:[file]});
+  $('shareBtn').hidden = !canShare;
+  $('shareBtn').onclick = () => navigator.share({files:[file], title:S.title, text:S.title+' · Je suis KCCiste'}).catch(()=>{});
+  rec=null; $('recBtn').textContent='● Enregistrer'; $('pauseBtn').disabled=true;
+  $('recPill').className='pill'; $('recTxt').textContent='Enregistré';
+  openTab('t-dif');
+}
+function lockSize(on){ document.querySelectorAll('#fmtChips .chip,#qChips .chip').forEach(b=>b.disabled=on); }
+function snapshot(){
+  cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='Miniature-JeSuisKCCiste.jpg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }, 'image/jpeg', .92);
+}
+
+/* ---------- Interface ---------- */
+function alertBox(t){ $('alertBox').textContent=t; $('alertBox').hidden=!t; }
+function openTab(id){
+  document.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===id));
+  document.querySelectorAll('.pane').forEach(p=>p.hidden = p.id!==id);
+}
+document.querySelectorAll('[role=tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+function chipGroup(id, key, attr, after){
+  const btns=[...document.querySelectorAll('#'+id+' .chip')];
+  const sync=()=>btns.forEach(b=>b.setAttribute('aria-pressed', String(b.dataset[attr])===String(S[key])));
+  btns.forEach(b=>b.onclick=()=>{ S[key] = key==='q' ? +b.dataset[attr] : b.dataset[attr]; sync(); save(); after&&after(); });
+  sync();
+}
+function bindText(id){ const el=$(id); el.value=S[id]; el.addEventListener('input',()=>{ S[id]=el.value; if(id==='people') buildPeople(); if(id==='ticker') tickX=null; save(); updOv(); }); }
+function bindCheck(id, after){ const el=$(id); el.checked=!!S[id]; el.addEventListener('change',()=>{ S[id]=el.checked; if(id==='ltOn'){ if(el.checked) ltShownAt=performance.now(); ltAutoOff=0; } save(); updOv(); after&&after(); }); }
+function bindRange(id, after){
+  const el=$(id), out=el.parentElement.querySelector('output'); el.value=S[id];
+  const upd=()=>{ S[id]=+el.value; if(out) out.textContent=el.value+(['tickerSpeed'].includes(id)?'':'%'); save(); after&&after(); };
+  el.addEventListener('input',upd); if(out) out.textContent=el.value+(['tickerSpeed'].includes(id)?'':'%');
+}
+function setLt(on){ S.ltOn=on; $('ltOn').checked=on; if(on) ltShownAt=performance.now(); updOv(); }
+function toggle(key, boxId){ S[key]=!S[key]; $(boxId).checked=S[key]; if(key==='ltOn'&&S.ltOn) ltShownAt=performance.now(); if(key==='tickerOn') tickX=null; updOv(); }
+function buildPeople(){
+  const box=$('peopleChips'); box.innerHTML='';
+  S.people.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    const [n,r='']=l.split('|').map(s=>s.trim());
+    const b=document.createElement('button'); b.className='chip'; b.textContent=n;
+    b.onclick=()=>{ S.ltName=n; S.ltRole=r; $('ltName').value=n; $('ltRole').value=r; setLt(true); ltAutoOff=Date.now()+10000; save(); };
+    box.appendChild(b);
+  });
+}
+function updOv(){
+  const u=new URL(location.origin+'/studio'); u.searchParams.set('habillage','1');
+  if(S.titleOn && S.title) u.searchParams.set('t',S.title);
+  if(S.ltOn && S.ltName){ u.searchParams.set('n',S.ltName); if(S.ltRole) u.searchParams.set('r',S.ltRole); }
+  if(S.tickerOn && S.ticker) u.searchParams.set('k',S.ticker);
+  if(S.cardOn && S.cardText){ u.searchParams.set('c',S.cardText); if(S.cardRef) u.searchParams.set('cr',S.cardRef); }
+  u.searchParams.set('b',S.badge); if(!S.logoOn) u.searchParams.set('l','0'); if(!S.clockOn) u.searchParams.set('h','0');
+  if(S.fmt==='port') u.searchParams.set('f','port');
+  $('ovUrl').value = u.toString();
+}
+function cleanMode(on){
+  document.body.classList.toggle('clean', on);
+  if(on){ try{ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){} try{ navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){} }
+  else if(document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+}
+
+function init(){
+  load(); buildScenes();
+  if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; return; }
+  chipGroup('fmtChips','fmt','fmt',()=>{ if(camOn) startCamera(); updOv(); });
+  chipGroup('qChips','q','q');
+  chipGroup('badgeChips','badge','badge',updOv);
+  chipGroup('pipChips','pip','pip');
+  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(bindText);
+  ['titleOn','logoOn','clockOn','ltOn','cardOn','tickerOn','pipRound','mirror'].forEach(id=>bindCheck(id));
+  bindCheck('musicDuck',applyVolumes); bindCheck('monitor',applyVolumes);
+  ['pipSize','zoom','bright','tickerSpeed'].forEach(id=>bindRange(id));
+  ['micVol','mediaVol','musicVol'].forEach(id=>bindRange(id,applyVolumes));
+  $('cdMin').value=S.cdMin; $('cdMin').oninput=()=>{ S.cdMin=Math.max(1,Math.min(60,+$('cdMin').value||5)); save(); };
+  $('cdBtn').onclick=()=>{ cdEnd=Date.now()+S.cdMin*60000; setScene('intro'); };
+  buildPeople(); updOv();
+
+  $('camBtn').onclick=()=>{ if(camOn){ stopCamera(); $('camBtn').textContent='📷 Activer la caméra'; $('camPill').className='pill'; $('camTxt').textContent='Caméra éteinte'; $('flipBtn').hidden=true; } else startCamera(); };
+  $('flipBtn').onclick=()=>{ facing = facing==='user' ? 'environment' : 'user'; $('camSel').value=''; startCamera(); };
+  $('camSel').onchange=()=>camOn&&startCamera(); $('micSel').onchange=()=>camOn&&startCamera();
+  $('mediaFile').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+  $('mediaFile2').onchange=e=>{ addFiles(e.target.files); e.target.value=''; };
+  if(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && !/Android|iPhone|iPad/i.test(navigator.userAgent)) $('screenBtn').hidden=false;
+  $('screenBtn').onclick=shareScreen;
+  $('vidPlay').onclick=()=>{ const m=media[active]; if(!m||m.kind!=='vid') return; audio()&&audioCtx.resume(); m.el.paused?m.el.play():m.el.pause(); renderMedia(); };
+  $('vidRestart').onclick=()=>{ const m=media[active]; if(m&&m.kind==='vid'){ m.el.currentTime=0; } };
+  $('vidLoop').onchange=()=>media.forEach(m=>{ if(m.kind==='vid') m.el.loop=$('vidLoop').checked; });
+  $('musicFile').onchange=e=>{
+    const f=e.target.files[0]; if(!f) return; music.src=URL.createObjectURL(f); $('musicName').textContent=f.name; $('musicCtl').hidden=false;
+    if(audio() && !musicNode){ try{ musicNode=audioCtx.createMediaElementSource(music); musicNode.connect(musicGain); }catch(err){} }
+  };
+  $('musicPlay').onclick=()=>{ audio()&&audioCtx.resume(); if(music.paused){ music.play(); $('musicPlay').textContent='❚❚ Pause'; } else { music.pause(); $('musicPlay').textContent='▶ Lire'; } };
+  $('recBtn').onclick=()=> rec ? stopRec() : startRec();
+  $('pauseBtn').onclick=togglePause;
+  $('shotBtn').onclick=snapshot;
+  $('cleanBtn').onclick=()=>cleanMode(true);
+  $('exitClean').onclick=()=>cleanMode(false);
+  $('stage').addEventListener('dblclick',()=>document.body.classList.contains('clean')&&cleanMode(false));
+  $('ovCopy').onclick=()=>{ $('ovUrl').select(); (navigator.clipboard?navigator.clipboard.writeText($('ovUrl').value):Promise.reject()).then(()=>{$('ovCopy').textContent='Copié ✓'; setTimeout(()=>$('ovCopy').textContent='Copier',1500);}).catch(()=>document.execCommand('copy')); };
+
+  document.addEventListener('keydown',e=>{
+    if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if(e.key>='1' && e.key<='7'){ setScene(SCENES[+e.key-1].id); }
+    else if(e.key==='n'||e.key==='N') toggle('ltOn','ltOn');
+    else if(e.key==='d'||e.key==='D') toggle('tickerOn','tickerOn');
+    else if(e.key==='t'||e.key==='T') toggle('cardOn','cardOn');
+    else if(e.key==='Escape') cleanMode(false);
+  });
+  window.addEventListener('beforeunload',e=>{ if(rec){ e.preventDefault(); e.returnValue=''; } });
+}
+document.fonts && document.fonts.load('800 20px Archivo').catch(()=>{});
+init();
+</script>
+</body>
+</html>

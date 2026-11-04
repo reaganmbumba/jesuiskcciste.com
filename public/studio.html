@@ -246,7 +246,7 @@ body.tele #tele{display:flex}
     <div class="notice err" id="alertBox" hidden></div>
     <div class="notice" id="recover" hidden><b>Enregistrement interrompu</b><br><span id="recoverTxt"></span>
       <div class="transport" style="margin-top:8px"><button class="btn gold sm" id="recoverBtn">Récupérer la vidéo</button><button class="btn sm" id="recoverDrop">Supprimer</button></div></div>
-    <p class="kbd"><b>1</b>–<b>0</b> scènes · <b>P</b> prompteur · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
+    <p class="kbd"><b>1</b>–<b>0</b> scènes · <b>P</b> prompteur · <b>H</b> thème · <b>V</b> verset · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
   </section>
 
   <aside>
@@ -303,6 +303,25 @@ body.tele #tele{display:flex}
         <textarea id="people">Prédicateur Reagan MBUMBA | Rédaction · Je suis KCCiste
 Maman Mam's | Animatrice des débats</textarea>
         <div class="chips" id="peopleChips"></div>
+      </div>
+
+      <div class="group">
+        <h3>Thème du jour <label class="sw"><input type="checkbox" id="themeOn"> afficher <kbd>H</kbd></label></h3>
+        <input type="text" id="theme" maxlength="90" placeholder="Ex. : Restons fidèles à l'Alliance de Yahweh">
+        <p class="note">Le thème reste affiché en haut de l'image pendant tout le direct.</p>
+      </div>
+
+      <div class="group">
+        <h3>Versets bibliques</h3>
+        <p class="note">Un verset par ligne : Texte | Référence. Touchez un verset pour l'afficher maintenant.</p>
+        <textarea id="verses" placeholder="Nous ferons tout ce que l'Éternel a dit, et nous obéirons. | Exode 24 : 7"></textarea>
+        <div class="chips" id="verseChips"></div>
+        <label class="check"><input type="checkbox" id="verseAuto"> Les afficher automatiquement de temps en temps</label>
+        <div class="two">
+          <select id="verseEvery" aria-label="Intervalle"><option value="3">Toutes les 3 minutes</option><option value="5">Toutes les 5 minutes</option><option value="10">Toutes les 10 minutes</option><option value="15">Toutes les 15 minutes</option></select>
+          <select id="verseDur" aria-label="Durée d'affichage"><option value="15">Pendant 15 secondes</option><option value="20">Pendant 20 secondes</option><option value="30">Pendant 30 secondes</option><option value="45">Pendant 45 secondes</option></select>
+        </div>
+        <p class="note" id="verseNext"></p>
       </div>
 
       <div class="group">
@@ -599,6 +618,7 @@ Bienvenue sur le direct Je suis KCCiste.
     <div class="rbig">
       <button class="btn" id="rLt">Bandeau nom</button><button class="btn" id="rTicker">Bandeau défilant</button>
       <button class="btn" id="rCard">Texte à l'écran</button><button class="btn" id="rCd">⏱ Compte à rebours</button>
+      <button class="btn" id="rTheme">Thème du jour</button><button class="btn" id="rVerse">📖 Verset suivant</button>
     </div></div>
   <div class="card"><h3>Intervenants</h3><div class="chips" id="rPeople"></div></div>
   <div class="card"><h3>Images et vidéos du studio</h3><div class="chips" id="rMedia"><span class="note">Aucun média.</span></div></div>
@@ -634,9 +654,9 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  theme:'', themeOn:false, verses:'', verseAuto:false, verseEvery:5, verseDur:20, c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts','theme','themeOn','verses','verseAuto','verseEvery','verseDur'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
@@ -905,7 +925,7 @@ function centerText(txt,y,font,color,maxW){
   return lines.length*lh;
 }
 function wrap(txt,maxW){
-  const words=String(txt).split(/\s+/), lines=[]; let cur='';
+  const words=String(txt).split(/[ \t\n\r]+/), lines=[]; let cur='';
   for(const w of words){ const t=cur?cur+' '+w:w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
   if(cur) lines.push(cur); return lines;
 }
@@ -1146,6 +1166,50 @@ function drawCard(){
   if(S.cardRef){ ctx.font=F(17,700); ctx.fillStyle='#f3d27a'; ctx.fillText('— '+S.cardRef+' —', W/2, y+h-28*U); }
   ctx.restore();
 }
+/* Thème du jour : bandeau fixe en haut */
+function drawTheme(){
+  if(!S.theme) return;
+  const port=S.fmt==='port';
+  ctx.save(); ctx.textBaseline='middle'; ctx.textAlign='left';
+  ctx.font=F(13,800); const lab='THÈME', lw=ctx.measureText(lab).width+22*U;
+  ctx.font=F(port?18:17,600); const maxT = W*(port?.80:.58)-lw, tw=Math.min(ctx.measureText(S.theme).width, maxT);
+  const h=34*U, w=lw+tw+26*U, x=(W-w)/2, y = port ? (S.titleOn?122:76)*U : (S.titleOn?66:18)*U;
+  rr(x,y,w,h,8*U); ctx.fillStyle='rgba(5,11,34,.86)'; ctx.fill(); ctx.strokeStyle='rgba(243,210,122,.5)'; ctx.lineWidth=1.2*U; ctx.stroke();
+  rr(x,y,lw,h,8*U); ctx.fillStyle='#d9b25a'; ctx.fill();
+  ctx.fillStyle='#0b1530'; ctx.font=F(13,800); ctx.fillText(lab, x+11*U, y+h/2+1*U);
+  ctx.fillStyle='#fff'; ctx.font=F(port?18:17,600); ctx.fillText(S.theme, x+lw+13*U, y+h/2+1*U, tw);
+  ctx.restore();
+}
+/* Versets : carte qui apparaît, de temps en temps ou à la demande */
+let verseCur = null, verseIdx = 0, verseNextAt = 0;
+function verseList(){ return S.verses.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const i=l.lastIndexOf('|'); return i>0 ? {text:l.slice(0,i).trim(), ref:l.slice(i+1).trim()} : {text:l, ref:''}; }); }
+function showVerse(v, dur){ if(!v || !v.text) return; verseCur = {...v, t0:performance.now(), until:performance.now()+(dur||S.verseDur)*1000}; if(S.dingOn) Sfx.ding(); Remote.push(); }
+function nextVerse(){ const l=verseList(); if(!l.length) return; verseIdx = verseIdx % l.length; showVerse(l[verseIdx]); verseIdx++; }
+function verseTick(){
+  if(!S.verseAuto) { $('verseNext') && ($('verseNext').textContent=''); return; }
+  const l=verseList(); if(!l.length){ $('verseNext').textContent='Ajoutez au moins un verset.'; return; }
+  if(!verseNextAt) verseNextAt = Date.now() + 15000;
+  const left = verseNextAt - Date.now();
+  if(left<=0){ nextVerse(); verseNextAt = Date.now() + S.verseEvery*60000; }
+  $('verseNext').textContent = 'Prochain verset dans ' + fmtTime(Math.max(0,verseNextAt-Date.now()));
+}
+function drawVerse(){
+  if(!verseCur) return;
+  const now=performance.now(); let k = ease(clamp01((now-verseCur.t0)/500));
+  if(now > verseCur.until){ k = 1-clamp01((now-verseCur.until)/500); if(k<=0){ verseCur=null; return; } }
+  const port=S.fmt==='port';
+  ctx.save(); ctx.globalAlpha=k;
+  ctx.font=F(port?30:28,600); const maxW=W*(port?.80:.62), lines=wrap('«\u00a0'+verseCur.text.trim().replace(/ ([!?;:])/g,'\u00a0$1')+'\u00a0»', maxW).slice(0,6), lh=(port?30:28)*1.32*U;
+  const w=Math.min(W*.9, Math.max(...lines.map(l=>ctx.measureText(l).width))+90*U), h=lines.length*lh+(verseCur.ref?96:70)*U;
+  const x=(W-w)/2, y=(port ? H*.34 : H*.5-h/2-20*U) + (1-k)*20*U;
+  rr(x,y,w,h,18*U); ctx.fillStyle='rgba(5,11,34,.9)'; ctx.fill(); ctx.strokeStyle='rgba(243,210,122,.85)'; ctx.lineWidth=2*U; ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=F(12,800); ctx.fillStyle='#d9b25a'; if('letterSpacing' in ctx) ctx.letterSpacing=(3*U)+'px'; ctx.fillText('PAROLE DE YAHWEH', W/2, y+24*U); if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+  ctx.font=F(port?30:28,600); ctx.fillStyle='#fff';
+  lines.forEach((l,i)=>ctx.fillText(l, W/2, y+46*U+lh/2+i*lh));
+  if(verseCur.ref){ ctx.font=F(18,800); ctx.fillStyle='#f3d27a'; ctx.fillText(verseCur.ref, W/2, y+h-28*U); }
+  ctx.restore();
+}
 let tickX = null, lastT = 0;
 function drawTicker(t,dt){
   const h=50*U, y=H-h, lab='INFO';
@@ -1194,7 +1258,9 @@ function draw(){
   if(brand && S.logoOn) drawLogoCorner();
   if(brand) drawBadge(t);
   if(brand && S.titleOn) drawTitle();
+  if(brand && S.themeOn) drawTheme();
   if(brand && S.cardOn) drawCard();
+  if(brand) drawVerse();
   if(brand && S.ltOn) drawLowerThird(t);
   if(S.scene!=='gen') drawSiteChat(t);
   if(brand || S.scene==='intro' || S.scene==='pause') drawComment(t);
@@ -1564,7 +1630,7 @@ const Remote = {
     return {type:'state', scene:S.scene, title:S.title, ltOn:S.ltOn, tickerOn:S.tickerOn, cardOn:S.cardOn, ltName:S.ltName,
       people:S.people.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,20),
       media:media.map((m,i)=>({i, kind:m.kind, name:(m.name||'').slice(0,40)})), active,
-      comment: comment && !comment.out ? comment.name : '', prompt:pPlaying, rec: !!rec, recTime: rec ? fmtTime(recElapsed()) : '', cam:camOn, cam2:cam2On};
+      comment: comment && !comment.out ? comment.name : '', prompt:pPlaying, rec: !!rec, recTime: rec ? fmtTime(recElapsed()) : '', cam:camOn, cam2:cam2On, themeOn:S.themeOn};
   },
   push(now){
     if(!this.link || REGIE) return;
@@ -1578,7 +1644,8 @@ const Remote = {
     const v=m.v;
     switch(m.a){
       case 'scene': if(SCENES.some(x=>x.id===v)) setScene(v); break;
-      case 'toggle': if(['ltOn','tickerOn','cardOn'].includes(v)) toggle(v, v); break;
+      case 'toggle': if(['ltOn','tickerOn','cardOn','themeOn'].includes(v)) toggle(v, v); break;
+      case 'verse': nextVerse(); break;
       case 'person': { const [n,r='']=String(v).split('|').map(x=>x.trim()); S.ltName=n; S.ltRole=r; $('ltName').value=n; $('ltRole').value=r; setLt(true); ltAutoOff=Date.now()+10000; save(); break; }
       case 'media': if(media[v]){ selectMedia(v); if(!['camMedia','mediaPip','media'].includes(S.scene)) setScene(camOn?'mediaPip':'media'); } break;
       case 'comment': showComment(v, 20); break;
@@ -1602,6 +1669,7 @@ function remoteMode(){
   link.send({type:'hello'}); setInterval(()=>{ if(Date.now()-last>8000){ $('rState').textContent='En attente du studio… Vérifiez que le studio est ouvert et que la régie y est activée (code '+REGIE+').'; link.send({type:'hello'}); } }, 4000);
   $('rScenes').innerHTML = SCENES.map(s=>`<button class="scene" data-scene="${s.id}"><svg viewBox="0 0 40 24">${s.icon}</svg>${s.label}</button>`).join('');
   $('rScenes').querySelectorAll('.scene').forEach(b=>b.onclick=()=>cmd('scene',b.dataset.scene));
+  $('rTheme').onclick=()=>cmd('toggle','themeOn'); $('rVerse').onclick=()=>cmd('verse');
   $('rLt').onclick=()=>cmd('toggle','ltOn'); $('rTicker').onclick=()=>cmd('toggle','tickerOn'); $('rCard').onclick=()=>cmd('toggle','cardOn'); $('rCd').onclick=()=>cmd('countdown');
   $('rCmShow').onclick=()=>{ const t=$('rCmText').value.trim(); if(!t) return; cmd('comment',{name:$('rCmName').value, src:$('rCmSrc').value, text:t}); $('rCmText').value=''; };
   $('rCmHide').onclick=()=>cmd('commentHide');
@@ -1646,7 +1714,7 @@ function renderRemote(m){
   const sc=SCENES.find(x=>x.id===m.scene);
   $('rState').textContent = `À l'écran : ${sc?sc.label:m.scene}` + (m.rec ? ` · ● Enregistrement ${m.recTime}` : '') + (m.comment ? ` · Commentaire de ${m.comment}` : '') + (m.cam ? '' : ' · caméra éteinte');
   $('rScenes').querySelectorAll('.scene').forEach(b=>b.setAttribute('aria-pressed', b.dataset.scene===m.scene));
-  $('rLt').classList.toggle('on',m.ltOn); $('rTicker').classList.toggle('on',m.tickerOn); $('rCard').classList.toggle('on',m.cardOn); $('rPPlay').classList.toggle('on',m.prompt);
+  $('rLt').classList.toggle('on',m.ltOn); $('rTicker').classList.toggle('on',m.tickerOn); $('rCard').classList.toggle('on',m.cardOn); $('rTheme').classList.toggle('on',!!m.themeOn); $('rPPlay').classList.toggle('on',m.prompt);
   const pk=JSON.stringify(m.people);
   if($('rPeople').dataset.k!==pk){ $('rPeople').dataset.k=pk; $('rPeople').innerHTML=''; m.people.forEach(l=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=l.split('|')[0].trim(); b.onclick=()=>window.__remoteCmd('person',l); $('rPeople').appendChild(b); }); }
   $('rPeople').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', m.ltOn && b.textContent===m.ltName));
@@ -1976,6 +2044,14 @@ function init(){
   $('cmShow').onclick=()=>{ const t=$('cmText').value.trim(); if(!t){ $('cmText').focus(); return; } showComment({name:$('cmName').value, src:cmSrc, text:t}); $('cmText').value=''; };
   $('cmHide').onclick=hideComment; renderHist();
 
+  // Thème et versets
+  bindCheck('themeOn'); bindText('theme'); bindText('verses'); bindCheck('verseAuto',()=>{ verseNextAt=0; });
+  $('verseEvery').value=String(S.verseEvery); $('verseEvery').onchange=()=>{ S.verseEvery=+$('verseEvery').value; verseNextAt=0; save(); };
+  $('verseDur').value=String(S.verseDur); $('verseDur').onchange=()=>{ S.verseDur=+$('verseDur').value; save(); };
+  const buildVerses=()=>{ const box=$('verseChips'); box.innerHTML=''; verseList().forEach((v,i)=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=v.ref || (v.text.length>30?v.text.slice(0,30)+'…':v.text); b.title=v.text; b.onclick=()=>{ verseIdx=i+1; showVerse(v); }; box.appendChild(b); }); };
+  $('verses').addEventListener('input',buildVerses); buildVerses();
+  setInterval(verseTick, 1000);
+
   // Deuxième caméra
   $('c2open').onclick=()=>Cam2.open();
   bindCheck('c2audio',()=>{ if(Cam2.gain) Cam2.gain.gain.value = S.c2audio?1:0; }); bindCheck('c2mirror');
@@ -2036,6 +2112,8 @@ function init(){
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if(e.key>='1' && e.key<='9'){ setScene(SCENES[+e.key-1].id); }
     else if(e.key==='0'){ setScene(SCENES[9].id); }
+    else if(e.key==='h'||e.key==='H') toggle('themeOn','themeOn');
+    else if(e.key==='v'||e.key==='V') nextVerse();
     else if(e.key==='p'||e.key==='P'){ S.promptOn=!S.promptOn; promptLayout(); }
     else if(e.key===' '){ e.preventDefault(); promptPlay(); }
     else if(e.key==='n'||e.key==='N') toggle('ltOn','ltOn');

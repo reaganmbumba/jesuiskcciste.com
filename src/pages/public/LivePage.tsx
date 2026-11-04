@@ -60,7 +60,7 @@ export default function LivePage() {
 
         <HowToWatch />
 
-        <section className="mt-12 flex flex-col gap-5 rounded-3xl bg-night p-6 text-white sm:flex-row sm:items-center sm:p-8" aria-labelledby="studio-title">
+        {admin && <section className="mt-12 flex flex-col gap-5 rounded-3xl bg-night p-6 text-white sm:flex-row sm:items-center sm:p-8" aria-labelledby="studio-title">
           <img src="/images/logo-kcc.png" alt="" className="h-16 w-16 shrink-0" />
           <div className="flex-1">
             <h2 id="studio-title" className="font-display text-2xl font-medium text-gold-300">{tx('Studio vidéo Je suis KCCiste', 'Je suis KCCiste video studio', 'Estúdio de vídeo Je suis KCCiste')}</h2>
@@ -70,7 +70,7 @@ export default function LivePage() {
             <ButtonLink to="/studio" reloadDocument icon={<Video className="h-4 w-4" />}>{tx('Ouvrir le studio', 'Open the studio', 'Abrir o estúdio')}</ButtonLink>
             <ButtonLink to="/teleprompteur" reloadDocument variant="light">{tx('Téléprompteur', 'Teleprompter', 'Teleponto')}</ButtonLink>
           </div>
-        </section>
+        </section>}
 
         {past.length > 0 && (
           <section className="mt-12" aria-labelledby="past-lives">

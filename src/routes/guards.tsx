@@ -27,6 +27,11 @@ export function RequirePermission({ permission }: { permission: Permission }) {
 export function RedirectIfAuthenticated() {
   const { profile, loading } = useAuth();
   if (loading) return <PageLoader />;
-  if (profile) return <Navigate to="/espace" replace />;
+  if (profile) {
+    // Déjà connecté et venu du studio : on y retourne directement.
+    const back = new URLSearchParams(window.location.search).get('retour');
+    if (back && /^\/(studio|teleprompteur)(\?|$)/.test(back)) { window.location.replace(back); return <PageLoader />; }
+    return <Navigate to="/espace" replace />;
+  }
   return <Outlet />;
 }

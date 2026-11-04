@@ -19,13 +19,16 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/espace';
+  // ?retour=/studio : revenir à une page du site hors application (studio, téléprompteur).
+  const back = new URLSearchParams(location.search).get('retour');
+  const safeBack = back && /^\/(studio|teleprompteur)(\?|$)/.test(back) ? back : null;
   const [show, setShow] = useState(false);
   const [serverError, setServerError] = useState('');
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = handleSubmit(async (v) => {
     setServerError('');
-    try { await signIn(v.email, v.password); navigate(from, { replace: true }); } catch (e) { setServerError(e instanceof Error ? e.message : tx('Connexion impossible.', 'Login failed.', 'Não foi possível iniciar sessão.')); }
+    try { await signIn(v.email, v.password); if (safeBack) window.location.assign(safeBack); else navigate(from, { replace: true }); } catch (e) { setServerError(e instanceof Error ? e.message : tx('Connexion impossible.', 'Login failed.', 'Não foi possível iniciar sessão.')); }
   });
 
   return (

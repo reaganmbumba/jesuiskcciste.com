@@ -383,6 +383,15 @@ Bienvenue sur le direct Je suis KCCiste.
         <p class="note">Le message reprend le titre de l'émission. Pour Facebook, le lien s'affiche avec l'image du site.</p>
       </div>
       <div class="group">
+        <h3>Spectateurs du site (jesuiskcciste.com/direct)</h3>
+        <p class="note">Pendant un direct programmé sur le site, les spectateurs commentent et envoient des cœurs sous la vidéo. Ils arrivent ici tout seuls.</p>
+        <label class="check"><input type="checkbox" id="siteOn"> Recevoir les commentaires du site</label>
+        <label class="check"><input type="checkbox" id="siteOverlay"> Les faire défiler dans la vidéo, comme sur TikTok</label>
+        <label class="check"><input type="checkbox" id="siteHearts"> Faire monter les cœurs dans la vidéo</label>
+        <p class="note" id="siteStatus"></p>
+        <div class="hist" id="siteList"></div>
+      </div>
+      <div class="group">
         <h3>Commentaire d'un fidèle à l'écran</h3>
         <input type="text" id="cmName" maxlength="40" placeholder="Nom (ex. Maman Chouchouna, Luanda)">
         <div class="chips" id="cmSrc">
@@ -575,9 +584,9 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
@@ -1110,6 +1119,7 @@ function draw(){
   if(brand && S.titleOn) drawTitle();
   if(brand && S.cardOn) drawCard();
   if(brand && S.ltOn) drawLowerThird(t);
+  if(S.scene!=='gen') drawSiteChat(t);
   if(brand || S.scene==='intro' || S.scene==='pause') drawComment(t);
   if(S.tickerOn && S.scene!=='gen') drawTicker(t,dt);
   if(ltAutoOff && Date.now()>ltAutoOff){ ltAutoOff=0; setLt(false); }
@@ -1423,9 +1433,10 @@ const SB_URL='https://anawpwprqvzxgzcpqqwu.supabase.co', SB_KEY='sb_publishable_
 const PTELE = params.get('prompteur') ? params.get('prompteur').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
 const REGIE = params.get('regie') ? params.get('regie').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
 // Canal temps réel : Supabase Realtime (d'un téléphone à l'autre) + BroadcastChannel (deux onglets du même appareil).
-function rtConnect(room, onMsg, onStatus){
-  const topic='realtime:kcc-studio-'+room; let ws=null, ref=0, hb=0, joined=false, closed=false, retry=0;
-  const bc = 'BroadcastChannel' in window ? new BroadcastChannel('kcc-studio-'+room) : null;
+function rtConnect(room, onMsg, onStatus, events){
+  // events : canal public du site (ex. « kcc-live ») ; on reçoit {event, payload} pour ces événements.
+  const topic = events ? 'realtime:'+room : 'realtime:kcc-studio-'+room; let ws=null, ref=0, hb=0, joined=false, closed=false, retry=0;
+  const bc = !events && 'BroadcastChannel' in window ? new BroadcastChannel('kcc-studio-'+room) : null;
   if(bc) bc.onmessage = e => onMsg(e.data);
   function open(){
     try{ ws = new WebSocket(SB_URL.replace('https','wss')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0'); }catch(e){ onStatus('off'); return; }
@@ -1438,7 +1449,8 @@ function rtConnect(room, onMsg, onStatus){
       let m; try{ m=JSON.parse(e.data); }catch(err){ return; }
       if(m.topic!==topic) return;
       if(m.event==='phx_reply' && !joined){ if(m.payload && m.payload.status==='ok'){ joined=true; onStatus('ok'); } else onStatus('err'); }
-      else if(m.event==='broadcast' && m.payload && m.payload.event==='kcc') onMsg(m.payload.payload);
+      else if(m.event==='broadcast' && m.payload && events && events.includes(m.payload.event)) onMsg({event:m.payload.event, payload:m.payload.payload});
+      else if(m.event==='broadcast' && m.payload && !events && m.payload.event==='kcc') onMsg(m.payload.payload);
     };
     ws.onclose = () => { clearInterval(hb); joined=false; onStatus('off'); if(!closed) setTimeout(open, Math.min(15000, 1000*2**retry++)); };
     ws.onerror = () => {};
@@ -1622,6 +1634,77 @@ function ytDefaults(){
   $('ytDesc').value = `${S.title} · ${date}\n\nPRESSE : JE SUIS KCCISTE\nÉglise Bon Nouveau Message (KCC)\n\nToutes les actualités : https://jesuiskcciste.com\nAbonnez-vous à la chaîne : https://www.youtube.com/@Jesuiskcciste\n\nContact : +243 840 238 592 / +243 861 271 633`;
 }
 
+
+/* ---------- Commentaires et cœurs des spectateurs du site ---------- */
+let siteFloat=[], siteHeartsArr=[], siteLast=new Date(Date.now()-120000).toISOString(), siteTimer=0, siteLink=null, siteSeen=new Set(), siteItems=[];
+function siteColor(name){ const c=['#e5484d','#3fb27f','#3b82f6','#d9b25a','#a855f7','#ec4899','#14b8a6','#f97316']; let h=0; for(const ch of name) h=(h*31+ch.charCodeAt(0))>>>0; return c[h%c.length]; }
+async function sitePoll(){
+  try{
+    const u = SB_URL+'/rest/v1/live_comments?select=id,author_name,body,created_at&live_key=eq.direct&created_at=gt.'+encodeURIComponent(siteLast)+'&order=created_at.asc&limit=50';
+    const r = await fetch(u, {headers:{apikey:SB_KEY}});
+    if(!r.ok){ $('siteStatus').textContent = r.status===404 ? 'La table des commentaires du direct n’existe pas encore dans Supabase.' : 'Commentaires du site indisponibles pour le moment.'; return; }
+    const rows = await r.json();
+    $('siteStatus').textContent = '✓ Connecté aux commentaires du site.';
+    for(const c of rows){ siteLast = c.created_at; siteAdd({id:c.id, name:c.author_name, text:c.body}); }
+  }catch(e){ $('siteStatus').textContent = 'Pas de connexion aux commentaires du site.'; }
+}
+function siteAdd(c){
+  if(siteSeen.has(c.id)) return; siteSeen.add(c.id);
+  siteItems = [c, ...siteItems].slice(0,30); renderSiteList();
+  if(S.siteOverlay) siteFloat = [...siteFloat, {...c, at:performance.now()}].slice(-5);
+}
+function siteHide(id){ siteFloat = siteFloat.filter(x=>x.id!==id); siteItems = siteItems.filter(x=>x.id!==id); renderSiteList(); }
+function renderSiteList(){
+  const box=$('siteList'); if(!box) return; box.innerHTML='';
+  siteItems.slice(0,12).forEach(c=>{ const b=document.createElement('button'); b.innerHTML='<b></b><span></span>'; b.querySelector('b').textContent=c.name; b.querySelector('span').textContent=c.text; b.title='Afficher en grand à l’écran'; b.onclick=()=>showComment({name:c.name, src:'Site', text:c.text}); box.appendChild(b); });
+}
+function siteStart(){
+  siteStop(); if(!S.siteOn) { $('siteStatus').textContent=''; return; }
+  sitePoll(); siteTimer = setInterval(sitePoll, 4000);
+  siteLink = rtConnect('kcc-live', m=>{
+    if(m.event==='heart' && S.siteHearts) siteHeartsArr.push({at:performance.now(), dx:(Math.random()*2-1)*60, hue:Math.floor(Math.random()*40)-10, s:.8+Math.random()*.5});
+    else if(m.event==='hide' && m.payload && m.payload.id) siteHide(m.payload.id);
+  }, ()=>{}, ['heart','hide']);
+}
+function siteStop(){ clearInterval(siteTimer); siteTimer=0; if(siteLink){ siteLink.close(); siteLink=null; } }
+function heartPath(x,y,r){
+  ctx.beginPath(); ctx.moveTo(x, y+r*.35);
+  ctx.bezierCurveTo(x, y, x-r*.5, y-r*.1, x-r*.5, y+r*.25); ctx.bezierCurveTo(x-r*.5, y+r*.6, x, y+r*.75, x, y+r);
+  ctx.bezierCurveTo(x, y+r*.75, x+r*.5, y+r*.6, x+r*.5, y+r*.25); ctx.bezierCurveTo(x+r*.5, y-r*.1, x, y, x, y+r*.35); ctx.closePath();
+}
+function drawSiteChat(){
+  const now=performance.now(), port=S.fmt==='port';
+  // Cœurs qui montent à droite
+  siteHeartsArr = siteHeartsArr.filter(h=>now-h.at<2600).slice(-40);
+  for(const h of siteHeartsArr){
+    const k=(now-h.at)/2600, x=W-(port?70:90)*U + h.dx*k*U, y=H-((S.tickerOn?70:30)+40)*U - k*320*U, r=(26*h.s)*U*(k<.15?k/.15:1);
+    ctx.save(); ctx.globalAlpha = k<.15 ? k/.15 : 1-(k-.15)/.85; ctx.fillStyle=`hsl(${350+h.hue},90%,60%)`; ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8*U;
+    heartPath(x,y,r); ctx.fill(); ctx.restore();
+  }
+  // Commentaires qui défilent en bas à gauche
+  siteFloat = siteFloat.filter(c=>now-c.at<16000);
+  if(!siteFloat.length) return;
+  const fs=port?22:17, lh=fs*1.3*U, maxW = port ? W*.74 : W*.36, gap=8*U, m=port?24*U:28*U;
+  let bottom = H - ((S.tickerOn?58:0)+20)*U - (S.ltOn && ['cam','camMedia','mediaPip','media'].includes(S.scene) ? (port?260:130)*U : 0) - (port?110*U:0);
+  ctx.save(); ctx.textBaseline='middle'; ctx.textAlign='left';
+  const items=[...siteFloat].reverse();
+  items.forEach((c,i)=>{
+    const age=now-c.at, kin=ease(clamp01(age/350)), kout=clamp01((16000-age)/600), fadeTop = 1 - i*0.12;
+    ctx.font=F(fs,500); const lines = wrap(c.text, maxW-70*U).slice(0,3);
+    ctx.font=F(fs-1,800); const nw=ctx.measureText(c.name).width;
+    ctx.font=F(fs,500); const tw=Math.max(nw, ...lines.map(l=>ctx.measureText(l).width));
+    const w=Math.min(maxW, tw+70*U), h=(fs+6)*U + lines.length*lh + 6*U, x=m, y=bottom-h + (1-kin)*14*U;
+    ctx.globalAlpha = kin*kout*fadeTop;
+    rr(x,y,w,h,16*U); ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x+24*U, y+22*U, 14*U, 0, 7); ctx.fillStyle=siteColor(c.name); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=F(14,800); ctx.textAlign='center'; ctx.fillText((c.name[0]||'?').toUpperCase(), x+24*U, y+23*U); ctx.textAlign='left';
+    ctx.font=F(fs-1,800); ctx.fillStyle='#f3d27a'; ctx.fillText(c.name, x+48*U, y+20*U, w-60*U);
+    ctx.font=F(fs,500); ctx.fillStyle='#fff'; lines.forEach((l,j)=>ctx.fillText(l, x+48*U, y+20*U+(j+1)*lh));
+    bottom = y - gap;
+  });
+  ctx.restore();
+}
+
 /* ---------- Annoncer le direct ---------- */
 function shareUrl(){
   const v=$('shLink').value;
@@ -1694,7 +1777,7 @@ function init(){
   if(REGIE){ remoteMode(); return; }
   if(PTELE){ teleMode(); return; }
   buildScenes();
-  if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; return; }
+  if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; if(params.get('commentaires')!=='0') siteStart(); return; }
   chipGroup('fmtChips','fmt','fmt',()=>{ if(camOn) startCamera(); updOv(); });
   chipGroup('qChips','q','q');
   chipGroup('badgeChips','badge','badge',updOv);
@@ -1725,6 +1808,10 @@ function init(){
   document.querySelectorAll('#cmSrc .chip').forEach(b=>b.onclick=()=>{ cmSrc=b.dataset.src; document.querySelectorAll('#cmSrc .chip').forEach(x=>x.setAttribute('aria-pressed',x===b)); });
   $('cmShow').onclick=()=>{ const t=$('cmText').value.trim(); if(!t){ $('cmText').focus(); return; } showComment({name:$('cmName').value, src:cmSrc, text:t}); $('cmText').value=''; };
   $('cmHide').onclick=hideComment; renderHist();
+
+  // Commentaires du site
+  ['siteOn','siteOverlay','siteHearts'].forEach(id=>bindCheck(id));
+  $('siteOn').addEventListener('change', siteStart); siteStart();
 
   // Annonce du direct
   $('shLink').onchange=updShare; $('shCustom').oninput=updShare;

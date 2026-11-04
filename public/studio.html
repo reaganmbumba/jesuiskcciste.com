@@ -53,7 +53,7 @@ canvas#out{display:block;max-width:100%;max-height:calc(100vh - 260px);width:aut
 .hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:999px;padding:5px 14px;color:#fff;font-size:12.5px;pointer-events:none;white-space:nowrap}
 @media (hover:none){.kbd{display:none}}
 
-.scenes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.scenes{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
 @media (max-width:700px){.scenes{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .scene{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--muted)}
 .scene svg{width:40px;height:24px}
@@ -126,6 +126,46 @@ body.overlay .main{padding:0}
 body.overlay .stage{background:transparent;border-radius:0;position:fixed;inset:0}
 body.overlay canvas#out{width:100vw;height:100vh;max-height:none;max-width:none}
 @media (prefers-reduced-motion:reduce){.pill.rec .dot{animation:none}}
+
+/* Prompteur : par-dessus l'aperçu, jamais dans la vidéo */
+.prompter{position:absolute;left:0;right:0;top:0;height:44%;overflow:hidden;background:linear-gradient(rgba(0,0,0,.84),rgba(0,0,0,.6));z-index:2;cursor:ns-resize;touch-action:none}
+.prompter .scroll{will-change:transform;padding:0 6%}
+.prompter .ptext{font-weight:700;line-height:1.38;color:#fff;white-space:pre-wrap;text-align:center;padding:16vh 0 60vh}
+.prompter.flip .ptext{transform:scaleX(-1)}
+.prompter .marker{position:absolute;left:0;right:0;top:34%;height:2px;background:var(--gold);opacity:.85;pointer-events:none}
+.prompter .marker:before,.prompter .marker:after{content:"";position:absolute;top:-6px;border:7px solid transparent}
+.prompter .marker:before{left:0;border-left-color:var(--gold)}
+.prompter .marker:after{right:0;border-right-color:var(--gold)}
+.prompter .ptag{position:absolute;right:8px;top:6px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold2);background:#000a;padding:2px 7px;border-radius:4px;pointer-events:none}
+.pbar{position:absolute;left:8px;top:6px;display:flex;gap:4px;z-index:3}
+.pbar button{background:#000b;border:1px solid #fff3;border-radius:6px;color:#fff;padding:3px 8px;font-size:12px;cursor:pointer}
+body.clean .prompter,body.clean .pbar{display:none!important}
+.tabs{grid-template-columns:repeat(3,1fr)!important}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;text-align:left;cursor:pointer}
+.preset b{display:block;font-size:13px;color:var(--gold2)}
+.preset span{font-size:11.5px;color:var(--muted)}
+.preset:hover{border-color:var(--gold)}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist button{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;text-align:left;cursor:pointer;font-size:12.5px}
+.hist button b{color:var(--gold2);margin-right:6px}
+.progress{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--gold2));transition:width .3s}
+details.cfg summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+details.cfg[open] summary{margin-bottom:8px}
+.code{font:700 22px/1 var(--ui);letter-spacing:.2em;color:var(--gold2)}
+
+/* Régie à distance (?regie=CODE) */
+#remote{display:none;max-width:560px;margin:0 auto;padding:14px;flex-direction:column;gap:14px}
+body.remote .app,body.remote .exit{display:none!important}
+body.remote #remote{display:flex}
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rbig{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rbig .btn{padding:12px}
+.btn.on{border-color:var(--gold);color:var(--gold2);background:#1d1a10}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:9px}
+.card h3{margin:0;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+</style>
 </style>
 </head>
 <body>
@@ -144,6 +184,11 @@ body.overlay canvas#out{width:100vw;height:100vh;max-height:none;max-width:none}
     <div class="stage" id="stage">
       <canvas id="out" width="1280" height="720" aria-label="Aperçu de la vidéo"></canvas>
       <div class="hint" id="hint">Touchez « Activer la caméra » pour commencer</div>
+      <div class="prompter" id="prompter" hidden>
+        <div class="scroll" id="pscroll"><div class="ptext" id="ptext"></div></div>
+        <div class="marker"></div><span class="ptag">Prompteur · hors vidéo</span>
+      </div>
+      <div class="pbar" id="pbar" hidden><button id="pPlay2">▶</button><button id="pSlow2">−</button><button id="pFast2">+</button><button id="pTop2">⟲</button></div>
     </div>
 
     <div class="scenes" id="scenes" role="group" aria-label="Scènes"></div>
@@ -152,6 +197,7 @@ body.overlay canvas#out{width:100vw;height:100vh;max-height:none;max-width:none}
       <button class="btn gold" id="camBtn">📷 Activer la caméra</button>
       <button class="btn sm" id="flipBtn" hidden>⇄ Avant / arrière</button>
       <label class="btn sm">🖼️ Ajouter images / vidéos<input type="file" id="mediaFile" accept="image/*,video/*" multiple hidden></label>
+      <button class="btn sm" id="promptBtn">📜 Prompteur</button>
       <div class="spacer"></div>
       <button class="btn sm" id="shotBtn" title="Photo de l'image actuelle, pour la miniature YouTube">📸 Miniature</button>
       <button class="btn sm" id="cleanBtn" title="Image seule en plein écran, pour la diffusion">⛶ Mode diffusion</button>
@@ -159,19 +205,26 @@ body.overlay canvas#out{width:100vw;height:100vh;max-height:none;max-width:none}
       <button class="btn rec" id="recBtn">● Enregistrer</button>
     </div>
     <div class="notice err" id="alertBox" hidden></div>
-    <p class="kbd"><b>1</b>–<b>7</b> scènes · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
+    <p class="kbd"><b>1</b>–<b>8</b> scènes · <b>P</b> prompteur · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
   </section>
 
   <aside>
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-tab="t-hab">Habillage</button>
       <button role="tab" aria-selected="false" data-tab="t-med">Médias</button>
+      <button role="tab" aria-selected="false" data-tab="t-pro">Prompteur</button>
+      <button role="tab" aria-selected="false" data-tab="t-dir">Direct</button>
       <button role="tab" aria-selected="false" data-tab="t-son">Son</button>
       <button role="tab" aria-selected="false" data-tab="t-dif">Diffuser</button>
     </div>
 
     <!-- HABILLAGE -->
     <div class="pane" id="t-hab">
+      <div class="group">
+        <h3>Modèles d'émission</h3>
+        <div class="presets" id="presets"></div>
+        <p class="note">Un toucher charge le titre, les intervenants, le bandeau défilant et les écrans. Vous pouvez ensuite tout modifier.</p>
+      </div>
       <div class="group">
         <h3>Format de la vidéo</h3>
         <div class="chips" id="fmtChips">
@@ -267,6 +320,58 @@ Maman Mam's | Animatrice des débats</textarea>
       </div>
     </div>
 
+    <!-- PROMPTEUR -->
+    <div class="pane" id="t-pro" hidden>
+      <div class="group">
+        <h3>Texte à lire <label class="sw"><input type="checkbox" id="promptOn"> afficher <kbd>P</kbd></label></h3>
+        <textarea id="promptText" style="min-height:220px" placeholder="Collez ici le texte de la prédication, de l'annonce ou du journal…">Chers frères et sœurs KCCistes, paix et bénédiction de Yahweh.
+
+Bienvenue sur le direct Je suis KCCiste.
+
+(Collez ici votre texte. Il défile au-dessus de l'image pendant que vous parlez, mais il n'apparaît pas dans la vidéo.)</textarea>
+        <div class="transport"><button class="btn gold sm" id="pPlay">▶ Faire défiler</button><button class="btn sm" id="pTop">⟲ Début</button></div>
+        <div class="row"><label for="pSpeed">Vitesse</label><input type="range" id="pSpeed" min="1" max="12" value="4"><output></output></div>
+        <div class="row"><label for="pSize">Taille</label><input type="range" id="pSize" min="18" max="72" value="34"><output></output></div>
+        <div class="row"><label for="pHeight">Hauteur</label><input type="range" id="pHeight" min="25" max="80" value="44"><output></output></div>
+        <label class="check"><input type="checkbox" id="pFlip"> Texte inversé (pour un miroir de prompteur)</label>
+        <p class="note">Faites glisser le texte du doigt pour avancer ou reculer. Placez le téléphone de façon à lire près de l'objectif : votre regard restera vers les fidèles.</p>
+        <div class="notice">En « Mode diffusion », le prompteur est caché, car l'application de direct filme tout l'écran.</div>
+      </div>
+    </div>
+
+    <!-- DIRECT : commentaires et régie -->
+    <div class="pane" id="t-dir" hidden>
+      <div class="group">
+        <h3>Commentaire d'un fidèle à l'écran</h3>
+        <input type="text" id="cmName" maxlength="40" placeholder="Nom (ex. Maman Chouchouna, Luanda)">
+        <div class="chips" id="cmSrc">
+          <button class="chip" data-src="WhatsApp" aria-pressed="true">WhatsApp</button>
+          <button class="chip" data-src="YouTube" aria-pressed="false">YouTube</button>
+          <button class="chip" data-src="Facebook" aria-pressed="false">Facebook</button>
+          <button class="chip" data-src="Site" aria-pressed="false">Site</button>
+        </div>
+        <textarea id="cmText" maxlength="220" placeholder="Recopiez le message…"></textarea>
+        <div class="two">
+          <select id="cmDur" aria-label="Durée"><option value="12">12 secondes</option><option value="20">20 secondes</option><option value="40">40 secondes</option><option value="0">Jusqu'à « Retirer »</option></select>
+          <div class="transport"><button class="btn gold sm" id="cmShow">Afficher</button><button class="btn sm" id="cmHide">Retirer</button></div>
+        </div>
+        <p class="note">Commentaires déjà affichés (touchez pour remontrer) :</p>
+        <div class="hist" id="cmHist"></div>
+      </div>
+      <div class="group">
+        <h3>Régie à distance</h3>
+        <p class="note">Une deuxième personne pilote le studio depuis son propre téléphone : scènes, noms, affiches, commentaires, prompteur. Ce téléphone-ci reste face au prédicateur.</p>
+        <button class="btn gold" id="rgOpen">📡 Ouvrir la régie à distance</button>
+        <div id="rgBox" hidden class="group">
+          <div>Code de la régie : <span class="code" id="rgCode"></span></div>
+          <div class="copy"><input type="text" id="rgUrl" readonly aria-label="Lien de la régie"><button class="btn sm" id="rgCopy">Copier</button></div>
+          <a class="btn sm" id="rgWa" target="_blank" rel="noopener">Envoyer le lien par WhatsApp</a>
+          <p class="note" id="rgStatus">Connexion…</p>
+          <button class="btn sm" id="rgClose">Fermer la régie</button>
+        </div>
+      </div>
+    </div>
+
     <!-- SON -->
     <div class="pane" id="t-son" hidden>
       <div class="group">
@@ -275,6 +380,14 @@ Maman Mam's | Animatrice des débats</textarea>
         <div class="row"><label for="mediaVol">Vidéos</label><input type="range" id="mediaVol" min="0" max="150" value="100"><output></output></div>
         <div class="row"><label for="musicVol">Musique</label><input type="range" id="musicVol" min="0" max="100" value="25"><output></output></div>
         <select id="micSel" aria-label="Choisir le micro" hidden></select>
+      </div>
+      <div class="group">
+        <h3>Générique et sons</h3>
+        <label class="check"><input type="checkbox" id="sfx" checked> Son de transition entre les scènes</label>
+        <label class="check"><input type="checkbox" id="jingleOn" checked> Musique du générique et de l'écran de fin</label>
+        <label class="check"><input type="checkbox" id="dingOn" checked> Petit son quand un commentaire s'affiche</label>
+        <div class="row"><label for="sfxVol">Volume</label><input type="range" id="sfxVol" min="0" max="100" value="60"><output></output></div>
+        <div class="transport"><button class="btn sm" id="testJingle">♪ Écouter le générique</button><button class="btn sm" id="testWhoosh">♪ Transition</button></div>
       </div>
       <div class="group">
         <h3>Musique de fond</h3>
@@ -297,6 +410,15 @@ Maman Mam's | Animatrice des débats</textarea>
           <button class="btn" id="shareBtn" hidden>↗ Partager (YouTube, WhatsApp…)</button>
         </div>
         <p class="note" id="resInfo"></p>
+        <div class="group" id="ytBox" style="border-top:1px solid var(--line);padding-top:12px">
+          <h3>Envoyer sur la chaîne YouTube</h3>
+          <input type="text" id="ytTitle" maxlength="100" placeholder="Titre de la vidéo">
+          <textarea id="ytDesc" maxlength="4500"></textarea>
+          <select id="ytPrivacy" aria-label="Visibilité"><option value="public">Publique</option><option value="unlisted">Non répertoriée (lien seulement)</option><option value="private">Privée</option></select>
+          <button class="btn gold" id="ytSend">▶ Envoyer sur YouTube</button>
+          <div class="progress" id="ytProg" hidden><i></i></div>
+          <p class="note" id="ytStatus"></p>
+        </div>
       </div>
 
       <div class="group">
@@ -324,6 +446,19 @@ Maman Mam's | Animatrice des débats</textarea>
         <div class="copy"><input type="text" id="ovUrl" readonly aria-label="Lien de l'habillage pour OBS"><button class="btn sm" id="ovCopy">Copier</button></div>
       </div>
 
+      <details class="cfg group" id="ytCfg">
+        <summary>⚙ Réglage de l'envoi direct sur YouTube (une seule fois)</summary>
+        <div class="notice"><ol>
+          <li>Sur un ordinateur, ouvrez <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com</a> avec le compte Google de la chaîne et créez un projet « Je suis KCCiste ».</li>
+          <li>Dans « API et services › Bibliothèque », activez <b>YouTube Data API v3</b>.</li>
+          <li>Dans « Écran de consentement OAuth », choisissez « Externe », nom « Je suis KCCiste », et ajoutez votre adresse comme utilisateur test.</li>
+          <li>Dans « Identifiants », créez un <b>ID client OAuth</b> de type « Application Web », avec l'origine autorisée <b>https://jesuiskcciste.com</b>.</li>
+          <li>Copiez l'ID client (il finit par <i>.apps.googleusercontent.com</i>) et collez-le ci-dessous.</li>
+        </ol></div>
+        <input type="text" id="ytClient" placeholder="xxxxxxxx.apps.googleusercontent.com" aria-label="ID client Google">
+        <p class="note">Tant que Google n'a pas vérifié le projet, YouTube garde les vidéos envoyées ainsi en « Privée » : il suffit alors de les passer en « Publique » dans YouTube Studio.</p>
+      </details>
+
       <div class="group">
         <h3>Liens utiles</h3>
         <div class="transport">
@@ -336,6 +471,31 @@ Maman Mam's | Animatrice des débats</textarea>
     </div>
   </aside>
 </div>
+<section id="remote" aria-label="Régie à distance">
+  <div class="topbar">
+    <span class="brand"><img src="/images/logo-kcc.png" alt=""><span><b>Régie à distance</b><small>Studio Je suis KCCiste · code <span id="rCode"></span></small></span></span>
+    <div class="spacer"></div><span class="pill" id="rLink"><span class="dot"></span><span id="rLinkTxt">Connexion…</span></span>
+  </div>
+  <div class="notice" id="rState">En attente du studio… Ouvrez le studio sur le téléphone du prédicateur et touchez « Ouvrir la régie à distance ».</div>
+  <div class="card"><h3>Scènes</h3><div class="rgrid" id="rScenes"></div></div>
+  <div class="card"><h3>À l'écran</h3>
+    <div class="rbig">
+      <button class="btn" id="rLt">Bandeau nom</button><button class="btn" id="rTicker">Bandeau défilant</button>
+      <button class="btn" id="rCard">Texte à l'écran</button><button class="btn" id="rCd">⏱ Compte à rebours</button>
+    </div></div>
+  <div class="card"><h3>Intervenants</h3><div class="chips" id="rPeople"></div></div>
+  <div class="card"><h3>Images et vidéos du studio</h3><div class="chips" id="rMedia"><span class="note">Aucun média.</span></div></div>
+  <div class="card"><h3>Commentaire à l'écran</h3>
+    <input type="text" id="rCmName" maxlength="40" placeholder="Nom">
+    <select id="rCmSrc" aria-label="Source"><option>WhatsApp</option><option>YouTube</option><option>Facebook</option><option>Site</option></select>
+    <textarea id="rCmText" maxlength="220" placeholder="Message"></textarea>
+    <div class="rbig"><button class="btn gold" id="rCmShow">Afficher</button><button class="btn" id="rCmHide">Retirer</button></div>
+  </div>
+  <div class="card"><h3>Prompteur du prédicateur</h3>
+    <div class="rgrid"><button class="btn" id="rPPlay">▶ / ❚❚</button><button class="btn" id="rPSlow">− Lent</button><button class="btn" id="rPFast">+ Vite</button><button class="btn" id="rPTop">⟲ Début</button></div>
+  </div>
+  <div class="card"><h3>Modèles d'émission</h3><div class="chips" id="rPresets"></div></div>
+</section>
 <button class="btn sm exit" id="exitClean">✕ Quitter le mode diffusion</button>
 
 <script>
@@ -354,12 +514,14 @@ const S = {
   tickerOn:false, ticker:'', tickerSpeed:70, introSub:'', cdMin:5, pauseText:'', endText:'',
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
+  promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
+  sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
-  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(k=>S[k]=$(k).value);
+  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText','promptText'].forEach(k=>S[k]=$(k).value);
   try{ const o=JSON.parse(localStorage.getItem('kcc-studio')||'{}'); KEEP.forEach(k=>{ if(o[k]!==undefined) S[k]=o[k]; }); }catch(e){}
   if(OVERLAY){
     const map={t:'title',n:'ltName',r:'ltRole',c:'cardText',cr:'cardRef',k:'ticker'};
@@ -377,7 +539,7 @@ const logo = new Image(); logo.src = '/images/logo-kcc.png';
 const camV = document.createElement('video'); camV.muted = true; camV.playsInline = true;
 let camStream = null, facing = 'user', camOn = false;
 const media = []; let active = -1;       // {kind:'img'|'vid'|'screen', el, name, url}
-let audioCtx = null, dest = null, micGain = null, mediaGain = null, musicGain = null, monitorGain = null, analyser = null, micSrc = null;
+let sfxGain = null, audioCtx = null, dest = null, micGain = null, mediaGain = null, musicGain = null, monitorGain = null, analyser = null, micSrc = null;
 const music = new Audio(); music.loop = true; let musicNode = null;
 
 function audio(){
@@ -389,6 +551,7 @@ function audio(){
   analyser = audioCtx.createAnalyser(); analyser.fftSize = 512;
   micGain.connect(dest); micGain.connect(analyser);
   mediaGain.connect(dest); musicGain.connect(dest);
+  sfxGain = audioCtx.createGain(); sfxGain.connect(dest); sfxGain.connect(monitorGain);
   mediaGain.connect(monitorGain); musicGain.connect(monitorGain); monitorGain.connect(audioCtx.destination);
   applyVolumes();
   return audioCtx;
@@ -401,6 +564,7 @@ function applyVolumes(){
   const camScene = ['cam','camMedia','mediaPip'].includes(S.scene);
   musicGain.gain.setTargetAtTime(S.musicVol/100 * (S.musicDuck && camScene ? .35 : 1), t, .3);
   monitorGain.gain.setTargetAtTime(S.monitor ? 1 : 0, t, .05);
+  sfxGain.gain.setTargetAtTime(S.sfxVol/100, t, .05);
 }
 
 async function startCamera(){
@@ -498,6 +662,7 @@ async function shareScreen(){
 
 /* ---------- Scènes ---------- */
 const SCENES = [
+  {id:'gen', label:'Générique', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M16 7l9 5-9 5z" fill="currentColor"/>'},
   {id:'intro', label:'Ouverture', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="20" cy="12" r="6" fill="none" stroke="currentColor"/>'},
   {id:'cam', label:'Caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="currentColor" opacity=".35"/><circle cx="20" cy="10" r="4" fill="currentColor"/><path d="M12 22c1-5 15-5 16 0" fill="currentColor"/>'},
   {id:'camMedia', label:'Caméra + média', icon:'<rect x="1" y="1" width="18" height="22" rx="2" fill="currentColor" opacity=".35"/><rect x="21" y="1" width="18" height="22" rx="2" fill="none" stroke="currentColor"/><circle cx="10" cy="10" r="3" fill="currentColor"/>'},
@@ -507,9 +672,17 @@ const SCENES = [
   {id:'end', label:'Fin', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M13 12h14M22 7l5 5-5 5" stroke="currentColor" fill="none" stroke-width="2"/>'},
 ];
 let prevScene = null, sceneT0 = 0;
-function setScene(id){
-  if(id===S.scene) return;
-  prevScene = S.scene; S.scene = id; sceneT0 = performance.now();
+let genT0 = 0, endT0 = 0, genTimer = 0;
+function setScene(id, quiet){
+  if(id===S.scene && id!=='gen') return;
+  clearTimeout(genTimer);
+  prevScene = S.scene===id ? null : S.scene; S.scene = id; sceneT0 = performance.now();
+  if(id==='gen'){
+    genT0 = sceneT0; if(S.jingleOn) Sfx.jingle();
+    genTimer = setTimeout(()=>{ if(S.scene==='gen') setScene(cdEnd>Date.now() ? 'intro' : (camOn ? 'cam' : 'intro'), true); }, GEN_LEN*1000);
+  }else if(id==='end'){ endT0 = sceneT0; if(S.jingleOn) Sfx.outro(); }
+  else if(!quiet && S.sfx) Sfx.whoosh();
+  Remote.push();
   document.querySelectorAll('.scene').forEach(b=>b.setAttribute('aria-pressed', b.dataset.scene===id));
   const m = media[active];
   if(m && m.kind==='vid' && ['camMedia','mediaPip','media'].includes(id) && m.el.paused){ m.el.play().catch(()=>{}); renderMedia(); }
@@ -629,10 +802,12 @@ function scenePause(t){
   footerBrand();
 }
 function sceneEnd(t){
-  brandBg(t); const port=S.fmt==='port';
-  drawLogoAt(W/2, H*(port?.28:.27), 170*U, true);
-  centerText(S.endText, H*(port?.42:.50), F(44,800), '#ffffff');
-  centerText('Que Yahweh vous bénisse', H*(port?.48:.60), F(24,500,'Archivo'), '#f3d27a');
+  brandBg(t); const port=S.fmt==='port', e=(t-endT0)/1000;
+  const a1=ease(clamp01(e/0.9)), a2=ease(clamp01((e-0.5)/0.8)), a3=ease(clamp01((e-1.0)/0.8)), a4=ease(clamp01((e-1.5)/0.9));
+  ctx.save(); ctx.globalAlpha*=a1; drawLogoAt(W/2, H*(port?.28:.27), 170*U*(0.7+0.3*a1), true); ctx.restore();
+  ctx.save(); ctx.globalAlpha*=a2; centerText(S.endText, H*(port?.42:.50)+(1-a2)*20*U, F(44,800), '#ffffff'); ctx.restore();
+  ctx.save(); ctx.globalAlpha*=a3; centerText('Que Yahweh vous bénisse', H*(port?.48:.60)+(1-a3)*16*U, F(24,500,'Archivo'), '#f3d27a'); ctx.restore();
+  ctx.save(); ctx.globalAlpha*=a4; ctx.translate(0,(1-a4)*40*U);
   // Cartes d'abonnement
   const bw=(port?560:520)*U, bh=64*U, gap=16*U, by=H*(port?.56:.68);
   const cards=[['▶  Abonnez-vous sur YouTube', YT], ['🌐  Toutes les actualités', SITE]];
@@ -644,8 +819,90 @@ function sceneEnd(t){
     ctx.font=F(15,600); ctx.fillStyle='#c9d2ea'; ctx.fillText(c[0], cx, y+bh*.32);
     ctx.font=F(21,800); ctx.fillStyle='#f3d27a'; ctx.fillText(c[1], cx, y+bh*.68); ctx.restore();
   });
+  ctx.restore();
   footerBrand();
 }
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const ease = k => 1 - Math.pow(1 - k, 3);
+
+/* Générique d'ouverture : 7 secondes, logo, éclat doré, nom de la chaîne, titre */
+const GEN_LEN = 7;
+function sceneGen(t){
+  const e=(t-genT0)/1000, port=S.fmt==='port', cy=H*(port?.36:.40);
+  ctx.fillStyle='#030716'; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.globalAlpha=clamp01(e/0.8); brandBg(t); ctx.restore();
+  // Anneaux dorés qui s'ouvrent
+  for(let i=0;i<4;i++){
+    const k=clamp01((e-0.15*i)/1.6); if(k<=0||k>=1) continue;
+    ctx.save(); ctx.strokeStyle=`rgba(243,210,122,${(1-k)*.8})`; ctx.lineWidth=(4-k*3)*U;
+    ctx.beginPath(); ctx.arc(W/2,cy,40*U+k*Math.max(W,H)*.55,0,7); ctx.stroke(); ctx.restore();
+  }
+  // Logo
+  const lk=ease(clamp01((e-0.4)/1.1)), size=(port?250:220)*U*(0.55+0.45*lk);
+  ctx.save(); ctx.globalAlpha=lk; drawLogoAt(W/2,cy,size,true); ctx.restore();
+  // Éclat qui traverse le logo
+  const sk=clamp01((e-1.5)/0.9);
+  if(sk>0 && sk<1){
+    ctx.save(); ctx.beginPath(); ctx.arc(W/2,cy,size/2,0,7); ctx.clip();
+    const x=W/2-size+sk*size*2; const g=ctx.createLinearGradient(x-size*.25,0,x+size*.25,0);
+    g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,248,220,.55)'); g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.fillRect(W/2-size,cy-size,size*2,size*2); ctx.restore();
+  }
+  // JE SUIS KCCISTE, lettre par lettre
+  const word='JE SUIS KCCISTE', wy=cy+size/2+(port?62:50)*U;
+  ctx.save(); ctx.font=F(port?40:36,800); ctx.textBaseline='middle'; ctx.textAlign='left';
+  const sp=8*U, widths=[...word].map(c=>ctx.measureText(c).width), total=widths.reduce((a,b)=>a+b,0)+sp*(word.length-1);
+  let x=W/2-total/2;
+  [...word].forEach((c,i)=>{ const k=ease(clamp01((e-2.0-i*0.05)/0.5)); ctx.globalAlpha=k; ctx.fillStyle='#f3d27a'; ctx.fillText(c,x,wy+(1-k)*18*U); x+=widths[i]+sp; });
+  ctx.restore();
+  // Trait doré
+  const lk2=ease(clamp01((e-2.9)/0.8));
+  ctx.save(); ctx.fillStyle='#d9b25a'; const lw=total*lk2; ctx.fillRect(W/2-lw/2, wy+30*U, lw, 2.5*U); ctx.restore();
+  // Titre de l'émission
+  const tk=ease(clamp01((e-3.4)/0.9));
+  ctx.save(); ctx.globalAlpha=tk; centerText(S.title, wy+(port?90:78)*U+(1-tk)*14*U, F(port?34:30,600), '#ffffff'); ctx.restore();
+  // Fondu au noir à la fin
+  const out=clamp01((e-(GEN_LEN-0.7))/0.7); if(out>0){ ctx.fillStyle=`rgba(3,7,22,${out*.6})`; ctx.fillRect(0,0,W,H); }
+}
+
+/* ---------- Sons (fabriqués par le navigateur, mélangés dans l'enregistrement) ---------- */
+const Sfx = {
+  bus(local){ const ac=audio(); if(!ac) return null; ac.resume(); if(local){ const g=ac.createGain(); g.gain.value=S.sfxVol/100; g.connect(ac.destination); return g; } return sfxGain; },
+  bell(out, f, at, dur, vol){
+    const ac=audioCtx, o=ac.createOscillator(), o2=ac.createOscillator(), g=ac.createGain(), g2=ac.createGain();
+    o.type='sine'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*2.01; g2.gain.value=.25;
+    g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(vol,at+.012); g.gain.exponentialRampToValueAtTime(.0008,at+dur);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(out); o.start(at); o2.start(at); o.stop(at+dur+.05); o2.stop(at+dur+.05);
+  },
+  pad(out, freqs, at, dur, vol){
+    const ac=audioCtx, g=ac.createGain(), lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800;
+    g.gain.setValueAtTime(0,at); g.gain.linearRampToValueAtTime(vol,at+.8); g.gain.setValueAtTime(vol,at+dur-1.2); g.gain.linearRampToValueAtTime(0,at+dur);
+    lp.connect(g); g.connect(out);
+    freqs.forEach(f=>[0,-6,6].forEach(det=>{ const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.value=f; o.detune.value=det; const v=ac.createGain(); v.gain.value=.05; o.connect(v); v.connect(lp); o.start(at); o.stop(at+dur+.1); }));
+  },
+  jingle(local){
+    const out=this.bus(local); if(!out) return; const t=audioCtx.currentTime+.05;
+    this.pad(out,[130.81,196,261.63,329.63],t+.2,6.2,.55);                 // accord de do majeur
+    [523.25,659.25,783.99,1046.5].forEach((f,i)=>this.bell(out,f,t+.45+i*.22,2.2,.32));
+    [1318.5,1567.98].forEach((f,i)=>this.bell(out,f,t+2.1+i*.16,2.4,.18));
+    this.bell(out,1046.5,t+3.3,3,.22); this.bell(out,523.25,t+3.3,3.2,.28);
+  },
+  outro(local){
+    const out=this.bus(local); if(!out) return; const t=audioCtx.currentTime+.05;
+    this.pad(out,[174.61,220,261.63,349.23],t,4.5,.45);
+    [1046.5,880,698.46,523.25].forEach((f,i)=>this.bell(out,f,t+.2+i*.3,2.4,.26));
+  },
+  whoosh(local){
+    const out=this.bus(local); if(!out) return; const ac=audioCtx, t=ac.currentTime+.01, len=.55;
+    const buf=ac.createBuffer(1, ac.sampleRate*len, ac.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    const src=ac.createBufferSource(); src.buffer=buf;
+    const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2; bp.frequency.setValueAtTime(350,t); bp.frequency.exponentialRampToValueAtTime(3200,t+len*.6); bp.frequency.exponentialRampToValueAtTime(900,t+len);
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+len*.45); g.gain.linearRampToValueAtTime(0,t+len);
+    src.connect(bp); bp.connect(g); g.connect(out); src.start(t); src.stop(t+len);
+  },
+  ding(){ const out=this.bus(false); if(!out) return; const t=audioCtx.currentTime+.02; this.bell(out,1318.5,t,1.1,.2); this.bell(out,1760,t+.12,1.2,.15); },
+};
 function footerBrand(){
   ctx.save(); ctx.font=F(13,600); ctx.fillStyle='rgba(201,210,234,.75)'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('PRESSE : JE SUIS KCCISTE  ·  '+SITE.toUpperCase(), W/2, H-(S.tickerOn?78:34)*U); ctx.restore();
@@ -764,6 +1021,7 @@ function drawTicker(t,dt){
 
 function drawScene(id,t){
   switch(id){
+    case 'gen': sceneGen(t); break;
     case 'intro': sceneIntro(t); break;
     case 'cam': sceneCam(t); break;
     case 'camMedia': sceneCamMedia(t); break;
@@ -774,6 +1032,7 @@ function drawScene(id,t){
   }
 }
 function draw(){
+  if(REGIE) return;
   const t = performance.now(), dt = lastT ? Math.min(100, t-lastT) : 16; lastT = t;
   setSize();
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.shadowBlur=0; ctx.filter='none';
@@ -785,13 +1044,14 @@ function draw(){
     if(prevScene && k<1){ drawScene(prevScene,t); ctx.save(); ctx.globalAlpha=k; drawScene(S.scene,t); ctx.restore(); }
     else { prevScene=null; drawScene(S.scene,t); }
   }
-  const brand = !['intro','pause','end'].includes(S.scene);
+  const brand = !['gen','intro','pause','end'].includes(S.scene);
   if(brand && S.logoOn) drawLogoCorner();
   if(brand) drawBadge(t);
   if(brand && S.titleOn) drawTitle();
   if(brand && S.cardOn) drawCard();
   if(brand && S.ltOn) drawLowerThird(t);
-  if(S.tickerOn) drawTicker(t,dt);
+  if(brand || S.scene==='intro' || S.scene==='pause') drawComment(t);
+  if(S.tickerOn && S.scene!=='gen') drawTicker(t,dt);
   if(ltAutoOff && Date.now()>ltAutoOff){ ltAutoOff=0; setLt(false); }
   meter();
 }
@@ -818,7 +1078,10 @@ function startRec(){
   catch(e){ rec = new MediaRecorder(stream); }
   rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
   rec.onstop = finishRec;
-  rec.start(1000); recStart=Date.now(); recPaused=0;
+  rec.start(1000); recStart=Date.now(); recPaused=0; autoThumb=null;
+  // Miniature automatique au cas où aucune n'est choisie : l'image après 4 secondes.
+  setTimeout(()=>{ if(rec) cv.toBlob(b=>{ autoThumb=b; }, 'image/jpeg', .9); }, 4000);
+  Remote.push();
   $('recBtn').textContent='■ Arrêter'; $('pauseBtn').disabled=false; $('pauseBtn').textContent='❚❚ Pause';
   $('recPill').className='pill rec';
   recTimer = setInterval(()=>{ $('recTxt').textContent = (rec.state==='paused'?'En pause · ':'● ') + fmtTime(recElapsed()); }, 250);
@@ -844,13 +1107,293 @@ function finishRec(){
   const canShare = navigator.canShare && navigator.canShare({files:[file]});
   $('shareBtn').hidden = !canShare;
   $('shareBtn').onclick = () => navigator.share({files:[file], title:S.title, text:S.title+' · Je suis KCCiste'}).catch(()=>{});
+  lastBlob = blob; lastName = name; ytDefaults(); $('ytStatus').textContent=''; $('ytProg').hidden=true;
   rec=null; $('recBtn').textContent='● Enregistrer'; $('pauseBtn').disabled=true;
   $('recPill').className='pill'; $('recTxt').textContent='Enregistré';
-  openTab('t-dif');
+  openTab('t-dif'); Remote.push();
 }
 function lockSize(on){ document.querySelectorAll('#fmtChips .chip,#qChips .chip').forEach(b=>b.disabled=on); }
 function snapshot(){
-  cv.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='Miniature-JeSuisKCCiste.jpg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }, 'image/jpeg', .92);
+  cv.toBlob(b=>{ thumbBlob=b; const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='Miniature-JeSuisKCCiste.jpg'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); }, 'image/jpeg', .92);
+}
+
+
+/* ---------- Commentaires des fidèles à l'écran ---------- */
+const SRC_COLOR = {WhatsApp:'#25D366', YouTube:'#FF0033', Facebook:'#1877F2', Site:'#d9b25a'};
+let comment = null;   // {name, src, text, t0, until, out}
+function showComment(c, durSec){
+  const name=String(c.name||'').trim().slice(0,40) || 'Un fidèle', text=String(c.text||'').trim().slice(0,220), src=SRC_COLOR[c.src]?c.src:'WhatsApp';
+  if(!text) return;
+  const d = durSec===undefined ? +$('cmDur').value : durSec;
+  comment = {name, src, text, t0:performance.now(), until: d ? Date.now()+d*1000 : 0, out:0};
+  if(S.dingOn) Sfx.ding();
+  S.cmHist = [{name,src,text}, ...S.cmHist.filter(h=>!(h.name===name && h.text===text))].slice(0,12);
+  renderHist(); save(); Remote.push();
+}
+function hideComment(){ if(comment && !comment.out) comment.out=performance.now(); Remote.push(); }
+function drawComment(){
+  if(!comment) return;
+  const now=performance.now();
+  if(comment.until && Date.now()>comment.until && !comment.out) comment.out=now;
+  let k = ease(clamp01((now-comment.t0)/450));
+  if(comment.out){ k = 1-clamp01((now-comment.out)/400); if(k<=0){ comment=null; return; } }
+  const port=S.fmt==='port', fs=port?25:21, lh=fs*1.32*U;
+  ctx.save(); ctx.font=F(fs,500);
+  const maxW = port ? W*.74 : W*.34, lines = wrap(comment.text, maxW).slice(0,5);
+  ctx.font=F(port?20:17,800); const nameW=ctx.measureText(comment.name).width;
+  ctx.font=F(fs,500); const textW=Math.max(...lines.map(l=>ctx.measureText(l).width));
+  const w = Math.min(port?W*.9:W*.42, Math.max(textW, nameW+120*U) + 44*U), h = 66*U + lines.length*lh;
+  const x = (port ? (W-w)/2 : W-w-28*U) + (1-k)*60*U;
+  const y = port ? H*.47 : H - h - ((S.tickerOn?58:0)+ (S.ltOn?0:0) + 30)*U;
+  ctx.globalAlpha = k;
+  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=20*U;
+  rr(x,y,w,h,16*U); ctx.fillStyle='rgba(8,20,64,.94)'; ctx.fill(); ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(243,210,122,.55)'; ctx.lineWidth=1.5*U; ctx.stroke();
+  const col = SRC_COLOR[comment.src];
+  // Avatar : initiale sur la couleur de la source
+  const ax=x+34*U, ay=y+33*U; ctx.beginPath(); ctx.arc(ax,ay,19*U,0,7); ctx.fillStyle=col; ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font=F(19,800); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(comment.name[0].toUpperCase(), ax, ay+1*U);
+  ctx.textAlign='left'; ctx.font=F(port?20:17,800); ctx.fillStyle='#f3d27a'; ctx.fillText(comment.name, x+64*U, y+27*U, w-170*U);
+  // Étiquette de la source
+  ctx.font=F(12,800); const sw=ctx.measureText(comment.src).width+16*U, sx=x+w-sw-16*U;
+  rr(sx, y+17*U, sw, 20*U, 10*U); ctx.fillStyle=col; ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(comment.src, sx+sw/2, y+28*U);
+  ctx.textAlign='left'; ctx.font=F(fs,500); ctx.fillStyle='#fff';
+  lines.forEach((l,i)=>ctx.fillText(l, x+22*U, y+62*U+i*lh+lh/2-4*U));
+  ctx.restore();
+}
+function renderHist(){
+  const box=$('cmHist'); if(!box) return; box.innerHTML='';
+  S.cmHist.forEach(h=>{ const b=document.createElement('button'); b.innerHTML='<b></b><span></span>'; b.querySelector('b').textContent=h.name; b.querySelector('span').textContent=h.text.length>70?h.text.slice(0,70)+'…':h.text; b.onclick=()=>showComment(h); box.appendChild(b); });
+  if(!S.cmHist.length) box.innerHTML='<p class="note">Aucun pour le moment.</p>';
+}
+
+/* ---------- Prompteur intégré (jamais dans la vidéo) ---------- */
+let pPos = 0, pPlaying = false, pLast = 0, pDrag = null;
+function promptLayout(){
+  const pr=$('prompter'); pr.hidden = !S.promptOn || OVERLAY; $('pbar').hidden = pr.hidden;
+  pr.style.height = S.pHeight+'%'; pr.classList.toggle('flip', S.pFlip);
+  $('ptext').style.fontSize = S.pSize+'px'; $('ptext').textContent = S.promptText;
+  $('promptBtn').classList.toggle('on', S.promptOn); $('promptOn').checked = S.promptOn;
+}
+function promptPlay(on){ pPlaying = on===undefined ? !pPlaying : on; const t=pPlaying?'❚❚ Pause':'▶ Faire défiler'; $('pPlay').textContent=t; $('pPlay2').textContent=pPlaying?'❚❚':'▶'; if(pPlaying && !S.promptOn){ S.promptOn=true; promptLayout(); } Remote.push(); }
+function promptTop(){ pPos=0; }
+function promptSpeed(d){ S.pSpeed=Math.max(1,Math.min(12,S.pSpeed+d)); $('pSpeed').value=S.pSpeed; $('pSpeed').dispatchEvent(new Event('input')); }
+function promptTick(t){
+  const dt = pLast ? Math.min(100,t-pLast) : 16; pLast=t;
+  if(pPlaying && !pDrag){
+    pPos += S.pSpeed * 9 * dt/1000 * (S.pSize/34);
+    const max = $('pscroll').scrollHeight - $('prompter').clientHeight*0.4; if(pPos>max){ pPos=max; promptPlay(false); }
+  }
+  $('pscroll').style.transform = `translateY(${-pPos}px)`;
+  requestAnimationFrame(promptTick);
+}
+function promptDrag(){
+  const pr=$('prompter');
+  pr.addEventListener('pointerdown',e=>{ pDrag={y:e.clientY,p:pPos}; pr.setPointerCapture(e.pointerId); });
+  pr.addEventListener('pointermove',e=>{ if(pDrag) pPos=Math.max(0,pDrag.p-(e.clientY-pDrag.y)); });
+  pr.addEventListener('pointerup',()=>pDrag=null); pr.addEventListener('pointercancel',()=>pDrag=null);
+  pr.addEventListener('wheel',e=>{ e.preventDefault(); pPos=Math.max(0,pPos+e.deltaY); },{passive:false});
+}
+
+/* ---------- Modèles d'émission ---------- */
+const PRESETS = [
+  {id:'sabbat', name:'Culte du Sabbat', d:'Direct du culte, prédication, annonces', v:{
+    title:'Culte du Sabbat en direct', badge:'live',
+    people:'Prédicateur du jour | Prédication\nChorale | Louange\nDiacre | Annonces',
+    ticker:'Culte du Sabbat en direct · Que Yahweh vous bénisse · Abonnez-vous à la chaîne YouTube Je suis KCCiste · Toutes les actualités de l’Église sur www.jesuiskcciste.com',
+    introSub:'Le culte commence dans un instant', pauseText:'Le culte reprend dans un instant', endText:'Merci d’avoir suivi le culte',
+    cardText:'', cardRef:'Lecture du jour', ltName:'Prédicateur du jour', ltRole:'Prédication'}},
+  {id:'journal', name:'Le journal Je suis KCCiste', d:'Actualités de l’Église', v:{
+    title:'Le journal Je suis KCCiste', badge:'live',
+    people:'Prédicateur Reagan MBUMBA | Rédaction · Je suis KCCiste',
+    ticker:'Le journal Je suis KCCiste · Envoyez vos informations à la rédaction : +243 840 238 592 · Toutes les actualités sur www.jesuiskcciste.com',
+    introSub:'Le journal commence dans un instant', pauseText:'Le journal revient dans un instant', endText:'Merci d’avoir suivi le journal',
+    cardText:'', cardRef:'', ltName:'Prédicateur Reagan MBUMBA', ltRole:'Rédaction · Je suis KCCiste'}},
+  {id:'debat', name:'Débat avec Maman Mam’s', d:'Débat audio, avis des fidèles', v:{
+    title:'Le débat Je suis KCCiste', badge:'live',
+    people:'Maman Mam’s | Animatrice des débats\nPrédicateur Reagan MBUMBA | Rédaction · Je suis KCCiste',
+    ticker:'Le débat Je suis KCCiste avec Maman Mam’s · Donnez votre avis en commentaire ou sur www.jesuiskcciste.com/debats · Restez respectueux',
+    introSub:'Le débat commence dans un instant', pauseText:'Le débat reprend dans un instant', endText:'Merci d’avoir participé au débat',
+    cardText:'Sujet du jour : …', cardRef:'Le débat Je suis KCCiste', ltName:'Maman Mam’s', ltRole:'Animatrice des débats'}},
+  {id:'interview', name:'Interview', d:'Au micro de Je suis KCCiste', v:{
+    title:'Au micro de Je suis KCCiste', badge:'rec',
+    people:'Prédicateur Reagan MBUMBA | Journaliste · Je suis KCCiste\nNom de l’invité | Fonction de l’invité',
+    ticker:'Au micro de Je suis KCCiste · Retrouvez toutes les interviews sur www.jesuiskcciste.com',
+    introSub:'L’interview commence dans un instant', pauseText:'Nous revenons dans un instant', endText:'Merci d’avoir suivi cette interview',
+    cardText:'', cardRef:'', ltName:'Nom de l’invité', ltRole:'Fonction de l’invité'}},
+];
+function applyPreset(id){
+  const p=PRESETS.find(x=>x.id===id); if(!p) return;
+  Object.assign(S, p.v, {ltOn:false, cardOn:false, tickerOn:true, titleOn:true, logoOn:true});
+  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(k=>{ const el=$(k); if(el) el.value=S[k]; });
+  ['ltOn','cardOn','tickerOn','titleOn','logoOn'].forEach(k=>{ const el=$(k); if(el) el.checked=S[k]; });
+  document.querySelectorAll('#badgeChips .chip').forEach(b=>b.setAttribute('aria-pressed', b.dataset.badge===S.badge));
+  tickX=null; buildPeople(); updOv(); save(); Remote.push();
+  if(!OVERLAY && !REGIE){ $('ytTitle') && ($('ytTitle').value=''); }
+}
+
+/* ---------- Régie à distance ---------- */
+const SB_URL='https://anawpwprqvzxgzcpqqwu.supabase.co', SB_KEY='sb_publishable_hnpwDEfVVCC0BhYkxOgdwQ_E745c7rK';
+const REGIE = params.get('regie') ? params.get('regie').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
+// Canal temps réel : Supabase Realtime (d'un téléphone à l'autre) + BroadcastChannel (deux onglets du même appareil).
+function rtConnect(room, onMsg, onStatus){
+  const topic='realtime:kcc-studio-'+room; let ws=null, ref=0, hb=0, joined=false, closed=false, retry=0;
+  const bc = 'BroadcastChannel' in window ? new BroadcastChannel('kcc-studio-'+room) : null;
+  if(bc) bc.onmessage = e => onMsg(e.data);
+  function open(){
+    try{ ws = new WebSocket(SB_URL.replace('https','wss')+'/realtime/v1/websocket?apikey='+encodeURIComponent(SB_KEY)+'&vsn=1.0.0'); }catch(e){ onStatus('off'); return; }
+    ws.onopen = () => {
+      retry=0;
+      ws.send(JSON.stringify({topic, event:'phx_join', payload:{config:{broadcast:{self:false,ack:false},presence:{key:''},postgres_changes:[],private:false}}, ref:String(++ref)}));
+      hb = setInterval(()=>{ if(ws.readyState===1) ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:String(++ref)})); }, 25000);
+    };
+    ws.onmessage = e => {
+      let m; try{ m=JSON.parse(e.data); }catch(err){ return; }
+      if(m.topic!==topic) return;
+      if(m.event==='phx_reply' && !joined){ if(m.payload && m.payload.status==='ok'){ joined=true; onStatus('ok'); } else onStatus('err'); }
+      else if(m.event==='broadcast' && m.payload && m.payload.event==='kcc') onMsg(m.payload.payload);
+    };
+    ws.onclose = () => { clearInterval(hb); joined=false; onStatus('off'); if(!closed) setTimeout(open, Math.min(15000, 1000*2**retry++)); };
+    ws.onerror = () => {};
+  }
+  open();
+  return {
+    send(msg){ if(bc) bc.postMessage(msg); if(ws && ws.readyState===1 && joined) ws.send(JSON.stringify({topic, event:'broadcast', payload:{type:'broadcast', event:'kcc', payload:msg}, ref:String(++ref)})); },
+    close(){ closed=true; try{ ws && ws.close(); }catch(e){} if(bc) bc.close(); },
+  };
+}
+const Remote = {
+  link:null, room:'', timer:0, pending:0,
+  // Côté studio
+  open(){
+    if(this.link) return;
+    let code=''; try{ code=sessionStorage.getItem('kcc-regie')||''; }catch(e){}
+    if(!code){ const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; const r=crypto.getRandomValues(new Uint8Array(6)); code=[...r].map(x=>A[x%A.length]).join(''); }
+    try{ sessionStorage.setItem('kcc-regie',code); }catch(e){}
+    this.room=code;
+    this.link = rtConnect(code, m=>this.onCmd(m), st=>{ $('rgStatus').textContent = st==='ok' ? '✓ Régie connectée : le lien fonctionne depuis un autre téléphone.' : st==='err' ? 'Le service temps réel a refusé la connexion. La régie marche seulement dans un autre onglet de cet appareil.' : 'Connexion au service temps réel…'; });
+    const url = location.origin + '/studio?regie=' + code;
+    $('rgCode').textContent=code; $('rgUrl').value=url; $('rgBox').hidden=false; $('rgOpen').hidden=true;
+    $('rgWa').href='https://wa.me/?text='+encodeURIComponent('Régie du studio Je suis KCCiste (code '+code+') : '+url);
+    this.timer=setInterval(()=>this.push(true),3000); this.push(true);
+  },
+  close(){ if(!this.link) return; this.link.close(); this.link=null; clearInterval(this.timer); $('rgBox').hidden=true; $('rgOpen').hidden=false; try{ sessionStorage.removeItem('kcc-regie'); }catch(e){} },
+  state(){
+    return {type:'state', scene:S.scene, title:S.title, ltOn:S.ltOn, tickerOn:S.tickerOn, cardOn:S.cardOn, ltName:S.ltName,
+      people:S.people.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,20),
+      media:media.map((m,i)=>({i, kind:m.kind, name:(m.name||'').slice(0,40)})), active,
+      comment: comment && !comment.out ? comment.name : '', prompt:pPlaying, rec: !!rec, recTime: rec ? fmtTime(recElapsed()) : '', cam:camOn};
+  },
+  push(now){
+    if(!this.link || REGIE) return;
+    if(now){ this.link.send(this.state()); return; }
+    clearTimeout(this.pending); this.pending=setTimeout(()=>this.link && this.link.send(this.state()),120);
+  },
+  onCmd(m){
+    if(!m || m.type!=='cmd') { if(m && m.type==='hello') this.push(true); return; }
+    const v=m.v;
+    switch(m.a){
+      case 'scene': if(SCENES.some(x=>x.id===v)) setScene(v); break;
+      case 'toggle': if(['ltOn','tickerOn','cardOn'].includes(v)) toggle(v, v); break;
+      case 'person': { const [n,r='']=String(v).split('|').map(x=>x.trim()); S.ltName=n; S.ltRole=r; $('ltName').value=n; $('ltRole').value=r; setLt(true); ltAutoOff=Date.now()+10000; save(); break; }
+      case 'media': if(media[v]){ selectMedia(v); if(!['camMedia','mediaPip','media'].includes(S.scene)) setScene(camOn?'mediaPip':'media'); } break;
+      case 'comment': showComment(v, 20); break;
+      case 'commentHide': hideComment(); break;
+      case 'prompt': if(v==='play') promptPlay(); else if(v==='top') promptTop(); else if(v==='fast') promptSpeed(1); else if(v==='slow') promptSpeed(-1); break;
+      case 'countdown': cdEnd=Date.now()+S.cdMin*60000; setScene('intro'); break;
+      case 'preset': applyPreset(v); break;
+    }
+    this.push();
+  },
+};
+// Côté régie (téléphone de la deuxième personne)
+function remoteMode(){
+  document.body.classList.add('remote'); $('rCode').textContent=REGIE;
+  let last=0;
+  const link = rtConnect(REGIE, m=>{ if(m && m.type==='state'){ last=Date.now(); $('rLink').className='pill on'; $('rLinkTxt').textContent='Studio connecté'; renderRemote(m); } }, st=>{
+    $('rLink').className = 'pill' + (st==='ok'?' on':''); $('rLinkTxt').textContent = st==='ok' ? 'Connecté' : st==='err' ? 'Refusé' : 'Connexion…';
+    if(st==='ok') link.send({type:'hello'});
+  });
+  const cmd=(a,v)=>link.send({type:'cmd',a,v});
+  link.send({type:'hello'}); setInterval(()=>{ if(Date.now()-last>8000){ $('rState').textContent='En attente du studio… Vérifiez que le studio est ouvert et que la régie y est activée (code '+REGIE+').'; link.send({type:'hello'}); } }, 4000);
+  $('rScenes').innerHTML = SCENES.map(s=>`<button class="scene" data-scene="${s.id}"><svg viewBox="0 0 40 24">${s.icon}</svg>${s.label}</button>`).join('');
+  $('rScenes').querySelectorAll('.scene').forEach(b=>b.onclick=()=>cmd('scene',b.dataset.scene));
+  $('rLt').onclick=()=>cmd('toggle','ltOn'); $('rTicker').onclick=()=>cmd('toggle','tickerOn'); $('rCard').onclick=()=>cmd('toggle','cardOn'); $('rCd').onclick=()=>cmd('countdown');
+  $('rCmShow').onclick=()=>{ const t=$('rCmText').value.trim(); if(!t) return; cmd('comment',{name:$('rCmName').value, src:$('rCmSrc').value, text:t}); $('rCmText').value=''; };
+  $('rCmHide').onclick=()=>cmd('commentHide');
+  $('rPPlay').onclick=()=>cmd('prompt','play'); $('rPSlow').onclick=()=>cmd('prompt','slow'); $('rPFast').onclick=()=>cmd('prompt','fast'); $('rPTop').onclick=()=>cmd('prompt','top');
+  $('rPresets').innerHTML=''; PRESETS.forEach(p=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=p.name; b.onclick=()=>{ if(confirmPreset(p.name)) cmd('preset',p.id); }; $('rPresets').appendChild(b); });
+  window.__remoteCmd = cmd;
+}
+function confirmPreset(){ return true; }
+function renderRemote(m){
+  const sc=SCENES.find(x=>x.id===m.scene);
+  $('rState').textContent = `À l'écran : ${sc?sc.label:m.scene}` + (m.rec ? ` · ● Enregistrement ${m.recTime}` : '') + (m.comment ? ` · Commentaire de ${m.comment}` : '') + (m.cam ? '' : ' · caméra éteinte');
+  $('rScenes').querySelectorAll('.scene').forEach(b=>b.setAttribute('aria-pressed', b.dataset.scene===m.scene));
+  $('rLt').classList.toggle('on',m.ltOn); $('rTicker').classList.toggle('on',m.tickerOn); $('rCard').classList.toggle('on',m.cardOn); $('rPPlay').classList.toggle('on',m.prompt);
+  const pk=JSON.stringify(m.people);
+  if($('rPeople').dataset.k!==pk){ $('rPeople').dataset.k=pk; $('rPeople').innerHTML=''; m.people.forEach(l=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=l.split('|')[0].trim(); b.onclick=()=>window.__remoteCmd('person',l); $('rPeople').appendChild(b); }); }
+  $('rPeople').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', m.ltOn && b.textContent===m.ltName));
+  const mk=JSON.stringify(m.media);
+  if($('rMedia').dataset.k!==mk){ $('rMedia').dataset.k=mk; $('rMedia').innerHTML = m.media.length ? '' : '<span class="note">Aucun média dans le studio.</span>'; m.media.forEach(x=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=(x.kind==='vid'?'🎬 ':x.kind==='screen'?'🖥️ ':'🖼️ ')+(x.name||'Média '+(x.i+1)); b.onclick=()=>window.__remoteCmd('media',x.i); $('rMedia').appendChild(b); }); }
+  $('rMedia').querySelectorAll('.chip').forEach((b,i)=>b.setAttribute('aria-pressed', i===m.active));
+}
+
+/* ---------- Envoi direct sur YouTube ---------- */
+let lastBlob=null, lastName='', thumbBlob=null, autoThumb=null, ytToken=null, ytTokenExp=0;
+function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res(); const sc=document.createElement('script'); sc.src=src; sc.async=true; sc.onload=res; sc.onerror=()=>rej(new Error('script')); document.head.appendChild(sc); }); }
+function ytStatus(t){ $('ytStatus').textContent=t; }
+async function ytGetToken(){
+  if(ytToken && Date.now()<ytTokenExp) return ytToken;
+  const cid=(S.ytClient||'').trim();
+  if(!/\.apps\.googleusercontent\.com$/.test(cid)){ $('ytCfg').open=true; openTab('t-dif'); $('ytClient').focus(); throw new Error('Collez d’abord l’ID client Google dans « Réglage de l’envoi direct sur YouTube ».'); }
+  await loadScript('https://accounts.google.com/gsi/client');
+  return new Promise((res,rej)=>{
+    const tc = google.accounts.oauth2.initTokenClient({client_id:cid, scope:'https://www.googleapis.com/auth/youtube.upload',
+      callback:r=>{ if(r && r.access_token){ ytToken=r.access_token; ytTokenExp=Date.now()+(r.expires_in-60)*1000; res(ytToken); } else rej(new Error('Connexion Google refusée.')); },
+      error_callback:e=>rej(new Error(e && e.type==='popup_closed' ? 'Fenêtre Google fermée avant la fin.' : 'Connexion Google impossible.'))});
+    tc.requestAccessToken();
+  });
+}
+async function ytUpload(){
+  if(!lastBlob) return;
+  const btn=$('ytSend'); btn.disabled=true; $('ytProg').hidden=true;
+  try{
+    ytStatus('Connexion au compte Google de la chaîne…');
+    const token = await ytGetToken();
+    const meta = {snippet:{title:($('ytTitle').value||S.title).slice(0,100), description:$('ytDesc').value, tags:['Je suis KCCiste','KCC','Église Bon Nouveau Message','EBNM'], categoryId:'29', defaultLanguage:'fr'},
+      status:{privacyStatus:$('ytPrivacy').value, selfDeclaredMadeForKids:false}};
+    ytStatus('Préparation de l’envoi…');
+    const init = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {method:'POST',
+      headers:{Authorization:'Bearer '+token,'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':lastBlob.type||'video/mp4','X-Upload-Content-Length':String(lastBlob.size)}, body:JSON.stringify(meta)});
+    if(!init.ok) throw new Error(await ytErr(init));
+    const loc = init.headers.get('Location'); if(!loc) throw new Error('YouTube n’a pas donné d’adresse d’envoi.');
+    $('ytProg').hidden=false;
+    const video = await new Promise((res,rej)=>{
+      const x=new XMLHttpRequest(); x.open('PUT',loc); x.setRequestHeader('Authorization','Bearer '+token); x.setRequestHeader('Content-Type',lastBlob.type||'video/mp4');
+      x.upload.onprogress=e=>{ if(e.lengthComputable){ const p=Math.round(e.loaded/e.total*100); $('ytProg').firstElementChild.style.width=p+'%'; ytStatus(`Envoi en cours : ${p} % · gardez cette page ouverte`); } };
+      x.onload=()=>{ if(x.status>=200&&x.status<300){ try{ res(JSON.parse(x.responseText)); }catch(e){ rej(new Error('Réponse illisible de YouTube.')); } } else rej(new Error('YouTube a refusé la vidéo ('+x.status+').')); };
+      x.onerror=()=>rej(new Error('La connexion a été coupée pendant l’envoi. Réessayez avec une meilleure connexion.'));
+      x.send(lastBlob);
+    });
+    const id = video.id; let extra='';
+    const th = thumbBlob || autoThumb;
+    if(th){
+      ytStatus('Vidéo envoyée. Ajout de la miniature…');
+      const r = await fetch('https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId='+id, {method:'POST', headers:{Authorization:'Bearer '+token,'Content-Type':'image/jpeg'}, body:th});
+      if(!r.ok) extra=' La miniature n’a pas été acceptée (la chaîne doit être validée par téléphone dans YouTube pour les miniatures personnalisées).';
+    }
+    const st = video.status && video.status.privacyStatus;
+    $('ytStatus').innerHTML=''; const a=document.createElement('a'); a.href='https://youtu.be/'+id; a.target='_blank'; a.rel='noopener'; a.textContent='✓ Vidéo en ligne : youtu.be/'+id; a.style.color='var(--gold2)';
+    $('ytStatus').append(a, document.createTextNode((st && st!==$('ytPrivacy').value ? ` · YouTube l’a mise en « ${st==='private'?'Privée':st} » : passez-la en Publique dans YouTube Studio.` : '') + extra));
+  }catch(e){ ytStatus('⚠ '+e.message); }
+  finally{ btn.disabled=false; }
+}
+async function ytErr(r){ try{ const j=await r.json(); const reason=j.error&&j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason; if(reason==='quotaExceeded') return 'Le quota YouTube du jour est atteint. Réessayez demain.'; if(r.status===401) { ytToken=null; return 'Connexion Google expirée, réessayez.'; } if(reason==='youtubeSignupRequired') return 'Ce compte Google n’a pas de chaîne YouTube.'; return 'YouTube a refusé : '+((j.error&&j.error.message)||r.status); }catch(e){ return 'YouTube a refusé ('+r.status+').'; } }
+function ytDefaults(){
+  const d=new Date(), date=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  $('ytTitle').value = `${S.title} · ${date}`.slice(0,100);
+  $('ytDesc').value = `${S.title} · ${date}\n\nPRESSE : JE SUIS KCCISTE\nÉglise Bon Nouveau Message (KCC)\n\nToutes les actualités : https://jesuiskcciste.com\nAbonnez-vous à la chaîne : https://www.youtube.com/@Jesuiskcciste\n\nContact : +243 840 238 592 / +243 861 271 633`;
 }
 
 /* ---------- Interface ---------- */
@@ -867,14 +1410,15 @@ function chipGroup(id, key, attr, after){
   sync();
 }
 function bindText(id){ const el=$(id); el.value=S[id]; el.addEventListener('input',()=>{ S[id]=el.value; if(id==='people') buildPeople(); if(id==='ticker') tickX=null; save(); updOv(); }); }
-function bindCheck(id, after){ const el=$(id); el.checked=!!S[id]; el.addEventListener('change',()=>{ S[id]=el.checked; if(id==='ltOn'){ if(el.checked) ltShownAt=performance.now(); ltAutoOff=0; } save(); updOv(); after&&after(); }); }
+function bindCheck(id, after){ const el=$(id); el.checked=!!S[id]; el.addEventListener('change',()=>{ S[id]=el.checked; if(id==='ltOn'){ if(el.checked) ltShownAt=performance.now(); ltAutoOff=0; } save(); updOv(); after&&after(); Remote.push(); }); }
 function bindRange(id, after){
   const el=$(id), out=el.parentElement.querySelector('output'); el.value=S[id];
-  const upd=()=>{ S[id]=+el.value; if(out) out.textContent=el.value+(['tickerSpeed'].includes(id)?'':'%'); save(); after&&after(); };
-  el.addEventListener('input',upd); if(out) out.textContent=el.value+(['tickerSpeed'].includes(id)?'':'%');
+  const suf = ['tickerSpeed','pSpeed'].includes(id) ? '' : id==='pSize' ? ' px' : '%';
+  const upd=()=>{ S[id]=+el.value; if(out) out.textContent=el.value+suf; save(); after&&after(); };
+  el.addEventListener('input',upd); if(out) out.textContent=el.value+suf;
 }
-function setLt(on){ S.ltOn=on; $('ltOn').checked=on; if(on) ltShownAt=performance.now(); updOv(); }
-function toggle(key, boxId){ S[key]=!S[key]; $(boxId).checked=S[key]; if(key==='ltOn'&&S.ltOn) ltShownAt=performance.now(); if(key==='tickerOn') tickX=null; updOv(); }
+function setLt(on){ S.ltOn=on; $('ltOn').checked=on; if(on) ltShownAt=performance.now(); updOv(); Remote.push(); }
+function toggle(key, boxId){ S[key]=!S[key]; $(boxId).checked=S[key]; if(key==='ltOn'&&S.ltOn) ltShownAt=performance.now(); if(key==='tickerOn') tickX=null; updOv(); Remote.push(); }
 function buildPeople(){
   const box=$('peopleChips'); box.innerHTML='';
   S.people.split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
@@ -901,15 +1445,47 @@ function cleanMode(on){
 }
 
 function init(){
-  load(); buildScenes();
+  load();
+  if(REGIE){ remoteMode(); return; }
+  buildScenes();
   if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; return; }
   chipGroup('fmtChips','fmt','fmt',()=>{ if(camOn) startCamera(); updOv(); });
   chipGroup('qChips','q','q');
   chipGroup('badgeChips','badge','badge',updOv);
   chipGroup('pipChips','pip','pip');
-  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(bindText);
+  ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText','promptText'].forEach(bindText);
   ['titleOn','logoOn','clockOn','ltOn','cardOn','tickerOn','pipRound','mirror'].forEach(id=>bindCheck(id));
   bindCheck('musicDuck',applyVolumes); bindCheck('monitor',applyVolumes);
+  ['sfx','jingleOn','dingOn'].forEach(id=>bindCheck(id)); bindRange('sfxVol',applyVolumes);
+  $('testJingle').onclick=()=>Sfx.jingle(true); $('testWhoosh').onclick=()=>Sfx.whoosh(true);
+
+  // Prompteur
+  bindCheck('promptOn',promptLayout); bindCheck('pFlip',promptLayout);
+  ['pSpeed','pSize','pHeight'].forEach(id=>bindRange(id,promptLayout));
+  $('promptText').addEventListener('input',promptLayout);
+  $('promptBtn').onclick=()=>{ S.promptOn=!S.promptOn; promptLayout(); if(S.promptOn) openTab('t-pro'); };
+  $('pPlay').onclick=$('pPlay2').onclick=()=>promptPlay(); $('pTop').onclick=$('pTop2').onclick=promptTop;
+  $('pSlow2').onclick=()=>promptSpeed(-1); $('pFast2').onclick=()=>promptSpeed(1);
+  promptDrag(); promptLayout(); requestAnimationFrame(promptTick);
+
+  // Modèles
+  $('presets').innerHTML = PRESETS.map(p=>`<button class="preset" data-p="${p.id}"><b>${p.name}</b><span>${p.d}</span></button>`).join('');
+  $('presets').querySelectorAll('.preset').forEach(b=>b.onclick=()=>applyPreset(b.dataset.p));
+
+  // Commentaires
+  let cmSrc='WhatsApp';
+  document.querySelectorAll('#cmSrc .chip').forEach(b=>b.onclick=()=>{ cmSrc=b.dataset.src; document.querySelectorAll('#cmSrc .chip').forEach(x=>x.setAttribute('aria-pressed',x===b)); });
+  $('cmShow').onclick=()=>{ const t=$('cmText').value.trim(); if(!t){ $('cmText').focus(); return; } showComment({name:$('cmName').value, src:cmSrc, text:t}); $('cmText').value=''; };
+  $('cmHide').onclick=hideComment; renderHist();
+
+  // Régie
+  $('rgOpen').onclick=()=>Remote.open(); $('rgClose').onclick=()=>Remote.close();
+  $('rgCopy').onclick=()=>{ $('rgUrl').select(); (navigator.clipboard?navigator.clipboard.writeText($('rgUrl').value):Promise.reject()).then(()=>{$('rgCopy').textContent='Copié ✓'; setTimeout(()=>$('rgCopy').textContent='Copier',1500);}).catch(()=>document.execCommand('copy')); };
+  try{ if(sessionStorage.getItem('kcc-regie')) Remote.open(); }catch(e){}
+
+  // YouTube
+  $('ytClient').value=S.ytClient; $('ytClient').addEventListener('input',()=>{ S.ytClient=$('ytClient').value.trim(); ytToken=null; save(); });
+  $('ytSend').onclick=ytUpload;
   ['pipSize','zoom','bright','tickerSpeed'].forEach(id=>bindRange(id));
   ['micVol','mediaVol','musicVol'].forEach(id=>bindRange(id,applyVolumes));
   $('cdMin').value=S.cdMin; $('cdMin').oninput=()=>{ S.cdMin=Math.max(1,Math.min(60,+$('cdMin').value||5)); save(); };
@@ -941,7 +1517,9 @@ function init(){
 
   document.addEventListener('keydown',e=>{
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key>='1' && e.key<='7'){ setScene(SCENES[+e.key-1].id); }
+    if(e.key>='1' && e.key<='8'){ setScene(SCENES[+e.key-1].id); }
+    else if(e.key==='p'||e.key==='P'){ S.promptOn=!S.promptOn; promptLayout(); }
+    else if(e.key===' '){ e.preventDefault(); promptPlay(); }
     else if(e.key==='n'||e.key==='N') toggle('ltOn','ltOn');
     else if(e.key==='d'||e.key==='D') toggle('tickerOn','tickerOn');
     else if(e.key==='t'||e.key==='T') toggle('cardOn','cardOn');

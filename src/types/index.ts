@@ -512,6 +512,8 @@ export interface Livestream {
   /** Identifiant de la vidéo YouTube (11 caractères) ; vide = le direct en cours de la chaîne. */
   youtubeId?: string | null;
   isCancelled: boolean;
+  /** Fin réelle (bouton « Terminer le direct » du studio) ; vide = horaire programmé. */
+  endedAt?: string | null;
   createdAt?: string;
 }
 

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { CalendarClock, Clock, Pencil, PlayCircle, Radio, Smartphone, Video } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
@@ -7,7 +8,7 @@ import { Skeleton } from '@/components/ui/Spinner';
 import { DemoInline } from '@/components/common/DemoNotice';
 import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 import { useAuth } from '@/features/auth/AuthContext';
-import { featuredLivestream, listLivestreams, liveEnd, liveWatchUrl, splitLivestreams, useNow } from '@/features/livestreams/livestreams';
+import { featuredLivestream, listLivestreams, useLiveSignal, liveEnd, liveWatchUrl, splitLivestreams, useNow } from '@/features/livestreams/livestreams';
 import { LiveSpotlight } from '@/features/livestreams/LivestreamUi';
 import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
@@ -23,6 +24,9 @@ export default function LivePage() {
   const { profile } = useAuth();
   const admin = can(profile, 'settings.manage');
   const lives = useAsync(listLivestreams, []);
+  const { setData } = lives;
+  // Le studio lance ou termine un direct : la page bascule sans être rafraîchie.
+  useLiveSignal(useCallback(() => { listLivestreams().then(setData).catch(() => {}); }, [setData]), 30000);
   const now = useNow(60000);
   const featured = featuredLivestream(lives.data ?? [], now);
   const { upcoming, past } = splitLivestreams(lives.data ?? [], now);

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BellRing, CalendarClock, ExternalLink, Radio } from 'lucide-react';
 import { ShareButtons } from '@/components/common/ShareButtons';
@@ -7,7 +8,7 @@ import { useI18n } from '@/i18n';
 import { cn, formatDate, formatTime } from '@/utils/format';
 import type { Livestream } from '@/types';
 import { LiveChat } from './LiveChat';
-import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveWatchUrl, useNow } from './livestreams';
+import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveWatchUrl, useLiveSignal, useNow } from './livestreams';
 
 const SITE_LIVE_URL = 'https://jesuiskcciste.com/direct';
 
@@ -126,6 +127,8 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
 /** Bloc de la page d'accueil : n'apparaît que s'il y a un direct en cours ou programmé. */
 export function HomeLiveBlock({ className }: { className?: string }) {
   const lives = useAsync(() => listLivestreams().catch(() => []), []);
+  const { setData } = lives;
+  useLiveSignal(useCallback(() => { listLivestreams().then(setData).catch(() => {}); }, [setData]));
   // Recalcule chaque minute : un direct terminé disparaît, le suivant prend sa place.
   const now = useNow(60000);
   const live = featuredLivestream(lives.data ?? [], now);

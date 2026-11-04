@@ -53,7 +53,7 @@ canvas#out{display:block;max-width:100%;max-height:calc(100vh - 260px);width:aut
 .hint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:999px;padding:5px 14px;color:#fff;font-size:12.5px;pointer-events:none;white-space:nowrap}
 @media (hover:none){.kbd{display:none}}
 
-.scenes{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.scenes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 @media (max-width:700px){.scenes{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .scene{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--muted)}
 .scene svg{width:40px;height:24px}
@@ -156,6 +156,15 @@ details.cfg summary{cursor:pointer;color:var(--muted);font-size:12.5px}
 details.cfg[open] summary{margin-bottom:8px}
 .code{font:700 22px/1 var(--ui);letter-spacing:.2em;color:var(--gold2)}
 
+/* Deuxième caméra (?camera=CODE) */
+#cam2page{display:none;position:fixed;inset:0;background:#000;z-index:30;flex-direction:column}
+body.cam2 .app,body.cam2 .exit,body.cam2 #remote,body.cam2 #tele{display:none!important}
+body.cam2 #cam2page{display:flex}
+#cam2page video{flex:1;min-height:0;width:100%;object-fit:contain;background:#000}
+#cam2page .cbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;align-items:center;padding:10px;background:#0b0e16;border-top:1px solid var(--line)}
+#cam2page .cstate{position:absolute;left:10px;top:10px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:#000b;color:#fff}
+#cam2page .cstate.on{background:var(--rec)}
+
 /* Accès réservé aux administrateurs */
 #gate{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 50% 30%,#1b3378,#0b1530 60%,#050a1a);display:flex;align-items:center;justify-content:center;padding:20px}
 body.open #gate{display:none}
@@ -237,7 +246,7 @@ body.tele #tele{display:flex}
     <div class="notice err" id="alertBox" hidden></div>
     <div class="notice" id="recover" hidden><b>Enregistrement interrompu</b><br><span id="recoverTxt"></span>
       <div class="transport" style="margin-top:8px"><button class="btn gold sm" id="recoverBtn">Récupérer la vidéo</button><button class="btn sm" id="recoverDrop">Supprimer</button></div></div>
-    <p class="kbd"><b>1</b>–<b>8</b> scènes · <b>P</b> prompteur · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
+    <p class="kbd"><b>1</b>–<b>0</b> scènes · <b>P</b> prompteur · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
   </section>
 
   <aside>
@@ -333,6 +342,19 @@ Maman Mam's | Animatrice des débats</textarea>
       <div class="group" id="vidCtl" hidden>
         <h3>Vidéo choisie</h3>
         <div class="transport"><button class="btn sm" id="vidPlay">▶ Lire</button><button class="btn sm" id="vidRestart">⟲ Début</button><label class="check"><input type="checkbox" id="vidLoop" checked> En boucle</label></div>
+      </div>
+      <div class="group">
+        <h3>Deuxième caméra (un autre téléphone)</h3>
+        <p class="note">Filmez sous deux angles, ou l'invité d'une interview : un deuxième téléphone envoie son image au studio. Scènes « Caméra 2 » et « Deux caméras ».</p>
+        <button class="btn gold" id="c2open">📱 Connecter une 2e caméra</button>
+        <div id="c2box" class="group" hidden>
+          <div class="copy"><input type="text" id="c2url" readonly aria-label="Lien de la caméra 2"><button class="btn sm" id="c2copy">Copier</button></div>
+          <a class="btn sm" id="c2wa" target="_blank" rel="noopener">Envoyer le lien par WhatsApp</a>
+          <p class="note" id="c2status">En attente de la caméra 2…</p>
+          <label class="check"><input type="checkbox" id="c2audio"> Mélanger le son de la caméra 2 (micro de l'invité)</label>
+          <label class="check"><input type="checkbox" id="c2mirror"> Effet miroir sur la caméra 2</label>
+        </div>
+        <p class="note">Les deux téléphones sur le même Wi-Fi donnent la meilleure image. Sur certains réseaux mobiles, la connexion directe entre téléphones peut être bloquée.</p>
       </div>
       <div class="group">
         <h3>Médaillon de la caméra</h3>
@@ -549,6 +571,16 @@ Bienvenue sur le direct Je suis KCCiste.
     </div>
   </aside>
 </div>
+<section id="cam2page" aria-label="Deuxième caméra du studio">
+  <video id="c2preview" autoplay muted playsinline></video>
+  <span class="cstate" id="c2state">Caméra 2 · en attente</span>
+  <div class="cbar">
+    <button class="btn gold" id="c2start">📷 Démarrer la caméra 2</button>
+    <button class="btn" id="c2flip" hidden>⇄ Avant / arrière</button>
+    <label class="check"><input type="checkbox" id="c2mic"> Envoyer aussi le son</label>
+    <span class="note" id="c2info"></span>
+  </div>
+</section>
 <section id="tele" aria-label="Prompteur sur un deuxième écran">
   <div class="tview" id="tview"><div class="tscroll" id="tscroll"><div class="ttext" id="ttext">En attente du texte du studio…</div></div><div class="marker"></div><span class="tinfo" id="tinfo">Prompteur · connexion…</span></div>
   <div class="tbar">
@@ -602,7 +634,7 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
 const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
@@ -753,6 +785,8 @@ const SCENES = [
   {id:'intro', label:'Ouverture', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="20" cy="12" r="6" fill="none" stroke="currentColor"/>'},
   {id:'cam', label:'Caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="currentColor" opacity=".35"/><circle cx="20" cy="10" r="4" fill="currentColor"/><path d="M12 22c1-5 15-5 16 0" fill="currentColor"/>'},
   {id:'camMedia', label:'Caméra + média', icon:'<rect x="1" y="1" width="18" height="22" rx="2" fill="currentColor" opacity=".35"/><rect x="21" y="1" width="18" height="22" rx="2" fill="none" stroke="currentColor"/><circle cx="10" cy="10" r="3" fill="currentColor"/>'},
+  {id:'cam2', label:'Caméra 2', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="currentColor" opacity=".25"/><circle cx="20" cy="10" r="4" fill="currentColor"/><path d="M12 22c1-5 15-5 16 0" fill="currentColor"/><text x="33" y="9" font-size="8" font-weight="700" fill="currentColor">2</text>'},
+  {id:'duo', label:'Deux caméras', icon:'<rect x="1" y="1" width="18" height="22" rx="2" fill="currentColor" opacity=".35"/><rect x="21" y="1" width="18" height="22" rx="2" fill="currentColor" opacity=".35"/><circle cx="10" cy="10" r="3" fill="currentColor"/><circle cx="30" cy="10" r="3" fill="currentColor"/>'},
   {id:'mediaPip', label:'Média + caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="31" cy="16" r="5" fill="currentColor" opacity=".6"/>'},
   {id:'media', label:'Média', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M5 19l8-8 6 6 5-4 11 6z" fill="currentColor" opacity=".6"/>'},
   {id:'pause', label:'Pause', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><rect x="15" y="7" width="3" height="10" fill="currentColor"/><rect x="22" y="7" width="3" height="10" fill="currentColor"/>'},
@@ -821,6 +855,17 @@ function camDraw(x,y,w,h){
     const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,'#13244f'); g.addColorStop(1,'#0a1430'); ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
     ctx.fillStyle='rgba(243,210,122,.7)'; ctx.font=F(20,600); ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText('Caméra éteinte', x+w/2, y+h/2); ctx.restore();
+  }
+}
+const cam2V = document.createElement('video'); cam2V.muted = true; cam2V.playsInline = true;
+let cam2On = false;
+function cam2Draw(x,y,w,h){
+  if(cam2On && ready(cam2V)) cover(cam2V,x,y,w,h,{mirror:S.c2mirror});
+  else{
+    ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+    const g=ctx.createLinearGradient(x,y,x,y+h); g.addColorStop(0,'#13244f'); g.addColorStop(1,'#0a1430'); ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+    ctx.fillStyle='rgba(243,210,122,.7)'; ctx.font=F(20,600); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('Caméra 2 non connectée', x+w/2, y+h/2); ctx.restore();
   }
 }
 function mediaDraw(x,y,w,h){
@@ -1008,6 +1053,18 @@ function sceneCamMedia(t){
     frame(()=>mediaDraw(2*g+w,top,w,h), 2*g+w,top,w,h);
   }
 }
+function sceneDuo(t){
+  brandBg(t); const port=S.fmt==='port', g=14*U, top=(port?132:(S.titleOn?66:20))*U, bot=(S.tickerOn?64:20)*U;
+  if(port){
+    const h=(H-top-bot-g)/2;
+    frame(()=>camDraw(g,top,W-2*g,h), g,top,W-2*g,h);
+    frame(()=>cam2Draw(g,top+h+g,W-2*g,h), g,top+h+g,W-2*g,h);
+  }else{
+    const h=H-top-bot, w=(W-3*g)/2;
+    frame(()=>camDraw(g,top,w,h), g,top,w,h);
+    frame(()=>cam2Draw(2*g+w,top,w,h), 2*g+w,top,w,h);
+  }
+}
 function frame(fn,x,y,w,h){
   ctx.save(); rr(x,y,w,h,14*U); ctx.clip(); fn(); ctx.restore();
   ctx.save(); rr(x,y,w,h,14*U); ctx.strokeStyle='rgba(243,210,122,.75)'; ctx.lineWidth=2.5*U; ctx.stroke(); ctx.restore();
@@ -1112,6 +1169,8 @@ function drawScene(id,t){
     case 'intro': sceneIntro(t); break;
     case 'cam': sceneCam(t); break;
     case 'camMedia': sceneCamMedia(t); break;
+    case 'cam2': cam2Draw(0,0,W,H); break;
+    case 'duo': sceneDuo(t); break;
     case 'mediaPip': sceneMediaPip(t); break;
     case 'media': sceneMedia(t); break;
     case 'pause': scenePause(t); break;
@@ -1119,7 +1178,7 @@ function drawScene(id,t){
   }
 }
 function draw(){
-  if(REGIE || PTELE) return;
+  if(REGIE || PTELE || CAM2) return;
   const t = performance.now(), dt = lastT ? Math.min(100, t-lastT) : 16; lastT = t;
   setSize();
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.shadowBlur=0; ctx.filter='none';
@@ -1505,7 +1564,7 @@ const Remote = {
     return {type:'state', scene:S.scene, title:S.title, ltOn:S.ltOn, tickerOn:S.tickerOn, cardOn:S.cardOn, ltName:S.ltName,
       people:S.people.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,20),
       media:media.map((m,i)=>({i, kind:m.kind, name:(m.name||'').slice(0,40)})), active,
-      comment: comment && !comment.out ? comment.name : '', prompt:pPlaying, rec: !!rec, recTime: rec ? fmtTime(recElapsed()) : '', cam:camOn};
+      comment: comment && !comment.out ? comment.name : '', prompt:pPlaying, rec: !!rec, recTime: rec ? fmtTime(recElapsed()) : '', cam:camOn, cam2:cam2On};
   },
   push(now){
     if(!this.link || REGIE) return;
@@ -1514,6 +1573,7 @@ const Remote = {
   },
   onCmd(m){
     if(m && m.type==='phello'){ this.tele(this.ptext()); this.tele(this.pstate()); return; }
+    if(m && m.type==='cam-offer'){ Cam2.onOffer(m).catch(()=>Cam2.status('Erreur de connexion avec la caméra 2.')); return; }
     if(!m || m.type!=='cmd') { if(m && m.type==='hello') this.push(true); return; }
     const v=m.v;
     switch(m.a){
@@ -1703,7 +1763,7 @@ function drawSiteChat(){
   siteFloat = siteFloat.filter(c=>now-c.at<16000);
   if(!siteFloat.length) return;
   const fs=port?22:17, lh=fs*1.3*U, maxW = port ? W*.74 : W*.36, gap=8*U, m=port?24*U:28*U;
-  let bottom = H - ((S.tickerOn?58:0)+20)*U - (S.ltOn && ['cam','camMedia','mediaPip','media'].includes(S.scene) ? (port?260:130)*U : 0) - (port?110*U:0);
+  let bottom = H - ((S.tickerOn?58:0)+20)*U - (S.ltOn && ['cam','cam2','duo','camMedia','mediaPip','media'].includes(S.scene) ? (port?260:130)*U : 0) - (port?110*U:0);
   ctx.save(); ctx.textBaseline='middle'; ctx.textAlign='left';
   const items=[...siteFloat].reverse();
   items.forEach((c,i)=>{
@@ -1721,6 +1781,94 @@ function drawSiteChat(){
     bottom = y - gap;
   });
   ctx.restore();
+}
+
+
+/* ---------- Deuxième caméra : un autre téléphone, en WebRTC ----------
+   Le studio reçoit l'image ; la mise en relation passe par le même canal que la régie. */
+const ICE = {iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']}]};
+function waitIce(pc){ return new Promise(res=>{ if(pc.iceGatheringState==='complete') return res(); const t=setTimeout(res,3500); pc.addEventListener('icegatheringstatechange',()=>{ if(pc.iceGatheringState==='complete'){ clearTimeout(t); res(); } }); }); }
+const Cam2 = {
+  pc:null, id:'', reqTimer:0, gain:null, src:null,
+  open(){
+    Remote.open(); $('c2box').hidden=false; $('c2open').hidden=true;
+    const url = location.origin + '/studio?camera=' + Remote.room;
+    $('c2url').value=url; $('c2wa').href='https://wa.me/?text='+encodeURIComponent('Caméra 2 du studio Je suis KCCiste : ouvrez ce lien sur le téléphone qui filme : '+url);
+    clearInterval(this.reqTimer); this.reqTimer=setInterval(()=>{ if(!cam2On) Remote.tele({type:'cam-request'}); }, 4000);
+    Remote.tele({type:'cam-request'});
+  },
+  status(t){ $('c2status').textContent=t; },
+  async onOffer(m){
+    if(this.pc){ try{ this.pc.close(); }catch(e){} }
+    const pc = new RTCPeerConnection(ICE); this.pc=pc; this.id=m.id;
+    pc.ontrack = e => {
+      const st = e.streams[0] || new MediaStream([e.track]);
+      if(cam2V.srcObject!==st){ cam2V.srcObject = st; cam2V.play().catch(()=>{}); }
+      if(e.track.kind==='audio') this.audio(st);
+    };
+    pc.onconnectionstatechange = () => {
+      const s=pc.connectionState;
+      if(s==='connected'){ cam2On=true; this.status('✓ Caméra 2 connectée.'); if(!['cam2','duo'].includes(S.scene)) {} }
+      else if(s==='failed'||s==='disconnected'||s==='closed'){ cam2On=false; this.status(s==='failed' ? 'Connexion impossible entre les deux téléphones. Mettez-les sur le même Wi-Fi, puis touchez « Démarrer » sur la caméra 2.' : 'Caméra 2 déconnectée. En attente…'); }
+      Remote.push();
+    };
+    await pc.setRemoteDescription({type:'offer', sdp:m.sdp});
+    await pc.setLocalDescription(await pc.createAnswer());
+    await waitIce(pc);
+    Remote.tele({type:'cam-answer', id:m.id, sdp:pc.localDescription.sdp});
+    this.status('Connexion de la caméra 2…');
+  },
+  audio(st){
+    if(!audio() || !st.getAudioTracks().length) return;
+    if(!this.gain){ this.gain=audioCtx.createGain(); this.gain.connect(dest); this.gain.connect(analyser); }
+    if(this.src) try{ this.src.disconnect(); }catch(e){}
+    this.src = audioCtx.createMediaStreamSource(st); this.src.connect(this.gain);
+    this.gain.gain.value = S.c2audio ? 1 : 0;
+  },
+};
+// Page de la caméra 2 (?camera=CODE), sur l'autre téléphone
+const CAM2 = params.get('camera') ? params.get('camera').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
+function cam2Mode(){
+  document.body.classList.add('cam2');
+  let stream=null, pc=null, facing2='environment', link=null, sending=false;
+  const state=(t,on)=>{ $('c2state').textContent=t; $('c2state').classList.toggle('on',!!on); };
+  async function getCam(){
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:facing2, width:{ideal:1280}, height:{ideal:720}}, audio:$('c2mic').checked ? {echoCancellation:true, noiseSuppression:true} : false});
+    $('c2preview').srcObject=stream; $('c2flip').hidden=false;
+  }
+  async function offer(){
+    if(!stream || sending) return; sending=true;
+    try{
+      if(pc) try{ pc.close(); }catch(e){}
+      pc = new RTCPeerConnection(ICE);
+      stream.getTracks().forEach(t=>pc.addTrack(t,stream));
+      pc.onconnectionstatechange=()=>{ const s=pc.connectionState;
+        if(s==='connected') state('● Caméra 2 en direct dans le studio', true);
+        else if(s==='failed') state('Connexion impossible : mettez les deux téléphones sur le même Wi-Fi');
+        else if(s==='disconnected') state('Connexion perdue… nouvelle tentative'); };
+      // Image nette : jusqu'à 2,5 Mb/s
+      await pc.setLocalDescription(await pc.createOffer());
+      await waitIce(pc);
+      const id = Math.random().toString(36).slice(2,10);
+      pc.__id=id; link.send({type:'cam-offer', id, sdp:pc.localDescription.sdp});
+      state('Connexion au studio…');
+    }finally{ sending=false; }
+  }
+  link = rtConnect(CAM2, async m=>{
+    if(!m) return;
+    if(m.type==='cam-answer' && pc && m.id===pc.__id && pc.signalingState==='have-local-offer'){
+      await pc.setRemoteDescription({type:'answer', sdp:m.sdp});
+      try{ const snd=pc.getSenders().find(s=>s.track&&s.track.kind==='video'); const p=snd.getParameters(); p.encodings=p.encodings&&p.encodings.length?p.encodings:[{}]; p.encodings[0].maxBitrate=2500000; await snd.setParameters(p); }catch(e){}
+    }
+    else if(m.type==='cam-request' && stream && (!pc || ['failed','disconnected','closed','new'].includes(pc.connectionState))) offer();
+  }, st=>{ $('c2info').textContent = st==='ok' ? 'Relié au studio (code '+CAM2+')' : 'Connexion…'; });
+  $('c2start').onclick=async()=>{
+    try{ await getCam(); $('c2start').textContent='⟳ Relancer'; try{ navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){} offer(); }
+    catch(e){ state('Caméra refusée : autorisez la caméra dans le navigateur'); }
+  };
+  $('c2flip').onclick=async()=>{ facing2 = facing2==='user'?'environment':'user'; try{ await getCam(); if(pc){ const v=stream.getVideoTracks()[0]; const snd=pc.getSenders().find(s=>s.track&&s.track.kind==='video'); if(snd) await snd.replaceTrack(v); } }catch(e){} };
+  $('c2mic').onchange=()=>{ if(stream){ getCam().then(offer).catch(()=>{}); } };
 }
 
 /* ---------- Annoncer le direct ---------- */
@@ -1794,6 +1942,7 @@ function init(){
   load();
   if(REGIE){ remoteMode(); return; }
   if(PTELE){ teleMode(); return; }
+  if(CAM2){ cam2Mode(); return; }
   buildScenes();
   if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; if(params.get('commentaires')!=='0') siteStart(); return; }
   chipGroup('fmtChips','fmt','fmt',()=>{ if(camOn) startCamera(); updOv(); });
@@ -1826,6 +1975,11 @@ function init(){
   document.querySelectorAll('#cmSrc .chip').forEach(b=>b.onclick=()=>{ cmSrc=b.dataset.src; document.querySelectorAll('#cmSrc .chip').forEach(x=>x.setAttribute('aria-pressed',x===b)); });
   $('cmShow').onclick=()=>{ const t=$('cmText').value.trim(); if(!t){ $('cmText').focus(); return; } showComment({name:$('cmName').value, src:cmSrc, text:t}); $('cmText').value=''; };
   $('cmHide').onclick=hideComment; renderHist();
+
+  // Deuxième caméra
+  $('c2open').onclick=()=>Cam2.open();
+  bindCheck('c2audio',()=>{ if(Cam2.gain) Cam2.gain.gain.value = S.c2audio?1:0; }); bindCheck('c2mirror');
+  $('c2copy').onclick=()=>{ $('c2url').select(); (navigator.clipboard?navigator.clipboard.writeText($('c2url').value):Promise.reject()).then(()=>{$('c2copy').textContent='Copié ✓'; setTimeout(()=>$('c2copy').textContent='Copier',1500);}).catch(()=>document.execCommand('copy')); };
 
   // Commentaires du site
   ['siteOn','siteOverlay','siteHearts'].forEach(id=>bindCheck(id));
@@ -1880,7 +2034,8 @@ function init(){
 
   document.addEventListener('keydown',e=>{
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-    if(e.key>='1' && e.key<='8'){ setScene(SCENES[+e.key-1].id); }
+    if(e.key>='1' && e.key<='9'){ setScene(SCENES[+e.key-1].id); }
+    else if(e.key==='0'){ setScene(SCENES[9].id); }
     else if(e.key==='p'||e.key==='P'){ S.promptOn=!S.promptOn; promptLayout(); }
     else if(e.key===' '){ e.preventDefault(); promptPlay(); }
     else if(e.key==='n'||e.key==='N') toggle('ltOn','ltOn');
@@ -1929,7 +2084,7 @@ async function studioGate(){
   }catch(e){ gateShow('offline'); return false; }
 }
 (async () => {
-  if(REGIE || PTELE || OVERLAY){ document.body.classList.add('open'); init(); return; }
+  if(REGIE || PTELE || OVERLAY || CAM2){ document.body.classList.add('open'); init(); return; }
   if(await studioGate()) init();
 })();
 </script>

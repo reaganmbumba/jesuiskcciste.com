@@ -90,6 +90,7 @@ textarea{min-height:84px;resize:vertical}
 .check input,.sw input{accent-color:var(--gold);width:17px;height:17px}
 .sw{display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--fg);font-size:12.5px;cursor:pointer}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
+a.chip{text-decoration:none;color:inherit}
 .chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:12.5px}
 .chip[aria-pressed="true"]{border-color:var(--gold);color:var(--gold2)}
 .note{color:var(--muted);font-size:12px;margin:0}
@@ -205,6 +206,8 @@ body.remote #remote{display:flex}
       <button class="btn rec" id="recBtn">● Enregistrer</button>
     </div>
     <div class="notice err" id="alertBox" hidden></div>
+    <div class="notice" id="recover" hidden><b>Enregistrement interrompu</b><br><span id="recoverTxt"></span>
+      <div class="transport" style="margin-top:8px"><button class="btn gold sm" id="recoverBtn">Récupérer la vidéo</button><button class="btn sm" id="recoverDrop">Supprimer</button></div></div>
     <p class="kbd"><b>1</b>–<b>8</b> scènes · <b>P</b> prompteur · <b>Espace</b> défilement · <b>N</b> bandeau nom · <b>D</b> bandeau défilant · <b>T</b> texte à l'écran · <b>Échap</b> quitter le mode diffusion</p>
   </section>
 
@@ -231,6 +234,8 @@ body.remote #remote{display:flex}
           <button class="chip" data-fmt="land" aria-pressed="true">▭ Paysage 16:9 · YouTube</button>
           <button class="chip" data-fmt="port" aria-pressed="false">▯ Portrait 9:16 · Statut, Shorts</button>
         </div>
+        <label class="note" for="segMin">Long culte : découper la vidéo en parties de</label>
+        <select id="segMin"><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option><option value="0">Sans découpage</option></select>
         <div class="chips" id="qChips">
           <button class="chip" data-q="720" aria-pressed="true">720p (léger)</button>
           <button class="chip" data-q="1080" aria-pressed="false">1080p (haute qualité)</button>
@@ -342,6 +347,25 @@ Bienvenue sur le direct Je suis KCCiste.
     <!-- DIRECT : commentaires et régie -->
     <div class="pane" id="t-dir" hidden>
       <div class="group">
+        <h3>Annoncer le direct sur les réseaux</h3>
+        <select id="shLink" aria-label="Lien à partager">
+          <option value="site">Page Direct du site (jesuiskcciste.com/direct)</option>
+          <option value="yt">Direct de la chaîne YouTube</option>
+          <option value="custom">Autre lien (Facebook, YouTube…)</option>
+        </select>
+        <input type="text" id="shCustom" placeholder="Collez le lien du direct" hidden>
+        <textarea id="shText" maxlength="500"></textarea>
+        <div class="chips">
+          <a class="chip" id="shWa" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="chip" id="shFb" target="_blank" rel="noopener">Facebook</a>
+          <a class="chip" id="shTg" target="_blank" rel="noopener">Telegram</a>
+          <a class="chip" id="shX" target="_blank" rel="noopener">X (Twitter)</a>
+          <button class="chip" id="shNative" hidden>Autres applications…</button>
+          <button class="chip" id="shCopy">Copier le message</button>
+        </div>
+        <p class="note">Le message reprend le titre de l'émission. Pour Facebook, le lien s'affiche avec l'image du site.</p>
+      </div>
+      <div class="group">
         <h3>Commentaire d'un fidèle à l'écran</h3>
         <input type="text" id="cmName" maxlength="40" placeholder="Nom (ex. Maman Chouchouna, Luanda)">
         <div class="chips" id="cmSrc">
@@ -410,6 +434,7 @@ Bienvenue sur le direct Je suis KCCiste.
           <button class="btn" id="shareBtn" hidden>↗ Partager (YouTube, WhatsApp…)</button>
         </div>
         <p class="note" id="resInfo"></p>
+        <div class="hist" id="parts" hidden></div>
         <div class="group" id="ytBox" style="border-top:1px solid var(--line);padding-top:12px">
           <h3>Envoyer sur la chaîne YouTube</h3>
           <input type="text" id="ytTitle" maxlength="100" placeholder="Titre de la vidéo">
@@ -437,6 +462,15 @@ Bienvenue sur le direct Je suis KCCiste.
           <li>Installez une application de direct qui sait « diffuser l'écran » vers YouTube (par exemple Prism Live Studio ou Streamlabs) et reliez-la à la chaîne Je suis KCCiste.</li>
           <li>Dans l'application, choisissez la diffusion de l'écran, puis revenez ici.</li>
           <li>Touchez <b>⛶ Mode diffusion</b> : seule l'image du studio reste à l'écran, en plein écran. Touchez deux fois l'écran pour revenir aux réglages.</li>
+        </ol></div>
+      </div>
+
+      <div class="group">
+        <h3>Diffuser en même temps sur YouTube, Facebook et d'autres réseaux</h3>
+        <div class="notice">Pour un seul direct visible à la fois sur YouTube, Facebook, TikTok…, on passe par un service de « multidiffusion », relié une fois à chaque compte :<ol>
+          <li><b>Sur téléphone</b> : une application de direct qui sait diffuser vers plusieurs réseaux à la fois (par exemple Prism Live Studio). Reliez-y la chaîne YouTube et la page Facebook, choisissez la diffusion de l'écran, puis touchez ici <b>⛶ Mode diffusion</b>.</li>
+          <li><b>Sur ordinateur</b> : OBS avec un service comme Restream, qui renvoie le direct vers YouTube, Facebook et les autres réseaux reliés.</li>
+          <li>Pendant le direct, touchez <b>Annoncer le direct</b> (onglet Direct) pour envoyer le lien dans les groupes WhatsApp et sur Facebook.</li>
         </ol></div>
       </div>
 
@@ -517,9 +551,9 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
@@ -1067,52 +1101,178 @@ function meter(){
 setInterval(draw, 1000/30);
 
 /* ---------- Enregistrement ---------- */
-const MIME = ['video/mp4;codecs=avc1.42E01F,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+// Ordre choisi pour que la vidéo sorte seconde par seconde (et non d'un bloc à la fin).
+const MIME = (new URLSearchParams(location.search).get('format')==='webm' ? ['video/webm;codecs=vp8,opus','video/webm'] : ['video/mp4;codecs=avc1.42E01F,mp4a.40.2','video/mp4;codecs=avc1,mp4a','video/mp4;codecs=avc1.42E01F,opus','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'])
   .find(t => window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || '';
-let rec=null, chunks=[], recStart=0, recPaused=0, pausedAt=0, recTimer=0, lastUrl=null;
+let rec=null, recStream=null, recStart=0, recPaused=0, pausedAt=0, recTimer=0, lastUrl=null;
+let segBytes={}, bufferMode=false, session=null, seg=0, segStartAt=0, stopping=false, segTimes={}, parts=[], memChunks={};
 function recElapsed(){ return (rec && rec.state==='paused' ? pausedAt : Date.now()) - recStart - recPaused; }
-function startRec(){
+
+/* Sauvegarde au fur et à mesure : chaque seconde de vidéo est écrite tout de suite dans le
+   stockage du navigateur (IndexedDB), pas dans la mémoire. Un long culte ne remplit donc pas
+   la mémoire du téléphone, et si la page se ferme ou plante, l'enregistrement se récupère. */
+const Store = {
+  db:null,
+  open(){
+    if(this.db) return Promise.resolve(this.db);
+    return new Promise((res)=>{
+      try{
+        const r = indexedDB.open('kcc-studio', 1);
+        r.onupgradeneeded = () => { const db=r.result; db.createObjectStore('chunks'); db.createObjectStore('sessions',{keyPath:'sid'}); };
+        r.onsuccess = () => { this.db=r.result; res(this.db); };
+        r.onerror = () => res(null); r.onblocked = () => res(null);
+      }catch(e){ res(null); }
+    });
+  },
+  tx(store, mode, fn){
+    return this.open().then(db => new Promise((res,rej)=>{
+      if(!db) return rej(new Error('no-db'));
+      const t=db.transaction(store, mode), st=t.objectStore(store); let out;
+      const r = fn(st); if(r) r.onsuccess = () => { out=r.result; };
+      t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    }));
+  },
+  putChunk(sid, sg, n, blob){ return this.tx('chunks','readwrite', st=>st.put(blob,[sid,sg,n])); },
+  chunks(sid, sg){ return this.tx('chunks','readonly', st=>st.getAll(IDBKeyRange.bound([sid,sg,0],[sid,sg,1e9]))); },
+  segs(sid){ return this.tx('chunks','readonly', st=>st.getAllKeys(IDBKeyRange.bound([sid,0,0],[sid,1e9,1e9]))).then(keys=>[...new Set((keys||[]).map(k=>k[1]))].sort((a,b)=>a-b)); },
+  putSession(o){ return this.tx('sessions','readwrite', st=>st.put(o)); },
+  sessions(){ return this.tx('sessions','readonly', st=>st.getAll()); },
+  async drop(sid){ await this.tx('chunks','readwrite', st=>st.delete(IDBKeyRange.bound([sid,0,0],[sid,1e9,1e9]))); await this.tx('sessions','readwrite', st=>st.delete(sid)); },
+};
+const SEG_OPTS = MIME ? {mimeType:MIME, audioBitsPerSecond:160000} : undefined;
+function recType(){ return (MIME || 'video/webm').split(';')[0]; }
+function newRecorder(){
+  const sg = seg, sid = session.sid; let n = 0; const writes = [];
+  let r;
+  try{ r = new MediaRecorder(recStream, SEG_OPTS ? {...SEG_OPTS, videoBitsPerSecond:S.q===1080?8e6:4.5e6} : undefined); }
+  catch(e){ r = new MediaRecorder(recStream); }
+  r.ondataavailable = e => {
+    if(!e.data || !e.data.size) return;
+    segBytes[sg] = (segBytes[sg]||0) + e.data.size;
+    const i = n++;
+    if(session.idb) writes.push(Store.putChunk(sid, sg, i, e.data).catch(()=>{ (memChunks[sg]=memChunks[sg]||[])[i]=e.data; }));
+    else (memChunks[sg]=memChunks[sg]||[])[i]=e.data;
+  };
+  r.onstop = async () => { await Promise.all(writes); await finishSeg(sid, sg); };
+  r.start(1000);
+  segTimes[sg] = {start: recElapsed(), end: null};
+  return r;
+}
+async function startRec(){
   if(!window.MediaRecorder || !cv.captureStream){ alertBox("Ce navigateur ne sait pas enregistrer la vidéo. Utilisez Chrome sur Android ou un ordinateur, ou Safari à jour sur iPhone."); return; }
   audio(); audioCtx.resume();
-  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
-  chunks=[];
-  try{ rec = new MediaRecorder(stream, MIME ? {mimeType:MIME, videoBitsPerSecond:S.q===1080?8e6:4.5e6, audioBitsPerSecond:160000} : undefined); }
-  catch(e){ rec = new MediaRecorder(stream); }
-  rec.ondataavailable = e => { if(e.data && e.data.size) chunks.push(e.data); };
-  rec.onstop = finishRec;
-  rec.start(1000); recStart=Date.now(); recPaused=0; autoThumb=null;
+  recStream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
+  const db = await Store.open();
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+  session = {sid: Date.now(), started: Date.now(), mime: recType(), title: S.title, done: false, idb: !!db};
+  if(db) Store.putSession({sid:session.sid, started:session.started, mime:session.mime, title:session.title, done:false}).catch(()=>{ session.idb=false; });
+  seg = 0; parts = []; memChunks = {}; segTimes = {}; segBytes = {}; bufferMode = false; stopping = false; renderParts();
+  recStart=Date.now(); recPaused=0; autoThumb=null;
+  rec = newRecorder();
   // Miniature automatique au cas où aucune n'est choisie : l'image après 4 secondes.
   setTimeout(()=>{ if(rec) cv.toBlob(b=>{ autoThumb=b; }, 'image/jpeg', .9); }, 4000);
   Remote.push();
   $('recBtn').textContent='■ Arrêter'; $('pauseBtn').disabled=false; $('pauseBtn').textContent='❚❚ Pause';
   $('recPill').className='pill rec';
-  recTimer = setInterval(()=>{ $('recTxt').textContent = (rec.state==='paused'?'En pause · ':'● ') + fmtTime(recElapsed()); }, 250);
+  recTimer = setInterval(()=>{
+    if(!rec) return;
+    const segAge = recElapsed() - segTimes[seg].start;
+    // Sécurité : si ce téléphone garde la vidéo en mémoire au lieu de l'écrire au fur et à mesure,
+    // on coupe en parties de 5 minutes pour ne jamais risquer plus de 5 minutes.
+    if(!bufferMode && segAge > 10000 && (segBytes[seg]||0) < 60000){ bufferMode = true; alertBox("Ce téléphone ne permet pas d'écrire la vidéo seconde par seconde : elle sera découpée en parties de 5 minutes pour la protéger."); setTimeout(()=>alertBox(''), 12000); }
+    const lim = bufferMode ? Math.min(S.segMin||5, 5) : S.segMin;
+    const segLeft = lim ? lim*60000 - segAge : Infinity;
+    $('recTxt').textContent = (rec.state==='paused'?'En pause · ':'● ') + fmtTime(recElapsed()) + (seg>0 ? ` · partie ${seg+1}` : '');
+    if(segLeft <= 0 && rec.state==='recording') rotate();
+  }, 250);
   lockSize(true);
+  if(!db) alertBox("Attention : ce navigateur ne permet pas la sauvegarde au fur et à mesure (navigation privée ?). L'enregistrement reste en mémoire : évitez les enregistrements de plus de 30 minutes.");
+}
+// Nouvelle partie : le nouvel enregistreur démarre avant que l'ancien s'arrête, pour ne rien perdre.
+function rotate(){
+  const old = rec; segTimes[seg].end = recElapsed(); seg++;
+  rec = newRecorder(); old.stop(); Remote.push();
 }
 function togglePause(){
   if(!rec) return;
   if(rec.state==='recording'){ rec.pause(); pausedAt=Date.now(); $('pauseBtn').textContent='▶ Reprendre'; }
   else if(rec.state==='paused'){ recPaused += Date.now()-pausedAt; rec.resume(); $('pauseBtn').textContent='❚❚ Pause'; }
 }
-function stopRec(){ if(rec && rec.state!=='inactive') rec.stop(); }
-function finishRec(){
-  clearInterval(recTimer); lockSize(false);
-  const type = (rec.mimeType || MIME || 'video/webm').split(';')[0];
-  const blob = new Blob(chunks,{type}); const ext = type.includes('mp4') ? 'mp4' : 'webm';
-  const d=new Date(), p=n=>String(n).padStart(2,'0');
-  const name = `JeSuisKCCiste-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.${ext}`;
-  if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = URL.createObjectURL(blob);
-  $('resVideo').src = lastUrl; $('dlBtn').href = lastUrl; $('dlBtn').download = name;
-  $('resInfo').textContent = `${name} · ${(blob.size/1048576).toFixed(1)} Mo · ${fmtTime(recElapsed())}` + (ext==='webm' ? ' · format WebM, accepté par YouTube' : '');
+function stopRec(){
+  if(!rec || rec.state==='inactive') return;
+  stopping = true; segTimes[seg].end = recElapsed();
+  rec.stop(); clearInterval(recTimer); lockSize(false);
+  $('recBtn').textContent='● Enregistrer'; $('pauseBtn').disabled=true; $('recBtn').disabled=true;
+  $('recPill').className='pill'; $('recTxt').textContent='Finalisation…';
+}
+function partName(sid, sg, ext, multi){
+  const d=new Date(sid), p=n=>String(n).padStart(2,'0');
+  return `JeSuisKCCiste-${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${multi?'-partie'+(sg+1):''}.${ext}`;
+}
+async function finishSeg(sid, sg){
+  const type = session && session.sid===sid ? session.mime : recType();
+  let list = memChunks[sg] || [];
+  if(session && session.idb){ try{ list = await Store.chunks(sid, sg); }catch(e){} }
+  const blob = new Blob(list.filter(Boolean), {type});
+  delete memChunks[sg];
+  const t = segTimes[sg] || {start:0,end:0};
+  const ext = type.includes('mp4') ? 'mp4' : 'webm';
+  const multi = seg>0 || sg>0;
+  addPart({blob, type, name: partName(sid, sg, ext, multi), dur: (t.end ?? recElapsed()) - t.start, sg});
+  // Si plusieurs parties, la première porte aussi le suffixe « partie1 ».
+  if(multi && parts.length && !/partie/.test(parts[0].name)) parts[0].name = partName(sid, parts[0].sg, ext, true);
+  if(stopping && sg===seg){
+    if(session && session.idb) Store.putSession({sid, started:session.started, mime:session.mime, title:session.title, done:true}).catch(()=>{});
+    rec=null; stopping=false; $('recBtn').disabled=false; $('recTxt').textContent = parts.length>1 ? `Enregistré · ${parts.length} parties` : 'Enregistré';
+    selectPart(parts.length-1); openTab('t-dif'); Remote.push();
+  }else renderParts();
+}
+function addPart(pt){ if(!pt.blob.size) return; parts.push(pt); parts.sort((a,b)=>a.sg-b.sg); renderParts(); }
+let curPart = -1;
+function selectPart(i){
+  const pt = parts[i]; if(!pt) return; curPart = i;
+  if(lastUrl) URL.revokeObjectURL(lastUrl); lastUrl = URL.createObjectURL(pt.blob);
+  $('resVideo').src = lastUrl; $('dlBtn').href = lastUrl; $('dlBtn').download = pt.name;
+  const ext = pt.name.split('.').pop();
+  $('resInfo').textContent = `${pt.name} · ${(pt.blob.size/1048576).toFixed(1)} Mo` + (pt.dur>0 ? ` · ${fmtTime(pt.dur)}` : '') + (ext==='webm' ? ' · format WebM, accepté par YouTube' : '');
   $('result').hidden = false;
-  const file = new File([blob], name, {type});
+  const file = new File([pt.blob], pt.name, {type:pt.type});
   const canShare = navigator.canShare && navigator.canShare({files:[file]});
   $('shareBtn').hidden = !canShare;
   $('shareBtn').onclick = () => navigator.share({files:[file], title:S.title, text:S.title+' · Je suis KCCiste'}).catch(()=>{});
-  lastBlob = blob; lastName = name; ytDefaults(); $('ytStatus').textContent=''; $('ytProg').hidden=true;
-  rec=null; $('recBtn').textContent='● Enregistrer'; $('pauseBtn').disabled=true;
-  $('recPill').className='pill'; $('recTxt').textContent='Enregistré';
-  openTab('t-dif'); Remote.push();
+  lastBlob = pt.blob; lastName = pt.name; ytDefaults();
+  if(parts.length>1){ $('ytTitle').value = ($('ytTitle').value + ` (partie ${pt.sg+1})`).slice(0,100); }
+  $('ytStatus').textContent=''; $('ytProg').hidden=true;
+  renderParts();
+}
+function renderParts(){
+  const box=$('parts'); if(!box) return;
+  box.hidden = parts.length<2; box.innerHTML='';
+  if(parts.length<2) return;
+  const h=document.createElement('p'); h.className='note'; h.textContent=`${parts.length} parties : touchez une partie pour la voir, l'enregistrer ou l'envoyer.`; box.appendChild(h);
+  parts.forEach((pt,i)=>{ const b=document.createElement('button'); b.innerHTML=`<b>Partie ${pt.sg+1}</b>`; b.append(` ${pt.dur>0?fmtTime(pt.dur)+' · ':''}${(pt.blob.size/1048576).toFixed(0)} Mo`); if(i===curPart) b.style.borderColor='var(--gold)'; b.onclick=()=>selectPart(i); box.appendChild(b); });
+}
+// Au chargement : un enregistrement interrompu (page fermée, batterie, plantage) ?
+async function checkRecovery(){
+  let list; try{ list = await Store.sessions(); }catch(e){ return; }
+  if(!list || !list.length) return;
+  const week = Date.now() - 7*86400000;
+  for(const ss of list){ if(ss.done && ss.started < Date.now()-2*86400000) Store.drop(ss.sid).catch(()=>{}); else if(!ss.done && ss.started < week) Store.drop(ss.sid).catch(()=>{}); }
+  const lost = list.filter(ss=>!ss.done && ss.started >= week).sort((a,b)=>b.started-a.started);
+  if(!lost.length) return;
+  const ss = lost[0], box=$('recover');
+  box.hidden=false;
+  $('recoverTxt').textContent = `Un enregistrement du ${new Date(ss.started).toLocaleString('fr-FR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})} a été interrompu avant la fin. Il est gardé sur ce téléphone.`;
+  $('recoverBtn').onclick = async () => {
+    $('recoverBtn').disabled=true; $('recoverTxt').textContent='Récupération…';
+    const segs = await Store.segs(ss.sid).catch(()=>[]);
+    parts=[]; session={sid:ss.sid, mime:ss.mime, idb:true, started:ss.started, title:ss.title};
+    const ext = (ss.mime||'').includes('mp4') ? 'mp4' : 'webm';
+    for(const sg of segs){ const list = await Store.chunks(ss.sid, sg).catch(()=>[]); addPart({blob:new Blob(list,{type:ss.mime}), type:ss.mime, name:partName(ss.sid, sg, ext, segs.length>1), dur:0, sg}); }
+    await Store.putSession({sid:ss.sid, started:ss.started, mime:ss.mime, title:ss.title, done:true}).catch(()=>{});
+    box.hidden=true; if(parts.length){ selectPart(0); openTab('t-dif'); } else alertBox("Rien n'a pu être récupéré de cet enregistrement.");
+  };
+  $('recoverDrop').onclick = async () => { await Store.drop(ss.sid).catch(()=>{}); box.hidden=true; };
 }
 function lockSize(on){ document.querySelectorAll('#fmtChips .chip,#qChips .chip').forEach(b=>b.disabled=on); }
 function snapshot(){
@@ -1226,7 +1386,7 @@ const PRESETS = [
 ];
 function applyPreset(id){
   const p=PRESETS.find(x=>x.id===id); if(!p) return;
-  Object.assign(S, p.v, {ltOn:false, cardOn:false, tickerOn:true, titleOn:true, logoOn:true});
+  Object.assign(S, p.v, {ltOn:false, cardOn:false, tickerOn:true, titleOn:true, logoOn:true}); if(!REGIE && !OVERLAY && $('shText')) { shEdited=false; setTimeout(updShare); }
   ['title','ltName','ltRole','people','cardText','cardRef','ticker','introSub','pauseText','endText'].forEach(k=>{ const el=$(k); if(el) el.value=S[k]; });
   ['ltOn','cardOn','tickerOn','titleOn','logoOn'].forEach(k=>{ const el=$(k); if(el) el.checked=S[k]; });
   document.querySelectorAll('#badgeChips .chip').forEach(b=>b.setAttribute('aria-pressed', b.dataset.badge===S.badge));
@@ -1398,6 +1558,25 @@ function ytDefaults(){
   $('ytDesc').value = `${S.title} · ${date}\n\nPRESSE : JE SUIS KCCISTE\nÉglise Bon Nouveau Message (KCC)\n\nToutes les actualités : https://jesuiskcciste.com\nAbonnez-vous à la chaîne : https://www.youtube.com/@Jesuiskcciste\n\nContact : +243 840 238 592 / +243 861 271 633`;
 }
 
+/* ---------- Annoncer le direct ---------- */
+function shareUrl(){
+  const v=$('shLink').value;
+  if(v==='yt') return 'https://www.youtube.com/@Jesuiskcciste/live';
+  if(v==='custom') return ($('shCustom').value||'').trim() || location.origin+'/direct';
+  return location.origin + '/direct';
+}
+let shEdited=false;
+function shareText(){ return `🔴 EN DIRECT · ${S.title}\n\nSuivez le direct Je suis KCCiste maintenant :`; }
+function updShare(){
+  if(!shEdited) $('shText').value = shareText();
+  const url=shareUrl(), txt=$('shText').value, full=txt+'\n'+url;
+  $('shWa').href='https://wa.me/?text='+encodeURIComponent(full);
+  $('shFb').href='https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(url);
+  $('shTg').href='https://t.me/share/url?url='+encodeURIComponent(url)+'&text='+encodeURIComponent(txt);
+  $('shX').href='https://twitter.com/intent/tweet?text='+encodeURIComponent(txt)+'&url='+encodeURIComponent(url);
+  $('shCustom').hidden = $('shLink').value!=='custom';
+}
+
 /* ---------- Interface ---------- */
 function alertBox(t){ $('alertBox').textContent=t; $('alertBox').hidden=!t; }
 function openTab(id){
@@ -1480,6 +1659,14 @@ function init(){
   $('cmShow').onclick=()=>{ const t=$('cmText').value.trim(); if(!t){ $('cmText').focus(); return; } showComment({name:$('cmName').value, src:cmSrc, text:t}); $('cmText').value=''; };
   $('cmHide').onclick=hideComment; renderHist();
 
+  // Annonce du direct
+  $('shLink').onchange=updShare; $('shCustom').oninput=updShare;
+  $('shText').oninput=()=>{ shEdited=true; updShare(); };
+  $('title').addEventListener('input',updShare);
+  $('shNative').hidden=!navigator.share; $('shNative').onclick=()=>navigator.share({title:S.title, text:$('shText').value, url:shareUrl()}).catch(()=>{});
+  $('shCopy').onclick=()=>{ const t=$('shText').value+'\n'+shareUrl(); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ $('shCopy').textContent='Copié ✓'; setTimeout(()=>$('shCopy').textContent='Copier le message',1500); }).catch(()=>{}); };
+  updShare();
+
   // Régie
   $('rgOpen').onclick=()=>Remote.open(); $('rgClose').onclick=()=>Remote.close();
   $('rgCopy').onclick=()=>{ $('rgUrl').select(); (navigator.clipboard?navigator.clipboard.writeText($('rgUrl').value):Promise.reject()).then(()=>{$('rgCopy').textContent='Copié ✓'; setTimeout(()=>$('rgCopy').textContent='Copier',1500);}).catch(()=>document.execCommand('copy')); };
@@ -1490,6 +1677,8 @@ function init(){
   $('ytSend').onclick=ytUpload;
   ['pipSize','zoom','bright','tickerSpeed'].forEach(id=>bindRange(id));
   ['micVol','mediaVol','musicVol'].forEach(id=>bindRange(id,applyVolumes));
+  $('segMin').value=String(S.segMin); $('segMin').onchange=()=>{ S.segMin=+$('segMin').value; save(); };
+  checkRecovery();
   $('cdMin').value=S.cdMin; $('cdMin').oninput=()=>{ S.cdMin=Math.max(1,Math.min(60,+$('cdMin').value||5)); save(); };
   $('cdBtn').onclick=()=>{ cdEnd=Date.now()+S.cdMin*60000; setScene('intro'); };
   buildPeople(); updOv();
@@ -1528,6 +1717,8 @@ function init(){
     else if(e.key==='Escape') cleanMode(false);
   });
   window.addEventListener('beforeunload',e=>{ if(rec){ e.preventDefault(); e.returnValue=''; } });
+  // Quand le téléphone passe en arrière-plan, on force l'écriture de ce qui est en cours.
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden && rec && rec.state==='recording'){ try{ rec.requestData(); }catch(e){} } });
 }
 document.fonts && document.fonts.load('800 20px Archivo').catch(()=>{});
 init();

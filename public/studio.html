@@ -447,7 +447,7 @@ Bienvenue sur le direct Je suis KCCiste.
       </div>
 
       <details class="cfg group" id="ytCfg">
-        <summary>⚙ Réglage de l'envoi direct sur YouTube (une seule fois)</summary>
+        <summary>⚙ Réglage de l'envoi direct sur YouTube (déjà fait pour la chaîne Je suis KCCiste)</summary>
         <div class="notice"><ol>
           <li>Sur un ordinateur, ouvrez <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">console.cloud.google.com</a> avec le compte Google de la chaîne et créez un projet « Je suis KCCiste ».</li>
           <li>Dans « API et services › Bibliothèque », activez <b>YouTube Data API v3</b>.</li>
@@ -455,7 +455,7 @@ Bienvenue sur le direct Je suis KCCiste.
           <li>Dans « Identifiants », créez un <b>ID client OAuth</b> de type « Application Web », avec l'origine autorisée <b>https://jesuiskcciste.com</b>.</li>
           <li>Copiez l'ID client (il finit par <i>.apps.googleusercontent.com</i>) et collez-le ci-dessous.</li>
         </ol></div>
-        <input type="text" id="ytClient" placeholder="xxxxxxxx.apps.googleusercontent.com" aria-label="ID client Google">
+        <input type="text" id="ytClient" placeholder="ID client déjà réglé (laisser vide)" aria-label="ID client Google">
         <p class="note">Tant que Google n'a pas vérifié le projet, YouTube garde les vidéos envoyées ainsi en « Privée » : il suffit alors de les passer en « Publique » dans YouTube Studio.</p>
       </details>
 
@@ -506,6 +506,8 @@ const params = new URLSearchParams(location.search);
 const OVERLAY = params.get('habillage') === '1';
 const YT = 'youtube.com/@Jesuiskcciste';
 const SITE = 'www.jesuiskcciste.com';
+// ID client OAuth Google du projet « jesuiskcciste » (public : ce n'est pas un secret).
+const YT_CLIENT_ID = '854858268036-pjj5o3jmujqatsqseee0jcaepv8pkqha.apps.googleusercontent.com';
 
 /* ---------- Réglages (gardés sur ce téléphone) ---------- */
 const S = {
@@ -1345,7 +1347,7 @@ function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelec
 function ytStatus(t){ $('ytStatus').textContent=t; }
 async function ytGetToken(){
   if(ytToken && Date.now()<ytTokenExp) return ytToken;
-  const cid=(S.ytClient||'').trim();
+  const cid=(S.ytClient||YT_CLIENT_ID||'').trim();
   if(!/\.apps\.googleusercontent\.com$/.test(cid)){ $('ytCfg').open=true; openTab('t-dif'); $('ytClient').focus(); throw new Error('Collez d’abord l’ID client Google dans « Réglage de l’envoi direct sur YouTube ».'); }
   await loadScript('https://accounts.google.com/gsi/client');
   return new Promise((res,rej)=>{

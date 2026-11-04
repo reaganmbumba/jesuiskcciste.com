@@ -6,6 +6,7 @@ import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
 import { cn, formatDate, formatTime } from '@/utils/format';
 import type { Livestream } from '@/types';
+import { LiveChat } from './LiveChat';
 import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveWatchUrl, useNow } from './livestreams';
 
 const SITE_LIVE_URL = 'https://jesuiskcciste.com/direct';
@@ -65,7 +66,7 @@ export function LivePlayer({ live, className }: { live: Livestream; className?: 
  * Grand bloc sombre : le lecteur pendant le direct, sinon le compte à rebours.
  * Il bascule tout seul à l'heure du début.
  */
-export function LiveSpotlight({ live, headingId, showPageLink = false }: { live: Livestream; headingId?: string; showPageLink?: boolean }) {
+export function LiveSpotlight({ live, headingId, showPageLink = false, chat = false }: { live: Livestream; headingId?: string; showPageLink?: boolean; chat?: boolean }) {
   const { tx, locale } = useI18n();
   const now = useNow(1000);
   const status = liveStatus(live, now);
@@ -90,7 +91,10 @@ export function LiveSpotlight({ live, headingId, showPageLink = false }: { live:
       <h2 id={headingId} className="mt-3 font-display text-2xl font-medium leading-tight sm:text-3xl">{live.title}</h2>
       <p className="mt-1.5 flex items-center gap-1.5 text-sm text-white/70"><CalendarClock className="h-4 w-4 shrink-0 text-gold-300" aria-hidden />{when}</p>
 
-      {showPlayer ? (
+      {showPlayer && chat && isLive ? (
+        // Pendant le direct, sur la page Direct : commentaires sur la vidéo, comme sur TikTok.
+        <LiveChat since={new Date(new Date(live.startsAt).getTime() - 3600000).toISOString()} player={<LivePlayer live={live} />} />
+      ) : showPlayer ? (
         <LivePlayer live={live} className="mt-5" />
       ) : (
         <div className="mt-5">

@@ -45,7 +45,7 @@ export default function LivePage() {
         {lives.error ? <ErrorState error={lives.error} onRetry={lives.reload} /> : lives.loading ? (
           <Skeleton className="h-96 rounded-3xl" />
         ) : featured ? (
-          <LiveSpotlight key={featured.id} live={featured} headingId="live-title" />
+          <LiveSpotlight key={featured.id} live={featured} headingId="live-title" chat />
         ) : (
           <EmptyState icon={<Radio className="h-6 w-6" aria-hidden />} title={tx('Aucun direct programmé pour le moment.', 'No live stream scheduled yet.', 'Ainda não há transmissões agendadas.')}
             description={tx('Abonnez-vous à la chaîne YouTube et activez la cloche : vous serez prévenu dès le prochain culte en direct.', 'Subscribe to the YouTube channel and turn on the bell: you will be notified of the next live service.', 'Subscreva o canal YouTube e ative o sino: será avisado da próxima transmissão em direto.')} />

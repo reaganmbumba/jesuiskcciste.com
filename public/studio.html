@@ -216,6 +216,7 @@ body.tele #tele{display:flex}
       <div class="status">
         <span class="pill" id="camPill"><span class="dot"></span><span id="camTxt">Caméra éteinte</span></span>
         <span class="meter" title="Niveau du micro"><i id="meter"></i></span>
+        <span class="pill rec" id="livePill" hidden><span class="dot"></span>SUR LE SITE</span>
         <span class="pill" id="recPill"><span class="dot"></span><span id="recTxt">Prêt</span></span>
       </div>
     </div>
@@ -422,6 +423,19 @@ Bienvenue sur le direct Je suis KCCiste.
 
     <!-- DIRECT : commentaires et régie -->
     <div class="pane" id="t-dir" hidden>
+      <div class="group">
+        <h3>🔴 Direct sur le site et sur YouTube</h3>
+        <p class="note">Un toucher sur « Lancer le direct » : la page jesuiskcciste.com/direct bascule aussitôt sur votre direct YouTube, avec les commentaires et les cœurs. « Terminer » la fait passer en rediffusion.</p>
+        <input type="text" id="ytLive" placeholder="Lien du direct YouTube (youtube.com/live/…)" aria-label="Lien du direct YouTube">
+        <div class="two">
+          <select id="liveDur" aria-label="Durée prévue"><option value="60">Durée prévue : 1 h</option><option value="120">2 h</option><option value="180">3 h</option><option value="240">4 h</option><option value="360">6 h</option></select>
+          <label class="check"><input type="checkbox" id="liveGen"> Commencer par le générique TV</label>
+        </div>
+        <label class="check"><input type="checkbox" id="liveRec"> Enregistrer aussi la vidéo sur ce téléphone</label>
+        <div class="transport"><button class="btn rec" id="liveGo">🔴 Lancer le direct</button><button class="btn" id="liveStop" hidden>⏹ Terminer le direct</button></div>
+        <p class="note" id="liveStatus"></p>
+        <div class="notice" id="liveYt" hidden></div>
+      </div>
       <div class="group">
         <h3>Annoncer le direct sur les réseaux</h3>
         <select id="shLink" aria-label="Lien à partager">
@@ -654,9 +668,9 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  theme:'', themeOn:false, verses:'', verseAuto:false, verseEvery:5, verseDur:20, c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  ytLive:'https://youtube.com/live/3UQJrRcjn5w', liveDur:180, liveGen:true, liveRec:false, theme:'', themeOn:false, verses:'', verseAuto:false, verseEvery:5, verseDur:20, c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts','theme','themeOn','verses','verseAuto','verseEvery','verseDur'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts','theme','themeOn','verses','verseAuto','verseEvery','verseDur','ytLive','liveDur','liveGen','liveRec'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
@@ -1733,6 +1747,8 @@ function rtConnect(room, onMsg, onStatus, events){
   open();
   return {
     send(msg){ if(bc) bc.postMessage(msg); if(ws && ws.readyState===1 && joined) ws.send(JSON.stringify({topic, event:'broadcast', payload:{type:'broadcast', event:'kcc', payload:msg}, ref:String(++ref)})); },
+    // Événement nommé sur un canal public du site ; mis en attente tant que le canal n'est pas rejoint.
+    emit(event, payload){ const go=()=>ws.send(JSON.stringify({topic, event:'broadcast', payload:{type:'broadcast', event, payload:payload||{}}, ref:String(++ref)})); if(ws && ws.readyState===1 && joined) go(); else { const t=setInterval(()=>{ if(ws && ws.readyState===1 && joined){ clearInterval(t); go(); } }, 300); setTimeout(()=>clearInterval(t), 15000); } },
     close(){ closed=true; try{ ws && ws.close(); }catch(e){} if(bc) bc.close(); },
   };
 }
@@ -2071,6 +2087,83 @@ function cam2Mode(){
   $('c2mic').onchange=()=>{ if(stream){ getCam().then(offer).catch(()=>{}); } };
 }
 
+
+/* ---------- Relier le studio à la page Direct du site ---------- */
+let liveCur = null, liveSig = null;
+try{ liveCur = JSON.parse(localStorage.getItem('kcc-live-cur')||'null'); }catch(e){}
+function ytIdOf(raw){
+  const v=(raw||'').trim(); if(!v) return null;
+  if(/^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+  const m = v.match(/(?:youtu\.be\/|\/live\/|\/embed\/|\/shorts\/|[?&]v=)([A-Za-z0-9_-]{11})/); return m ? m[1] : undefined;
+}
+function liveStatusTxt(t, err){ $('liveStatus').textContent=t; $('liveStatus').style.color = err ? 'var(--rec)' : ''; }
+function liveSignal(){ try{ if(!liveSig) liveSig = rtConnect('kcc-live-status', ()=>{}, ()=>{}, ['live']); liveSig.emit('live'); setTimeout(()=>liveSig && liveSig.emit('live'), 4000); }catch(e){} }
+function liveUi(){
+  const on=!!liveCur; $('liveGo').hidden=on; $('liveStop').hidden=!on; $('livePill').hidden=!on;
+  const box=$('liveYt');
+  if(on){
+    const yt = liveCur.yt;
+    box.hidden=false;
+    box.innerHTML = '<b>Côté YouTube</b> : votre application de direct (Prism, OBS…) doit diffuser vers ' + (yt ? 'l’événement <b>'+yt+'</b>' : 'la chaîne') + ', avec ce studio en ⛶ Mode diffusion.<br>' +
+      (yt ? '<a href="https://studio.youtube.com/video/'+yt+'/livestreaming" target="_blank" rel="noopener">Ouvrir ce direct dans YouTube Studio</a> · <a href="https://youtube.com/live/'+yt+'" target="_blank" rel="noopener">Voir sur YouTube</a> · ' : '') +
+      '<a href="/direct" target="_blank" rel="noopener">Voir la page Direct du site</a>';
+    liveStatusTxt('● En direct sur jesuiskcciste.com/direct depuis ' + new Date(liveCur.start).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
+  }else box.hidden=true;
+}
+async function authSession(){
+  let sess=null; try{ sess = JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){}
+  if(sess && sess.currentSession) sess = sess.currentSession;
+  if(!sess || !sess.access_token) return null;
+  if(sess.expires_at && sess.expires_at*1000 < Date.now()+60000){
+    const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token', {method:'POST', headers:{apikey:SB_KEY,'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:sess.refresh_token})});
+    if(!r.ok) return null;
+    const n = await r.json();
+    sess = {...sess, ...n, expires_at: n.expires_at || Math.floor(Date.now()/1000)+(n.expires_in||3600)};
+    try{ localStorage.setItem(AUTH_KEY, JSON.stringify(sess)); }catch(e){}
+  }
+  return sess;
+}
+async function liveApi(method, path, body){
+  const sess = await authSession(); if(!sess) throw new Error('Votre connexion au site a expiré : reconnectez-vous puis réessayez.');
+  const r = await fetch(SB_URL+'/rest/v1/'+path, {method, headers:{apikey:SB_KEY, Authorization:'Bearer '+sess.access_token, 'Content-Type':'application/json', Prefer:'return=representation'}, body: body ? JSON.stringify(body) : undefined});
+  if(!r.ok){ let m=''; try{ const j=await r.json(); m=j.message||''; }catch(e){} const err=new Error(m || ('Erreur '+r.status)); err.status=r.status; err.raw=m; throw err; }
+  return r.json();
+}
+async function liveGo(){
+  const raw=$('ytLive').value, yt=ytIdOf(raw);
+  if(yt===undefined){ liveStatusTxt('Lien YouTube non reconnu. Collez le lien du direct (youtube.com/live/…).', true); return; }
+  $('liveGo').disabled=true; liveStatusTxt('Lancement…');
+  try{
+    const rows = await liveApi('POST', 'livestreams', {title:(S.title||'Direct Je suis KCCiste').slice(0,200), starts_at:new Date(Date.now()-60000).toISOString(), duration_minutes:S.liveDur, youtube_id:yt, is_cancelled:false});
+    const row = rows[0];
+    liveCur = {id:row.id, start:Date.now(), yt};
+    try{ localStorage.setItem('kcc-live-cur', JSON.stringify(liveCur)); }catch(e){}
+    liveSignal(); liveUi();
+    if(S.liveGen) setScene('gentv');
+    if(S.liveRec && !rec) startRec();
+    if(!S.siteOn){ S.siteOn=true; $('siteOn').checked=true; siteStart(); save(); }
+  }catch(e){ liveStatusTxt('⚠ '+(e.message||'Lancement impossible.'), true); }
+  finally{ $('liveGo').disabled=false; }
+}
+async function liveStop(){
+  if(!liveCur) return;
+  $('liveStop').disabled=true; liveStatusTxt('Fin du direct…');
+  const now = new Date();
+  try{
+    try{ await liveApi('PATCH', 'livestreams?id=eq.'+liveCur.id, {ended_at: now.toISOString()}); }
+    catch(e){
+      // Colonne « ended_at » pas encore créée : on raccourcit la durée prévue.
+      const mins = Math.max(15, Math.round((now.getTime()-liveCur.start)/60000)+1);
+      await liveApi('PATCH', 'livestreams?id=eq.'+liveCur.id, {duration_minutes: mins});
+      alertBox("Le direct est terminé. Pour que la page passe tout de suite en rediffusion, exécutez une fois le petit fichier SQL « livestreams_ended » dans Supabase (sinon elle attend jusqu'à 1 heure).");
+    }
+    liveCur = null; try{ localStorage.removeItem('kcc-live-cur'); }catch(e){}
+    liveSignal(); liveUi(); setScene('end');
+    liveStatusTxt('Direct terminé : la page Direct montre la rediffusion.');
+  }catch(e){ liveStatusTxt('⚠ '+(e.message||'Impossible de terminer.'), true); }
+  finally{ $('liveStop').disabled=false; }
+}
+
 /* ---------- Annoncer le direct ---------- */
 function shareUrl(){
   const v=$('shLink').value;
@@ -2193,6 +2286,12 @@ function init(){
   ['siteOn','siteOverlay','siteHearts'].forEach(id=>bindCheck(id));
   $('siteOn').addEventListener('change', siteStart); siteStart();
 
+  // Direct sur le site
+  bindText('ytLive'); bindCheck('liveGen'); bindCheck('liveRec');
+  $('liveDur').value=String(S.liveDur); $('liveDur').onchange=()=>{ S.liveDur=+$('liveDur').value; save(); };
+  $('liveGo').onclick=liveGo; $('liveStop').onclick=()=>{ if(confirm('Terminer le direct sur le site ?')) liveStop(); };
+  liveUi();
+
   // Annonce du direct
   $('shLink').onchange=updShare; $('shCustom').oninput=updShare;
   $('shText').oninput=()=>{ shEdited=true; updShare(); };
@@ -2274,18 +2373,10 @@ function gateShow(state){
   const [m,b] = msgs[state]; $('gateMsg').textContent = m; $('gateBtns').innerHTML = b;
 }
 async function studioGate(){
-  let sess=null; try{ sess = JSON.parse(localStorage.getItem(AUTH_KEY)||'null'); }catch(e){}
-  if(sess && sess.currentSession) sess = sess.currentSession;
-  if(!sess || !sess.access_token){ gateShow('login'); return false; }
   try{
-    if(sess.expires_at && sess.expires_at*1000 < Date.now()+60000){
-      // Session expirée : on la renouvelle comme le site, et on la range au même endroit.
-      const r = await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token', {method:'POST', headers:{apikey:SB_KEY,'Content-Type':'application/json'}, body:JSON.stringify({refresh_token:sess.refresh_token})});
-      if(!r.ok){ gateShow('login'); return false; }
-      const n = await r.json();
-      sess = {...sess, ...n, expires_at: n.expires_at || Math.floor(Date.now()/1000)+(n.expires_in||3600)};
-      try{ localStorage.setItem(AUTH_KEY, JSON.stringify(sess)); }catch(e){}
-    }
+    // Session du site (renouvelée si besoin, et rangée au même endroit que le site).
+    const sess = await authSession();
+    if(!sess){ gateShow('login'); return false; }
     const r = await fetch(SB_URL+'/rest/v1/rpc/has_permission', {method:'POST', headers:{apikey:SB_KEY, Authorization:'Bearer '+sess.access_token, 'Content-Type':'application/json'}, body:JSON.stringify({p_permission:'settings.manage'})});
     if(r.status===401 || r.status===403){ gateShow('login'); return false; }
     if(!r.ok){ gateShow('offline'); return false; }

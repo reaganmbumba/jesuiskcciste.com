@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { YOUTUBE_CHANNEL_ID, youtubeChannelUrl, youtubeWatchUrl } from '@/config/youtube';
 import { repository, type Repository } from '@/services/repository';
 import type { Livestream } from '@/types';
@@ -49,6 +50,7 @@ export function liveStatus(l: Livestream, now = new Date()): LiveStatus {
   if (l.isCancelled) return 'cancelled';
   const t = now.getTime();
   if (t < new Date(l.startsAt).getTime()) return 'upcoming';
+  if (l.endedAt && t >= new Date(l.endedAt).getTime()) return 'ended';
   if (t > liveEnd(l).getTime() + LIVE_GRACE_MIN * 60000) return 'ended';
   return 'live';
 }
@@ -138,6 +140,21 @@ export function countdownParts(startsAt: string, now = new Date()): { days: numb
 }
 
 /** L'heure courante, rafraîchie toutes les `ms` millisecondes (compte à rebours, bascule en direct). */
+/**
+ * Le studio prévient le site quand il lance ou termine un direct (canal
+ * temps réel « kcc-live-status ») : la page recharge alors les directs sans
+ * qu'on rafraîchisse. Par sécurité, elle les recharge aussi chaque minute.
+ */
+export function useLiveSignal(onSignal: () => void, everyMs = 60000) {
+  useEffect(() => {
+    const t = setInterval(onSignal, everyMs);
+    if (!supabase) return () => clearInterval(t);
+    const client = supabase;
+    const ch = client.channel('kcc-live-status').on('broadcast', { event: 'live' }, () => onSignal()).subscribe();
+    return () => { clearInterval(t); void client.removeChannel(ch); };
+  }, [onSignal, everyMs]);
+}
+
 export function useNow(ms = 1000): Date {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {

@@ -496,7 +496,7 @@ Bienvenue sur le direct Je suis KCCiste.
         <label class="check"><input type="checkbox" id="jingleOn" checked> Musique du générique et de l'écran de fin</label>
         <label class="check"><input type="checkbox" id="dingOn" checked> Petit son quand un commentaire s'affiche</label>
         <div class="row"><label for="sfxVol">Volume</label><input type="range" id="sfxVol" min="0" max="100" value="60"><output></output></div>
-        <div class="transport"><button class="btn sm" id="testJingle">♪ Écouter le générique</button><button class="btn sm" id="testWhoosh">♪ Transition</button></div>
+        <div class="transport"><button class="btn sm" id="testJingle">♪ Écouter le générique</button><button class="btn sm" id="testTV">♪ Générique TV</button><button class="btn sm" id="testWhoosh">♪ Transition</button></div>
       </div>
       <div class="group">
         <h3>Musique de fond</h3>
@@ -801,6 +801,7 @@ async function shareScreen(){
 
 /* ---------- Scènes ---------- */
 const SCENES = [
+  {id:'gentv', label:'Générique TV', icon:'<rect x="1" y="3" width="38" height="20" rx="3" fill="none" stroke="currentColor"/><path d="M14 1l6 4 6-4" stroke="currentColor" fill="none"/><text x="20" y="18" font-size="9" font-weight="800" text-anchor="middle" fill="currentColor">TV</text>'},
   {id:'gen', label:'Générique', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><path d="M16 7l9 5-9 5z" fill="currentColor"/>'},
   {id:'intro', label:'Ouverture', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="none" stroke="currentColor"/><circle cx="20" cy="12" r="6" fill="none" stroke="currentColor"/>'},
   {id:'cam', label:'Caméra', icon:'<rect x="1" y="1" width="38" height="22" rx="3" fill="currentColor" opacity=".35"/><circle cx="20" cy="10" r="4" fill="currentColor"/><path d="M12 22c1-5 15-5 16 0" fill="currentColor"/>'},
@@ -821,6 +822,9 @@ function setScene(id, quiet){
   if(id==='gen'){
     genT0 = sceneT0; if(S.jingleOn) Sfx.jingle();
     genTimer = setTimeout(()=>{ if(S.scene==='gen') setScene(cdEnd>Date.now() ? 'intro' : (camOn ? 'cam' : 'intro'), true); }, GEN_LEN*1000);
+  }else if(id==='gentv'){
+    genT0 = sceneT0; prevScene = null; if(S.jingleOn) Sfx.tv();
+    genTimer = setTimeout(()=>{ if(S.scene==='gentv') setScene(cdEnd>Date.now() ? 'intro' : (camOn ? 'cam' : 'intro'), true); }, TV_LEN*1000);
   }else if(id==='end'){ endT0 = sceneT0; if(S.jingleOn) Sfx.outro(); }
   else if(!quiet && S.sfx) Sfx.whoosh();
   Remote.push();
@@ -1017,6 +1021,110 @@ function sceneGen(t){
   const out=clamp01((e-(GEN_LEN-0.7))/0.7); if(out>0){ ctx.fillStyle=`rgba(3,7,22,${out*.6})`; ctx.fillRect(0,0,W,H); }
 }
 
+/* Générique « Je suis KCCiste TV » : 8 secondes, façon habillage de chaîne. */
+const TV_LEN = 8;
+function sceneTV(t){
+  const e=(t-genT0)/1000, port=S.fmt==='port';
+  const cx=W/2, cy=H*(port?.40:.44);
+  ctx.fillStyle='#020617'; ctx.fillRect(0,0,W,H);
+  ctx.save();
+  // Fond : bleu nuit profond, rayons lumineux en diagonale, léger zoom
+  const zoom = 1.12 - .12*ease(clamp01(e/2.2)) + (e>7 ? (e-7)*.06 : 0);
+  ctx.translate(cx,cy); ctx.scale(zoom,zoom); ctx.translate(-cx,-cy);
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8); bg.addColorStop(0,'#14306e'); bg.addColorStop(.5,'#081a4a'); bg.addColorStop(1,'#020617');
+  ctx.globalAlpha=clamp01(e/.6); ctx.fillStyle=bg; ctx.fillRect(-W*.1,-H*.1,W*1.2,H*1.2); ctx.globalAlpha=1;
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<6;i++){
+    const a=-0.5+i*0.18, off=((e*120+i*170)%(W*1.6))-W*.3;
+    ctx.save(); ctx.translate(off*U/U, 0); ctx.rotate(a*.25);
+    const g=ctx.createLinearGradient(0,0,90*U,0); g.addColorStop(0,'rgba(243,210,122,0)'); g.addColorStop(.5,`rgba(243,210,122,${.05+.03*(i%2)})`); g.addColorStop(1,'rgba(243,210,122,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,-H*.5,90*U,H*2); ctx.restore();
+  }
+  // Particules
+  for(let i=0;i<60;i++){ const px=((i*137.5)%100)/100*W, py=(((i*53.7)%100)/100*H - e*20*(1+i%4)*U + H*2)%H, r=(1+(i%3))*U;
+    ctx.fillStyle=`rgba(243,210,122,${.15+.25*Math.abs(Math.sin(e*2+i))})`; ctx.beginPath(); ctx.arc(px,py,r,0,7); ctx.fill(); }
+  ctx.restore();
+  // Traits de lumière d'ouverture (0 → 1 s)
+  if(e<1.3){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    [[-.35,0],[.25,.18]].forEach(([ang,delay],j)=>{
+      const k=clamp01((e-delay)/.9); if(k<=0||k>=1) return;
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang); const x=-W*.9+k*W*1.8, len=W*.6;
+      const g=ctx.createLinearGradient(x-len,0,x,0); g.addColorStop(0,'rgba(255,240,200,0)'); g.addColorStop(1,'rgba(255,240,200,.95)');
+      ctx.fillStyle=g; ctx.fillRect(x-len,-2.5*U-j,len,5*U+2*j); ctx.fillStyle='rgba(255,250,235,1)'; ctx.beginPath(); ctx.arc(x,0,5*U,0,7); ctx.fill();
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  // Positions : logo au centre puis glisse à gauche (paysage) ou monte (portrait)
+  const slide = ease(clamp01((e-2.3)/.8));
+  const logoSize=(port?230:200)*U;
+  ctx.save(); ctx.font=F(port?54:58,900); const wwPre=ctx.measureText('JE SUIS KCCISTE').width; ctx.restore();
+  const badgeW = 86*U + 16*U;
+  const lxEnd = cx - (logoSize*.12 + wwPre + badgeW)/2;   // groupe logo + texte + TV centré
+  const lx = port ? cx : cx + slide*(lxEnd-cx), ly = port ? cy - slide*90*U : cy;
+  // Anneau doré qui se dessine (0,8 → 1,9 s)
+  const rk=ease(clamp01((e-.8)/1.1));
+  if(rk>0 && e<2.15){ ctx.save(); ctx.strokeStyle='#f3d27a'; ctx.lineWidth=5*U; ctx.shadowColor='rgba(243,210,122,.9)'; ctx.shadowBlur=24*U;
+    ctx.beginPath(); ctx.arc(cx,cy,logoSize*.47,-Math.PI/2,-Math.PI/2+rk*Math.PI*2); ctx.stroke(); ctx.restore(); }
+  // Logo : arrive avec flou de mouvement et flash (1,6 → 2,1 s)
+  const lk=clamp01((e-1.6)/.5);
+  if(lk>0){
+    const sc = 1.7 - .7*ease(lk);
+    for(let j=4;j>=0;j--){ const ss = sc + j*.06*(1-lk); ctx.save(); ctx.globalAlpha = (j? .12 : 1)*lk; drawLogoAt(lx,ly,logoSize*ss, j===0); ctx.restore(); }
+  }
+  // Flash et onde de choc à 2 s
+  const fk=clamp01((e-2.0)/.6);
+  if(fk>0 && fk<1){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    const fl=ctx.createRadialGradient(cx,cy,0,cx,cy,W*.6); fl.addColorStop(0,`rgba(255,248,225,${(1-fk)*.85})`); fl.addColorStop(1,'rgba(255,248,225,0)'); ctx.fillStyle=fl; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle=`rgba(243,210,122,${1-fk})`; ctx.lineWidth=(6-5*fk)*U; ctx.beginPath(); ctx.arc(cx,cy,logoSize*.5+fk*W*.5,0,7); ctx.stroke();
+    ctx.restore();
+  }
+  // Texte « JE SUIS KCCISTE » révélé par un volet (2,6 → 3,4 s)
+  const tk=ease(clamp01((e-2.6)/.8));
+  const tx = port ? cx : lx + logoSize*.62, ty = port ? ly + logoSize*.62 : ly - 22*U;
+  ctx.save(); ctx.textBaseline='middle';
+  ctx.font=F(port?54:58,900); ctx.textAlign = port ? 'center' : 'left';
+  const word='JE SUIS KCCISTE', ww=ctx.measureText(word).width;
+  const x0 = port ? tx-ww/2 : tx;
+  ctx.beginPath(); ctx.rect(x0-10*U, ty-50*U, (ww+20*U)*tk, 100*U); ctx.clip();
+  const tg=ctx.createLinearGradient(0,ty-30*U,0,ty+30*U); tg.addColorStop(0,'#fff6d6'); tg.addColorStop(.55,'#f3c24a'); tg.addColorStop(1,'#b8862b');
+  ctx.fillStyle=tg; ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=12*U; ctx.fillText(word, tx, ty);
+  // Éclat qui balaie le texte (4 → 5 s)
+  const sk=clamp01((e-4)/1);
+  if(sk>0&&sk<1){ ctx.globalCompositeOperation='source-atop'; const sx=x0-60*U+sk*(ww+120*U); const sg=ctx.createLinearGradient(sx-40*U,0,sx+40*U,0);
+    sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,'rgba(255,255,255,.75)'); sg.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle=sg; ctx.fillRect(x0-80*U,ty-50*U,ww+160*U,100*U); }
+  ctx.restore();
+  // Trait doré sous le texte
+  const uk=ease(clamp01((e-3.0)/.6));
+  ctx.save(); ctx.fillStyle='#d9b25a'; ctx.fillRect(port ? cx-ww/2 : x0, ty+40*U, ww*uk, 3*U); ctx.restore();
+  // Badge « TV » qui jaillit (3,1 s)
+  const bk=clamp01((e-3.1)/.45);
+  if(bk>0){
+    const over = bk<1 ? 1+Math.sin(bk*Math.PI)*.25 : 1, bw=86*U, bh=50*U;
+    const bx = port ? cx - bw/2 : x0 + ww + 16*U, by = port ? ty + 60*U : ty - bh/2;
+    ctx.save(); ctx.translate(bx+bw/2, by+bh/2); ctx.scale(over*bk, over*bk); ctx.translate(-bw/2,-bh/2);
+    ctx.shadowColor='rgba(229,72,77,.6)'; ctx.shadowBlur=18*U; rr(0,0,bw,bh,10*U); ctx.fillStyle='#e5484d'; ctx.fill(); ctx.shadowBlur=0;
+    ctx.strokeStyle='#f3d27a'; ctx.lineWidth=2.5*U; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font=F(32,900); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('TV', bw/2, bh/2+2*U);
+    ctx.restore();
+  }
+  // Sous-titre et titre de l'émission
+  const sub=ease(clamp01((e-3.8)/.7));
+  ctx.save(); ctx.globalAlpha=sub; ctx.font=F(port?18:17,600); ctx.fillStyle='#c9d2ea'; ctx.textAlign= port?'center':'left'; ctx.textBaseline='middle';
+  if('letterSpacing' in ctx) ctx.letterSpacing=(3*U)+'px';
+  ctx.fillText('ÉGLISE BON NOUVEAU MESSAGE · KCC', port?cx:x0, port ? ty+135*U : ty+95*U); if('letterSpacing' in ctx) ctx.letterSpacing='0px'; ctx.restore();
+  const tt=ease(clamp01((e-4.6)/.8));
+  if(S.title){ ctx.save(); ctx.globalAlpha=tt; ctx.font=F(port?28:26,700); ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(S.title, cx, H*(port?.80:.82)+(1-tt)*12*U, W*.86); ctx.restore(); }
+  ctx.restore();
+  // Sortie : volet doré puis fondu (7,2 → 8 s)
+  const ok=clamp01((e-7.2)/.8);
+  if(ok>0){ ctx.save(); const wx=-W*.2+ok*W*1.4; const wg=ctx.createLinearGradient(wx-W*.3,0,wx,0); wg.addColorStop(0,'rgba(243,210,122,0)'); wg.addColorStop(1,'rgba(255,240,200,.9)');
+    ctx.fillStyle=wg; ctx.fillRect(wx-W*.3,0,W*.3,H); ctx.fillStyle=`rgba(2,6,23,${ok*.7})`; ctx.fillRect(0,0,W,H); ctx.restore(); }
+}
+
 /* ---------- Sons (fabriqués par le navigateur, mélangés dans l'enregistrement) ---------- */
 const Sfx = {
   bus(local){ const ac=audio(); if(!ac) return null; ac.resume(); if(local){ const g=ac.createGain(); g.gain.value=S.sfxVol/100; g.connect(ac.destination); return g; } return sfxGain; },
@@ -1052,6 +1160,29 @@ const Sfx = {
     const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=1.2; bp.frequency.setValueAtTime(350,t); bp.frequency.exponentialRampToValueAtTime(3200,t+len*.6); bp.frequency.exponentialRampToValueAtTime(900,t+len);
     const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.35,t+len*.45); g.gain.linearRampToValueAtTime(0,t+len);
     src.connect(bp); bp.connect(g); g.connect(out); src.start(t); src.stop(t+len);
+  },
+  // Générique TV : montée, impact, scintillement du badge, nappe, coup final.
+  tv(local){
+    const out=this.bus(local); if(!out) return; const ac=audioCtx, t=ac.currentTime+.05;
+    const noise=(len)=>{ const b=ac.createBuffer(1, ac.sampleRate*len, ac.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; const s=ac.createBufferSource(); s.buffer=b; return s; };
+    // Montée (riser) 0 → 1,9 s
+    { const n=noise(2), bp=ac.createBiquadFilter(), g=ac.createGain(); bp.type='bandpass'; bp.Q.value=2; bp.frequency.setValueAtTime(300,t); bp.frequency.exponentialRampToValueAtTime(6000,t+1.9);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.32,t+1.85); g.gain.linearRampToValueAtTime(0,t+1.95); n.connect(bp); bp.connect(g); g.connect(out); n.start(t); n.stop(t+2); }
+    { const o=ac.createOscillator(), g=ac.createGain(); o.type='sawtooth'; o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(880,t+1.9);
+      const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1800; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.06,t+1.8); g.gain.linearRampToValueAtTime(0,t+1.95); o.connect(lp); lp.connect(g); g.connect(out); o.start(t); o.stop(t+2); }
+    // Impact à 2 s : grave + souffle
+    const hit=(at, vol)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.setValueAtTime(120,at); o.frequency.exponentialRampToValueAtTime(38,at+.6);
+      g.gain.setValueAtTime(vol,at); g.gain.exponentialRampToValueAtTime(.001,at+1.4); o.connect(g); g.connect(out); o.start(at); o.stop(at+1.5);
+      const n=noise(.8), lp=ac.createBiquadFilter(), gn=ac.createGain(); lp.type='lowpass'; lp.frequency.setValueAtTime(5000,at); lp.frequency.exponentialRampToValueAtTime(200,at+.7);
+      gn.gain.setValueAtTime(vol*.5,at); gn.gain.exponentialRampToValueAtTime(.001,at+.8); n.connect(lp); lp.connect(gn); gn.connect(out); n.start(at); n.stop(at+.8); };
+    hit(t+2.0, .9);
+    // Badge TV à 3 s : scintillement
+    [1567.98,2093,2637].forEach((f,i)=>this.bell(out,f,t+3.0+i*.07,1.4,.12));
+    // Nappe 2,1 → 7,6 s (ré majeur)
+    this.pad(out,[146.83,220,293.66,369.99],t+2.1,5.5,.42);
+    [587.33,739.99,880,1174.66].forEach((f,i)=>this.bell(out,f,t+3.4+i*.28,1.8,.14));
+    // Coup final à 7,2 s
+    hit(t+7.2, .55);
   },
   ding(){ const out=this.bus(false); if(!out) return; const t=audioCtx.currentTime+.02; this.bell(out,1318.5,t,1.1,.2); this.bell(out,1760,t+.12,1.2,.15); },
 };
@@ -1230,6 +1361,7 @@ function drawTicker(t,dt){
 function drawScene(id,t){
   switch(id){
     case 'gen': sceneGen(t); break;
+    case 'gentv': sceneTV(t); break;
     case 'intro': sceneIntro(t); break;
     case 'cam': sceneCam(t); break;
     case 'camMedia': sceneCamMedia(t); break;
@@ -1254,7 +1386,7 @@ function draw(){
     if(prevScene && k<1){ drawScene(prevScene,t); ctx.save(); ctx.globalAlpha=k; drawScene(S.scene,t); ctx.restore(); }
     else { prevScene=null; drawScene(S.scene,t); }
   }
-  const brand = !['gen','intro','pause','end'].includes(S.scene);
+  const brand = !['gen','gentv','intro','pause','end'].includes(S.scene);
   if(brand && S.logoOn) drawLogoCorner();
   if(brand) drawBadge(t);
   if(brand && S.titleOn) drawTitle();
@@ -1262,9 +1394,9 @@ function draw(){
   if(brand && S.cardOn) drawCard();
   if(brand) drawVerse();
   if(brand && S.ltOn) drawLowerThird(t);
-  if(S.scene!=='gen') drawSiteChat(t);
+  if(S.scene!=='gen' && S.scene!=='gentv') drawSiteChat(t);
   if(brand || S.scene==='intro' || S.scene==='pause') drawComment(t);
-  if(S.tickerOn && S.scene!=='gen') drawTicker(t,dt);
+  if(S.tickerOn && S.scene!=='gen' && S.scene!=='gentv') drawTicker(t,dt);
   if(ltAutoOff && Date.now()>ltAutoOff){ ltAutoOff=0; setLt(false); }
   meter();
 }
@@ -2021,7 +2153,7 @@ function init(){
   ['titleOn','logoOn','clockOn','ltOn','cardOn','tickerOn','pipRound','mirror'].forEach(id=>bindCheck(id));
   bindCheck('musicDuck',applyVolumes); bindCheck('monitor',applyVolumes);
   ['sfx','jingleOn','dingOn'].forEach(id=>bindCheck(id)); bindRange('sfxVol',applyVolumes);
-  $('testJingle').onclick=()=>Sfx.jingle(true); $('testWhoosh').onclick=()=>Sfx.whoosh(true);
+  $('testJingle').onclick=()=>Sfx.jingle(true); $('testTV').onclick=()=>Sfx.tv(true); $('testWhoosh').onclick=()=>Sfx.whoosh(true);
 
   // Prompteur
   bindCheck('promptOn',promptLayout); bindCheck('pFlip',promptLayout);

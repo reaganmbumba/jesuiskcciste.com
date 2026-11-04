@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n';
 import { cn, formatDate, formatTime } from '@/utils/format';
 import type { Livestream } from '@/types';
 import { LiveChat } from './LiveChat';
+import { StudioPlayer } from './StudioPlayer';
 import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveWatchUrl, useLiveSignal, useNow } from './livestreams';
 
 const SITE_LIVE_URL = 'https://jesuiskcciste.com/direct';
@@ -74,6 +75,7 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
   const isLive = status === 'live';
   // Après la fin : la rediffusion (ou le direct de la chaîne) reste dans le lecteur.
   const showPlayer = isLive || status === 'ended';
+  const studio = !!live.rtcSession;
   const when = `${formatDate(live.startsAt, locale, { weekday: 'long', day: 'numeric', month: 'long' })} · ${formatTime(live.startsAt, locale)} – ${formatTime(liveEnd(live).toISOString(), locale)}`;
 
   return (
@@ -87,14 +89,21 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
             <Radio className="h-3.5 w-3.5" aria-hidden />{tx('Prochain direct', 'Next live stream', 'Próxima transmissão')}
           </span>
         )}
-        <span className="inline-flex items-center gap-1.5 text-xs text-white/60"><YouTubeIcon className="h-3.5 w-5" /> YouTube</span>
+        {studio ? <span className="inline-flex items-center gap-1.5 text-xs text-white/60">Je suis KCCiste TV</span>
+          : <span className="inline-flex items-center gap-1.5 text-xs text-white/60"><YouTubeIcon className="h-3.5 w-5" /> YouTube</span>}
       </div>
       <h2 id={headingId} className="mt-3 font-display text-2xl font-medium leading-tight sm:text-3xl">{live.title}</h2>
       <p className="mt-1.5 flex items-center gap-1.5 text-sm text-white/70"><CalendarClock className="h-4 w-4 shrink-0 text-gold-300" aria-hidden />{when}</p>
 
       {showPlayer && chat && isLive ? (
         // Pendant le direct, sur la page Direct : commentaires sur la vidéo, comme sur TikTok.
-        <LiveChat since={new Date(new Date(live.startsAt).getTime() - 3600000).toISOString()} player={<LivePlayer live={live} />} />
+        // L'image vient du studio du site si le direct est lancé depuis le studio, sinon de YouTube.
+        <LiveChat since={new Date(new Date(live.startsAt).getTime() - 3600000).toISOString()}
+          player={studio ? <StudioPlayer key={live.rtcSession} sessionId={live.rtcSession!} /> : <LivePlayer live={live} />} />
+      ) : isLive && studio ? (
+        <StudioPlayer key={live.rtcSession} sessionId={live.rtcSession!} className="mt-5" />
+      ) : showPlayer && studio && !live.youtubeId ? (
+        <p className="mt-5 rounded-2xl bg-white/5 p-5 text-sm text-white/75">{tx('Ce direct est terminé. Merci de l’avoir suivi !', 'This live stream has ended. Thank you for watching!', 'Esta transmissão terminou. Obrigado por ter acompanhado!')}</p>
       ) : showPlayer ? (
         <LivePlayer live={live} className="mt-5" />
       ) : (
@@ -107,11 +116,11 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
       {live.description && <p className="mt-4 whitespace-pre-line text-[15px] leading-relaxed text-white/75">{live.description}</p>}
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <a href={liveWatchUrl(live)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
+        {(!studio || live.youtubeId) && <a href={liveWatchUrl(live)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10">
           {showPlayer ? <><ExternalLink className="h-4 w-4" aria-hidden />{tx('Regarder sur YouTube', 'Watch on YouTube', 'Ver no YouTube')}</>
             : live.youtubeId ? <><BellRing className="h-4 w-4" aria-hidden />{tx('Me le rappeler sur YouTube', 'Remind me on YouTube', 'Lembrar-me no YouTube')}</>
             : <><ExternalLink className="h-4 w-4" aria-hidden />{tx('Ouvrir la chaîne', 'Open the channel', 'Abrir o canal')}</>}
-        </a>
+        </a>}
         <YouTubeSubscribeButton size="sm" />
         {showPageLink && (
           <Link to="/direct" className="inline-flex items-center justify-center gap-1 text-sm font-semibold text-gold-300 hover:underline sm:ml-auto">

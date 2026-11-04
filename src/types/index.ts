@@ -514,6 +514,8 @@ export interface Livestream {
   isCancelled: boolean;
   /** Fin réelle (bouton « Terminer le direct » du studio) ; vide = horaire programmé. */
   endedAt?: string | null;
+  /** Session du relais vidéo quand le direct vient du studio du site (sans YouTube). */
+  rtcSession?: string | null;
   createdAt?: string;
 }
 

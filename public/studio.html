@@ -424,9 +424,10 @@ Bienvenue sur le direct Je suis KCCiste.
     <!-- DIRECT : commentaires et régie -->
     <div class="pane" id="t-dir" hidden>
       <div class="group">
-        <h3>🔴 Direct sur le site et sur YouTube</h3>
-        <p class="note">Un toucher sur « Lancer le direct » : la page jesuiskcciste.com/direct bascule aussitôt sur votre direct YouTube, avec les commentaires et les cœurs. « Terminer » la fait passer en rediffusion.</p>
-        <input type="text" id="ytLive" placeholder="Lien du direct YouTube (youtube.com/live/…)" aria-label="Lien du direct YouTube">
+        <h3>🔴 Direct sur la page jesuiskcciste.com/direct</h3>
+        <p class="note">Un toucher sur « Lancer le direct » : l'image de ce studio (caméras, habillage, versets, commentaires) part en direct sur la page Direct du site, pour tous les visiteurs, avec les commentaires et les cœurs. Partagez ensuite ce lien sur Facebook, WhatsApp, YouTube…</p>
+        <label class="check"><input type="checkbox" id="livePub"> Diffuser l'image du studio sur la page Direct (sans YouTube)</label>
+        <input type="text" id="ytLive" placeholder="Lien d'un direct YouTube (facultatif)" aria-label="Lien du direct YouTube (facultatif)">
         <div class="two">
           <select id="liveDur" aria-label="Durée prévue"><option value="60">Durée prévue : 1 h</option><option value="120">2 h</option><option value="180">3 h</option><option value="240">4 h</option><option value="360">6 h</option></select>
           <label class="check"><input type="checkbox" id="liveGen"> Commencer par le générique TV</label>
@@ -668,9 +669,9 @@ const S = {
   pip:'br', pipSize:28, pipRound:true, mirror:true, zoom:100, bright:100,
   micVol:100, mediaVol:100, musicVol:25, musicDuck:true, monitor:false,
   promptOn:false, promptText:'', pSpeed:4, pSize:34, pHeight:44, pFlip:false,
-  ytLive:'https://youtube.com/live/3UQJrRcjn5w', liveDur:180, liveGen:true, liveRec:false, theme:'', themeOn:false, verses:'', verseAuto:false, verseEvery:5, verseDur:20, c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
+  livePub:true, ytLive:'', liveDur:180, liveGen:true, liveRec:false, theme:'', themeOn:false, verses:'', verseAuto:false, verseEvery:5, verseDur:20, c2audio:false, c2mirror:false, siteOn:true, siteOverlay:true, siteHearts:true, segMin:15, sfx:true, jingleOn:true, dingOn:true, sfxVol:60, ytClient:'', cmHist:[],
 };
-const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts','theme','themeOn','verses','verseAuto','verseEvery','verseDur','ytLive','liveDur','liveGen','liveRec'];
+const KEEP = ['fmt','q','title','titleOn','logoOn','badge','clockOn','ltName','ltRole','people','cardText','cardRef','ticker','tickerSpeed','introSub','cdMin','pauseText','endText','pip','pipSize','pipRound','mirror','micVol','mediaVol','musicVol','musicDuck','promptText','pSpeed','pSize','pHeight','pFlip','sfx','jingleOn','dingOn','sfxVol','ytClient','cmHist','segMin','siteOn','siteOverlay','siteHearts','theme','themeOn','verses','verseAuto','verseEvery','verseDur','livePub','ytLive','liveDur','liveGen','liveRec'];
 function save(){ try{ const o={}; KEEP.forEach(k=>o[k]=S[k]); localStorage.setItem('kcc-studio', JSON.stringify(o)); }catch(e){} }
 function load(){
   // Réglages par défaut tirés des champs de la page, puis ceux enregistrés.
@@ -2104,8 +2105,9 @@ function liveUi(){
   if(on){
     const yt = liveCur.yt;
     box.hidden=false;
-    box.innerHTML = '<b>Côté YouTube</b> : votre application de direct (Prism, OBS…) doit diffuser vers ' + (yt ? 'l’événement <b>'+yt+'</b>' : 'la chaîne') + ', avec ce studio en ⛶ Mode diffusion.<br>' +
-      (yt ? '<a href="https://studio.youtube.com/video/'+yt+'/livestreaming" target="_blank" rel="noopener">Ouvrir ce direct dans YouTube Studio</a> · <a href="https://youtube.com/live/'+yt+'" target="_blank" rel="noopener">Voir sur YouTube</a> · ' : '') +
+    box.innerHTML = (liveCur.rtc ? '<b>L’image de ce studio est sur la page Direct.</b> Gardez cette page ouverte au premier plan et l’écran allumé pendant tout le direct. Partagez le lien <b>jesuiskcciste.com/direct</b> (onglet Direct, « Annoncer le direct »).<br>' :
+      '<b>Côté YouTube</b> : votre application de direct (Prism, OBS…) doit diffuser vers ' + (yt ? 'l’événement <b>'+yt+'</b>' : 'la chaîne') + ', avec ce studio en ⛶ Mode diffusion.<br>') +
+      (yt ? '<a href="https://studio.youtube.com/video/'+yt+'/livestreaming" target="_blank" rel="noopener">Ouvrir ce direct dans YouTube Studio</a> · ' : '') +
       '<a href="/direct" target="_blank" rel="noopener">Voir la page Direct du site</a>';
     liveStatusTxt('● En direct sur jesuiskcciste.com/direct depuis ' + new Date(liveCur.start).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
   }else box.hidden=true;
@@ -2129,16 +2131,73 @@ async function liveApi(method, path, body){
   if(!r.ok){ let m=''; try{ const j=await r.json(); m=j.message||''; }catch(e){} const err=new Error(m || ('Erreur '+r.status)); err.status=r.status; err.raw=m; throw err; }
   return r.json();
 }
+/* Envoi de l'image du studio au relais vidéo (Cloudflare Realtime), par le Worker du site. */
+const Pub = {
+  pc:null, sid:null, retry:0, stopping:false,
+  async start(){
+    const sess = await authSession(); if(!sess) throw new Error('Votre connexion au site a expiré : reconnectez-vous puis réessayez.');
+    audio(); try{ await audioCtx.resume(); }catch(e){}
+    const v = cv.captureStream(30).getVideoTracks()[0], a = dest.stream.getAudioTracks()[0];
+    const ms = new MediaStream([v, a].filter(Boolean));
+    const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}], bundlePolicy:'max-bundle'});
+    const tv = pc.addTransceiver(v, {direction:'sendonly', streams:[ms], sendEncodings:[{maxBitrate: S.q===1080 ? 3000000 : 1800000, maxFramerate:30}]});
+    const ta = a ? pc.addTransceiver(a, {direction:'sendonly', streams:[ms]}) : null;
+    await pc.setLocalDescription(await pc.createOffer());
+    const tracks=[{mid:tv.mid, trackName:'video'}]; if(ta) tracks.push({mid:ta.mid, trackName:'audio'});
+    const r = await fetch('/api/live/publish', {method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+sess.access_token}, body:JSON.stringify({sdp:pc.localDescription.sdp, tracks})});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok){ pc.close(); const e=new Error(j.error==='not-configured' ? 'not-configured' : j.error==='forbidden' ? 'Accès refusé : compte administrateur nécessaire.' : 'Le relais vidéo ne répond pas ('+(j.detail||r.status)+').'); e.code=j.error; throw e; }
+    await pc.setRemoteDescription({type:'answer', sdp:j.sdp});
+    this.pc=pc; this.sid=j.sessionId; this.stopping=false;
+    pc.onconnectionstatechange = () => {
+      const st = pc.connectionState;
+      if(st==='connected'){ this.retry=0; liveStatusTxt('● Image du studio en direct sur jesuiskcciste.com/direct'); }
+      if((st==='failed' || st==='disconnected') && !this.stopping && liveCur){
+        liveStatusTxt('Connexion au relais perdue… reconnexion', true);
+        clearTimeout(this.rt); this.rt = setTimeout(()=>this.reconnect(), st==='failed' ? 500 : 4000);
+      }
+    };
+    return j.sessionId;
+  },
+  async reconnect(){
+    if(!liveCur || this.stopping) return;
+    if(this.pc && this.pc.connectionState==='connected') return;
+    try{ if(this.pc) this.pc.close(); }catch(e){}
+    try{
+      const sid = await this.start();
+      await liveApi('PATCH', 'livestreams?id=eq.'+liveCur.id, {rtc_session: sid});
+      liveCur.rtc = sid; try{ localStorage.setItem('kcc-live-cur', JSON.stringify(liveCur)); }catch(e){}
+      liveSignal();
+    }catch(e){ this.retry++; setTimeout(()=>this.reconnect(), Math.min(20000, 2000*this.retry)); }
+  },
+  stop(){ this.stopping=true; clearTimeout(this.rt); try{ this.pc && this.pc.close(); }catch(e){} this.pc=null; this.sid=null; },
+};
 async function liveGo(){
   const raw=$('ytLive').value, yt=ytIdOf(raw);
   if(yt===undefined){ liveStatusTxt('Lien YouTube non reconnu. Collez le lien du direct (youtube.com/live/…).', true); return; }
+  if(!S.livePub && !yt){ liveStatusTxt('Cochez « Diffuser l’image du studio » ou collez le lien d’un direct YouTube.', true); return; }
   $('liveGo').disabled=true; liveStatusTxt('Lancement…');
   try{
-    const rows = await liveApi('POST', 'livestreams', {title:(S.title||'Direct Je suis KCCiste').slice(0,200), starts_at:new Date(Date.now()-60000).toISOString(), duration_minutes:S.liveDur, youtube_id:yt, is_cancelled:false});
+    let rtcSid = null;
+    if(S.livePub){
+      try{ rtcSid = await Pub.start(); }
+      catch(e){
+        if(e.code==='not-configured'){ liveStatusTxt('Le relais vidéo n’est pas encore activé sur le site (réglage Cloudflare à faire une fois).', true); if(!yt){ return; } }
+        else throw e;
+      }
+    }
+    const row0 = {title:(S.title||'Direct Je suis KCCiste').slice(0,200), starts_at:new Date(Date.now()-60000).toISOString(), duration_minutes:S.liveDur, youtube_id:yt, is_cancelled:false};
+    let rows;
+    try{ rows = await liveApi('POST', 'livestreams', rtcSid ? {...row0, rtc_session:rtcSid} : row0); }
+    catch(e){
+      if(rtcSid && /rtc_session/.test(e.raw||e.message||'')){ Pub.stop(); throw new Error('Exécutez d’abord dans Supabase le fichier SQL « livestreams_studio » (une seule fois).'); }
+      throw e;
+    }
     const row = rows[0];
-    liveCur = {id:row.id, start:Date.now(), yt};
+    liveCur = {id:row.id, start:Date.now(), yt, rtc:rtcSid};
     try{ localStorage.setItem('kcc-live-cur', JSON.stringify(liveCur)); }catch(e){}
     liveSignal(); liveUi();
+    try{ navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){}
     if(S.liveGen) setScene('gentv');
     if(S.liveRec && !rec) startRec();
     if(!S.siteOn){ S.siteOn=true; $('siteOn').checked=true; siteStart(); save(); }
@@ -2148,6 +2207,7 @@ async function liveGo(){
 async function liveStop(){
   if(!liveCur) return;
   $('liveStop').disabled=true; liveStatusTxt('Fin du direct…');
+  Pub.stop();
   const now = new Date();
   try{
     try{ await liveApi('PATCH', 'livestreams?id=eq.'+liveCur.id, {ended_at: now.toISOString()}); }
@@ -2287,7 +2347,9 @@ function init(){
   $('siteOn').addEventListener('change', siteStart); siteStart();
 
   // Direct sur le site
-  bindText('ytLive'); bindCheck('liveGen'); bindCheck('liveRec');
+  bindText('ytLive'); bindCheck('liveGen'); bindCheck('liveRec'); bindCheck('livePub');
+  // Direct en cours après un rechargement de la page : on renvoie l'image.
+  if(liveCur && liveCur.rtc) setTimeout(()=>{ liveStatusTxt('Reprise de la diffusion…'); Pub.reconnect(); }, 1500);
   $('liveDur').value=String(S.liveDur); $('liveDur').onchange=()=>{ S.liveDur=+$('liveDur').value; save(); };
   $('liveGo').onclick=liveGo; $('liveStop').onclick=()=>{ if(confirm('Terminer le direct sur le site ?')) liveStop(); };
   liveUi();

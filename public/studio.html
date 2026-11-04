@@ -116,7 +116,7 @@ body.clean .app{grid-template-columns:1fr}
 body.clean .main{padding:0}
 body.clean .stage{position:fixed;inset:0;border-radius:0;z-index:5}
 body.clean canvas#out{max-height:100vh;max-width:100vw}
-.exit{position:fixed;top:10px;right:10px;z-index:6;opacity:0;transition:opacity .3s}
+.exit{display:none;position:fixed;top:10px;right:10px;z-index:6;opacity:.15;transition:opacity .3s}
 body.clean .exit{display:inline-flex}
 body.clean .exit:hover,body.clean .exit:focus{opacity:1}
 
@@ -160,6 +160,17 @@ details.cfg[open] summary{margin-bottom:8px}
 #remote{display:none;max-width:560px;margin:0 auto;padding:14px;flex-direction:column;gap:14px}
 body.remote .app,body.remote .exit{display:none!important}
 body.remote #remote{display:flex}
+#tele{display:none;position:fixed;inset:0;background:#000;z-index:20;flex-direction:column}
+body.tele .app,body.tele .exit,body.tele #remote{display:none!important}
+body.tele #tele{display:flex}
+#tele .tview{position:relative;flex:1;overflow:hidden;touch-action:none}
+#tele .tscroll{will-change:transform;padding:0 6%}
+#tele .ttext{font:700 48px/1.4 var(--ui);color:#fff;white-space:pre-wrap;text-align:center;padding:30vh 0 80vh}
+#tele.flip .ttext{transform:scaleX(-1)}
+#tele .marker{position:absolute;left:0;right:0;top:30%;height:2px;background:var(--gold);opacity:.8}
+#tele .tbar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:8px;background:#0b0e16;border-top:1px solid var(--line)}
+#tele .tbar .btn{padding:10px 14px}
+#tele .tinfo{position:absolute;left:10px;top:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold2);background:#000a;padding:3px 8px;border-radius:5px}
 .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .rbig{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rbig .btn{padding:12px}
@@ -340,7 +351,13 @@ Bienvenue sur le direct Je suis KCCiste.
         <div class="row"><label for="pHeight">Hauteur</label><input type="range" id="pHeight" min="25" max="80" value="44"><output></output></div>
         <label class="check"><input type="checkbox" id="pFlip"> Texte inversé (pour un miroir de prompteur)</label>
         <p class="note">Faites glisser le texte du doigt pour avancer ou reculer. Placez le téléphone de façon à lire près de l'objectif : votre regard restera vers les fidèles.</p>
-        <div class="notice">En « Mode diffusion », le prompteur est caché, car l'application de direct filme tout l'écran.</div>
+        <div class="notice">En « Mode diffusion », le prompteur est caché sur ce téléphone, car l'application de direct filme tout l'écran : il apparaîtrait dans le direct. Pour lire pendant un direct, affichez le texte sur un <b>deuxième téléphone ou une tablette</b> posé juste sous la caméra :</div>
+        <button class="btn gold" id="teleOpen">📱 Afficher le texte sur un 2e écran</button>
+        <div id="teleBox" class="group" hidden>
+          <div class="copy"><input type="text" id="teleUrl" readonly aria-label="Lien du prompteur"><button class="btn sm" id="teleCopy">Copier</button></div>
+          <a class="btn sm" id="teleWa" target="_blank" rel="noopener">Envoyer le lien par WhatsApp</a>
+          <p class="note">Ouvrez ce lien sur l'autre appareil. Le texte y défile du bas vers le haut, en grand ; il n'est jamais dans la vidéo. Lecture, pause et vitesse se commandent d'ici, depuis l'autre écran ou depuis la régie.</p>
+        </div>
       </div>
     </div>
 
@@ -505,6 +522,13 @@ Bienvenue sur le direct Je suis KCCiste.
     </div>
   </aside>
 </div>
+<section id="tele" aria-label="Prompteur sur un deuxième écran">
+  <div class="tview" id="tview"><div class="tscroll" id="tscroll"><div class="ttext" id="ttext">En attente du texte du studio…</div></div><div class="marker"></div><span class="tinfo" id="tinfo">Prompteur · connexion…</span></div>
+  <div class="tbar">
+    <button class="btn gold" id="tPlay">▶ Défiler</button><button class="btn" id="tSlow">− Lent</button><button class="btn" id="tFast">+ Vite</button><button class="btn" id="tTop">⟲ Début</button>
+    <button class="btn" id="tSmall">A−</button><button class="btn" id="tBig">A+</button><button class="btn" id="tFlip">⇋ Miroir</button><button class="btn" id="tFull">⛶</button>
+  </div>
+</section>
 <section id="remote" aria-label="Régie à distance">
   <div class="topbar">
     <span class="brand"><img src="/images/logo-kcc.png" alt=""><span><b>Régie à distance</b><small>Studio Je suis KCCiste · code <span id="rCode"></span></small></span></span>
@@ -1068,7 +1092,7 @@ function drawScene(id,t){
   }
 }
 function draw(){
-  if(REGIE) return;
+  if(REGIE || PTELE) return;
   const t = performance.now(), dt = lastT ? Math.min(100, t-lastT) : 16; lastT = t;
   setSize();
   ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.shadowBlur=0; ctx.filter='none';
@@ -1337,14 +1361,14 @@ function promptLayout(){
   $('ptext').style.fontSize = S.pSize+'px'; $('ptext').textContent = S.promptText;
   $('promptBtn').classList.toggle('on', S.promptOn); $('promptOn').checked = S.promptOn;
 }
-function promptPlay(on){ pPlaying = on===undefined ? !pPlaying : on; const t=pPlaying?'❚❚ Pause':'▶ Faire défiler'; $('pPlay').textContent=t; $('pPlay2').textContent=pPlaying?'❚❚':'▶'; if(pPlaying && !S.promptOn){ S.promptOn=true; promptLayout(); } Remote.push(); }
-function promptTop(){ pPos=0; }
-function promptSpeed(d){ S.pSpeed=Math.max(1,Math.min(12,S.pSpeed+d)); $('pSpeed').value=S.pSpeed; $('pSpeed').dispatchEvent(new Event('input')); }
+function promptPlay(on){ pPlaying = on===undefined ? !pPlaying : on; Remote.tele(Remote.pstate()); const t=pPlaying?'❚❚ Pause':'▶ Faire défiler'; $('pPlay').textContent=t; $('pPlay2').textContent=pPlaying?'❚❚':'▶'; if(pPlaying && !S.promptOn){ S.promptOn=true; promptLayout(); } Remote.push(); }
+function promptTop(){ pPos=0; Remote.tele({type:'ptop'}); }
+function promptSpeed(d){ S.pSpeed=Math.max(1,Math.min(12,S.pSpeed+d)); $('pSpeed').value=S.pSpeed; $('pSpeed').dispatchEvent(new Event('input')); Remote.tele(Remote.pstate()); }
 function promptTick(t){
   const dt = pLast ? Math.min(100,t-pLast) : 16; pLast=t;
   if(pPlaying && !pDrag){
     pPos += S.pSpeed * 9 * dt/1000 * (S.pSize/34);
-    const max = $('pscroll').scrollHeight - $('prompter').clientHeight*0.4; if(pPos>max){ pPos=max; promptPlay(false); }
+    if($('prompter').offsetParent){ const max = $('pscroll').scrollHeight - $('prompter').clientHeight*0.4; if(pPos>max){ pPos=max; promptPlay(false); } }
   }
   $('pscroll').style.transform = `translateY(${-pPos}px)`;
   requestAnimationFrame(promptTick);
@@ -1396,6 +1420,7 @@ function applyPreset(id){
 
 /* ---------- Régie à distance ---------- */
 const SB_URL='https://anawpwprqvzxgzcpqqwu.supabase.co', SB_KEY='sb_publishable_hnpwDEfVVCC0BhYkxOgdwQ_E745c7rK';
+const PTELE = params.get('prompteur') ? params.get('prompteur').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
 const REGIE = params.get('regie') ? params.get('regie').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8) : '';
 // Canal temps réel : Supabase Realtime (d'un téléphone à l'autre) + BroadcastChannel (deux onglets du même appareil).
 function rtConnect(room, onMsg, onStatus){
@@ -1425,7 +1450,11 @@ function rtConnect(room, onMsg, onStatus){
   };
 }
 const Remote = {
-  link:null, room:'', timer:0, pending:0,
+  link:null, room:'', timer:0, pending:0, ttimer:0,
+  pstate(){ return {type:'pstate', playing:pPlaying, speed:S.pSpeed}; },
+  ptext(){ return {type:'ptext', text:String(S.promptText||'').slice(0,60000), size:S.pSize}; },
+  tele(msg){ if(this.link && !REGIE && !PTELE) this.link.send(msg); },
+  sendText(){ clearTimeout(this.ttimer); this.ttimer=setTimeout(()=>this.tele(this.ptext()), 700); },
   // Côté studio
   open(){
     if(this.link) return;
@@ -1437,7 +1466,9 @@ const Remote = {
     const url = location.origin + '/studio?regie=' + code;
     $('rgCode').textContent=code; $('rgUrl').value=url; $('rgBox').hidden=false; $('rgOpen').hidden=true;
     $('rgWa').href='https://wa.me/?text='+encodeURIComponent('Régie du studio Je suis KCCiste (code '+code+') : '+url);
-    this.timer=setInterval(()=>this.push(true),3000); this.push(true);
+    this.timer=setInterval(()=>{ this.push(true); this.tele(this.pstate()); },3000); this.push(true);
+    const turl = location.origin + '/studio?prompteur=' + code;
+    $('teleUrl').value=turl; $('teleWa').href='https://wa.me/?text='+encodeURIComponent('Prompteur du studio Je suis KCCiste : '+turl);
   },
   close(){ if(!this.link) return; this.link.close(); this.link=null; clearInterval(this.timer); $('rgBox').hidden=true; $('rgOpen').hidden=false; try{ sessionStorage.removeItem('kcc-regie'); }catch(e){} },
   state(){
@@ -1452,6 +1483,7 @@ const Remote = {
     clearTimeout(this.pending); this.pending=setTimeout(()=>this.link && this.link.send(this.state()),120);
   },
   onCmd(m){
+    if(m && m.type==='phello'){ this.tele(this.ptext()); this.tele(this.pstate()); return; }
     if(!m || m.type!=='cmd') { if(m && m.type==='hello') this.push(true); return; }
     const v=m.v;
     switch(m.a){
@@ -1488,6 +1520,38 @@ function remoteMode(){
   window.__remoteCmd = cmd;
 }
 function confirmPreset(){ return true; }
+// Prompteur sur un deuxième écran (?prompteur=CODE) : le texte défile ici, jamais dans la vidéo.
+function teleMode(){
+  document.body.classList.add('tele');
+  let pos=0, playing=false, speed=4, size=48, last=0, drag=null, flip=false, got=false;
+  try{ const o=JSON.parse(localStorage.getItem('kcc-tele')||'{}'); if(o.size) size=o.size; flip=!!o.flip; }catch(e){}
+  const keep=()=>{ try{ localStorage.setItem('kcc-tele', JSON.stringify({size,flip})); }catch(e){} };
+  const lay=()=>{ $('ttext').style.fontSize=size+'px'; $('tele').classList.toggle('flip',flip); $('tPlay').textContent = playing?'❚❚ Pause':'▶ Défiler'; };
+  const link = rtConnect(PTELE, m=>{
+    if(!m) return;
+    if(m.type==='ptext'){ $('ttext').textContent = m.text || '(Aucun texte dans le prompteur du studio.)'; if(!got){ got=true; } $('tinfo').textContent='Prompteur · '+PTELE; }
+    else if(m.type==='pstate'){ playing=!!m.playing; speed=+m.speed||4; lay(); if(!got) link.send({type:'phello'}); }
+    else if(m.type==='ptop'){ pos=0; }
+  }, st=>{ if(st==='ok') link.send({type:'phello'}); if(!got) $('tinfo').textContent = st==='ok' ? 'Prompteur · en attente du studio…' : 'Prompteur · connexion…'; });
+  link.send({type:'phello'});
+  setInterval(()=>{ if(!got) link.send({type:'phello'}); }, 3000);
+  const cmd=v=>link.send({type:'cmd',a:'prompt',v});
+  $('tPlay').onclick=()=>cmd('play'); $('tSlow').onclick=()=>cmd('slow'); $('tFast').onclick=()=>cmd('fast'); $('tTop').onclick=()=>{ pos=0; cmd('top'); };
+  $('tSmall').onclick=()=>{ size=Math.max(24,size-6); lay(); keep(); }; $('tBig').onclick=()=>{ size=Math.min(110,size+6); lay(); keep(); };
+  $('tFlip').onclick=()=>{ flip=!flip; lay(); keep(); };
+  $('tFull').onclick=()=>{ try{ document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }catch(e){} };
+  try{ navigator.wakeLock && navigator.wakeLock.request('screen').catch(()=>{}); }catch(e){}
+  const v=$('tview');
+  v.addEventListener('pointerdown',e=>{ drag={y:e.clientY,p:pos}; v.setPointerCapture(e.pointerId); });
+  v.addEventListener('pointermove',e=>{ if(drag) pos=Math.max(0,drag.p-(e.clientY-drag.y)); });
+  v.addEventListener('pointerup',()=>drag=null); v.addEventListener('pointercancel',()=>drag=null);
+  v.addEventListener('wheel',e=>{ e.preventDefault(); pos=Math.max(0,pos+e.deltaY); },{passive:false});
+  document.addEventListener('keydown',e=>{ if(e.key===' '){ e.preventDefault(); cmd('play'); } });
+  const tick=t=>{ const dt=last?Math.min(100,t-last):16; last=t;
+    if(playing && !drag){ pos += speed*9*dt/1000*(size/34); const max=$('tscroll').scrollHeight - v.clientHeight*0.35; if(pos>max) pos=max; }
+    $('tscroll').style.transform=`translateY(${-pos}px)`; requestAnimationFrame(tick); };
+  lay(); requestAnimationFrame(tick);
+}
 function renderRemote(m){
   const sc=SCENES.find(x=>x.id===m.scene);
   $('rState').textContent = `À l'écran : ${sc?sc.label:m.scene}` + (m.rec ? ` · ● Enregistrement ${m.recTime}` : '') + (m.comment ? ` · Commentaire de ${m.comment}` : '') + (m.cam ? '' : ' · caméra éteinte');
@@ -1628,6 +1692,7 @@ function cleanMode(on){
 function init(){
   load();
   if(REGIE){ remoteMode(); return; }
+  if(PTELE){ teleMode(); return; }
   buildScenes();
   if(OVERLAY){ document.documentElement.style.cssText='background:transparent;color-scheme:light'; document.body.classList.add('overlay'); document.querySelector('aside').hidden=true; ['.topbar','.scenes','.transport','.kbd'].forEach(s=>document.querySelector(s).hidden=true); $('hint').hidden=true; return; }
   chipGroup('fmtChips','fmt','fmt',()=>{ if(camOn) startCamera(); updOv(); });
@@ -1643,7 +1708,9 @@ function init(){
   // Prompteur
   bindCheck('promptOn',promptLayout); bindCheck('pFlip',promptLayout);
   ['pSpeed','pSize','pHeight'].forEach(id=>bindRange(id,promptLayout));
-  $('promptText').addEventListener('input',promptLayout);
+  $('promptText').addEventListener('input',()=>{ promptLayout(); Remote.sendText(); });
+  $('teleOpen').onclick=()=>{ Remote.open(); $('teleBox').hidden=false; $('teleOpen').hidden=true; Remote.sendText(); };
+  $('teleCopy').onclick=()=>{ $('teleUrl').select(); (navigator.clipboard?navigator.clipboard.writeText($('teleUrl').value):Promise.reject()).then(()=>{$('teleCopy').textContent='Copié ✓'; setTimeout(()=>$('teleCopy').textContent='Copier',1500);}).catch(()=>document.execCommand('copy')); };
   $('promptBtn').onclick=()=>{ S.promptOn=!S.promptOn; promptLayout(); if(S.promptOn) openTab('t-pro'); };
   $('pPlay').onclick=$('pPlay2').onclick=()=>promptPlay(); $('pTop').onclick=$('pTop2').onclick=promptTop;
   $('pSlow2').onclick=()=>promptSpeed(-1); $('pFast2').onclick=()=>promptSpeed(1);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, CalendarDays, Camera, Building2, Landmark, ScrollText, Star } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -190,6 +190,9 @@ export default function DoctrinePage() {
               </li>
             ))}
           </ul>
+          <Link to="/histoire/reconnaissance-juridique" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-gold-700 hover:text-night">
+            <Landmark className="h-4 w-4" aria-hidden />{tx('Lire l’histoire de la reconnaissance juridique (1966-1980)', 'Read the history of legal recognition (1966-1980)', 'Ler a história do reconhecimento jurídico (1966-1980)')}
+          </Link>
 
           <h3 className="mt-12 font-display text-2xl font-semibold text-night">{tx('Déroulement ordinaire du culte du sabbat', 'Usual order of the Sabbath service', 'Ordem habitual do culto do sábado')}</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

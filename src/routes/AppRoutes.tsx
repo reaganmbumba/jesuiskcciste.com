@@ -23,6 +23,7 @@ const CatechismPage = lazy(() => import('@/pages/public/CatechismPage'));
 const LiturgyPage = lazy(() => import('@/pages/public/LiturgyPage'));
 const CallingPage = lazy(() => import('@/pages/public/CallingPage'));
 const ProphetWordsPage = lazy(() => import('@/pages/public/ProphetWordsPage'));
+const KccismeBookPage = lazy(() => import('@/pages/public/KccismeBookPage'));
 const SermonsPage = lazy(() => import('@/pages/public/SermonsPage'));
 const GalleryPage = lazy(() => import('@/pages/public/GalleryPage'));
 const ApostlesPage = lazy(() => import('@/pages/public/ApostlesPage'));
@@ -158,6 +159,7 @@ export function AppRoutes() {
         <Route path="liturgie" element={<LiturgyPage />} />
         <Route path="appel-du-prophete" element={<CallingPage />} />
         <Route path="paroles-du-prophete" element={<ProphetWordsPage />} />
+        <Route path="livre-kccisme" element={<KccismeBookPage />} />
         <Route path="predications" element={<SermonsPage />} />
         <Route path="predications/audio/:id" element={<SermonsPage />} />
         <Route path="galerie" element={<GalleryPage />} />

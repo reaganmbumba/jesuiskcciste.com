@@ -32,6 +32,7 @@ export default function CallingPage() {
               <div className="mt-4 flex flex-wrap gap-3">
                 <a href={BOOK_PDF} target="_blank" rel="noopener" className={buttonClass('gold')}><BookOpen className="h-4 w-4" aria-hidden />{tx('Lire le livre', 'Read the book', 'Ler o livro')}</a>
                 <a href={BOOK_PDF} download="Mon-Appel-DIZOLELE-MPUNGU-WAFIDUSWA-Isaac.pdf" className={buttonClass('light')}><Download className="h-4 w-4" aria-hidden />{tx('Télécharger', 'Download', 'Descarregar')}</a>
+                <ButtonLink to="/paroles-du-prophete" variant="light"><Quote className="h-4 w-4" aria-hidden />{tx('Paroles du Prophète', 'Words of the Prophet', 'Palavras do Profeta')}</ButtonLink>
               </div>
             </div>
           </div>

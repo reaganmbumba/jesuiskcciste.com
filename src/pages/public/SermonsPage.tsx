@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, CalendarDays, MapPin, Mic } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
@@ -29,6 +30,15 @@ export default function SermonsPage() {
 
       <section id="ecrites" className="container-page scroll-mt-32 py-14">
         <SectionHeading eyebrow={tx('À lire', 'To read', 'Para ler')} title={tx('L’enseignement du Chef Spirituel', 'The Spiritual Leader’s teaching', 'O ensino do Chefe Espiritual')} />
+        <Link to="/predications/tournee-bas-congo-2012" className="group mb-10 grid overflow-hidden rounded-3xl bg-night text-white shadow-lift md:grid-cols-2">
+          <img src="/images/predications/tournee-bas-congo-2012.jpg" alt="" className="h-full w-full object-cover" loading="lazy" />
+          <div className="flex flex-col justify-center p-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">{tx('Nouveau · avril – mai 2012', 'New · April – May 2012', 'Novo · abril – maio de 2012')}</p>
+            <p className="mt-2 font-display text-2xl font-semibold">{tx('Tournée du Prophète au Bas-Congo', 'The Prophet’s tour of Bas-Congo', 'A digressão do Profeta no Baixo Congo')}</p>
+            <p className="mt-2 text-sm text-white/70">{tx('Inkisi, Mbanza-Ngungu, Lukala, Kimpese, Kenge, Matadi, Boma et Nlemba : ses prédications, paroisse par paroisse.', 'Inkisi, Mbanza-Ngungu, Lukala, Kimpese, Kenge, Matadi, Boma and Nlemba: his sermons, parish by parish.', 'Inkisi, Mbanza-Ngungu, Lukala, Kimpese, Kenge, Matadi, Boma e Nlemba: as suas pregações, paróquia a paróquia.')}</p>
+            <span className="mt-4 text-sm font-semibold text-gold group-hover:underline">{tx('Lire les prédications →', 'Read the sermons →', 'Ler as pregações →')}</span>
+          </div>
+        </Link>
         <div role="tablist" aria-label={tx('Thèmes', 'Themes', 'Temas')} className="mb-8 flex flex-wrap gap-2">
           {filters.map(([k, label]) => (
             <button key={k} type="button" role="tab" aria-selected={filter === k} onClick={() => setFilter(k)}

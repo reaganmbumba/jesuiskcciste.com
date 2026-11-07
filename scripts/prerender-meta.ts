@@ -122,6 +122,8 @@ const PAGE_IMAGES: Record<string, string> = {
   '/apotres/biographies': APOSTLE_BIOGRAPHIES.find((b) => b.image)?.image ?? '',
 };
 // Paroles du Prophète : l'aperçu montre le premier visuel de la série.
+render('/predications/tournee-bas-congo-2012', { title: 'Tournée du Prophète au Bas-Congo (2012)', description: 'Avril – mai 2012 : les prédications du Prophète DIZOLELE-MPUNGU WAFIDUSWA Isaac à Inkisi, Mbanza-Ngungu, Lukala, Kimpese, Kenge, Matadi, Boma et Nlemba, paroisse par paroisse.', image: '/images/predications/tournee-bas-congo-2012.jpg' });
+count += 1;
 render('/histoire/reconnaissance-juridique', { title: 'Le chemin de la reconnaissance juridique', description: 'De 1966 à 1980 : requêtes, dissolution, arrestations et persévérance, jusqu’à l’ordonnance du 30 avril 1980 qui accorde la personnalité civile à l’Église.', image: '/images/histoire/reconnaissance-juridique.jpg' });
 count += 1;
 render('/livre-kccisme', { title: 'Le KCCisme : le livre de la doctrine', description: 'Le livre de la doctrine de l’Église Bon Nouveau Message (KCC), du Prophète DIZOLELE-MPUNGU WAFIDUSWA Isaac, à lire en ligne avec un code d’accès.', image: '/images/livres/kccisme-annonce.jpg' });

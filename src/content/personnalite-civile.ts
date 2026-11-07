@@ -704,7 +704,7 @@ export const civilChapters: HistoryChapter[] = [
    ],
    [
     "p",
-    "A l’instant même, d’autres frères, ayant aperçu l’Apôtre dans le bureau du pharmacien, l’y suivirent. Un petit groupe se constitua autour de lui. Ainsi, un culte fut organisé en ce lieu même. Il regroupa les personnes ci-après : l’Apôtre MBUNGU-MBIZI, le prédicateur NGUNDA MAKAYI, le disciple KHONDE KINKELA, le sage MPUKU, Mr. KANDA MBUMBA, Mr. MVEMBA NIMI, Mademoiselle MALONDA Emilie, agent à la Pharmacie et le jeune MBUNGU NTATUKILA ; venu de Muanda rencontrer son frère aîné MBUNGU-MBIZI pour raison des frais scolaires."
+    "A l’instant même, d’autres frères, ayant aperçu l’Apôtre dans le bureau du pharmacien, l’y suivirent. Un petit groupe se constitua autour de lui. Ainsi, un culte fut organisé en ce lieu même. Il regroupa les personnes ci-après : l’Apôtre MBUNGU-MBIZI, le prédicateur NGUNDA MAKAYI, le disciple KHONDE KINKELA, le sage MPUKU, Mr. KANDA MBUMBA, Mr. MVEMBA NIMI, une jeune employée de la pharmacie et le jeune MBUNGU NTATUKILA ; venu de Muanda rencontrer son frère aîné MBUNGU-MBIZI pour raison des frais scolaires."
    ],
    [
     "p",
@@ -777,7 +777,7 @@ export const civilChapters: HistoryChapter[] = [
    ],
    [
     "p",
-    "Il importe de souligner que l’un des détenus, Mademoiselle MALONDA Emilie qui avait subi une forte pression de la part de ses parents afin qu’elle abandonnât l’E.U.D.A., renia sa foi quand le substitut du Procureur lui posa la question suivante : « Citoyenne MALONDA, voulez-vous continuer à prier dans cette Eglise non reconnue ? Si vous dites oui, vous continuerez à être détenue. Si vous dites non, vous êtes acquittée ». Prenant la parole, MALONDA déclara solennellement ce qui suit : « Citoyen Substitut du Procureur, je ne continue plus à prier dans cette Eglise. Je ne savais pas qu’elle n’avait pas de personnalité civile. Si je l’avais su, je n’y serais pas entrée » Après cette déclaration, elle fut acquittée sans autre forme de procès. Hormis celle-là qui devint un renégat, les autres détenus gardèrent leur foi et manifestèrent leur attachement à Dieu et à l’Eglise, envers et contre tous. Après cette comparution, les détenus furent remis au cachot."
+    "Il importe de souligner que l’un des détenus, une jeune fidèle qui avait subi une forte pression de la part de ses parents afin qu’elle abandonnât l’E.U.D.A., renia sa foi quand le substitut du Procureur lui posa la question suivante : « Citoyenne, voulez-vous continuer à prier dans cette Eglise non reconnue ? Si vous dites oui, vous continuerez à être détenue. Si vous dites non, vous êtes acquittée ». Prenant la parole, elle déclara solennellement ce qui suit : « Citoyen Substitut du Procureur, je ne continue plus à prier dans cette Eglise. Je ne savais pas qu’elle n’avait pas de personnalité civile. Si je l’avais su, je n’y serais pas entrée » Après cette déclaration, elle fut acquittée sans autre forme de procès. Hormis celle-là qui devint un renégat, les autres détenus gardèrent leur foi et manifestèrent leur attachement à Dieu et à l’Eglise, envers et contre tous. Après cette comparution, les détenus furent remis au cachot."
    ],
    [
     "p",

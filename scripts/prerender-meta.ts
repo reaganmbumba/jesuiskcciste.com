@@ -121,6 +121,10 @@ const PAGE_IMAGES: Record<string, string> = {
   // La biographie la plus récente illustre la rubrique.
   '/apotres/biographies': APOSTLE_BIOGRAPHIES.find((b) => b.image)?.image ?? '',
 };
+// Paroles du Prophète : l'aperçu montre le premier visuel de la série.
+render('/paroles-du-prophete', { title: 'Paroles du Prophète', description: '20 paroles tirées du livre « Mon Appel » du Prophète DIZOLELE-MPUNGU WAFIDUSWA Isaac, avec l’explication de chacune et l’image à partager sur WhatsApp.', image: '/images/paroles-prophete/yt-01.jpg' });
+count += 1;
+
 for (const [path, [title, description]] of Object.entries(PAGES)) {
   render(path, { title, description, image: PAGE_IMAGES[path] || undefined });
   count += 1;

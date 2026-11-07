@@ -23,6 +23,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.faith', to: '/doctrine', children: [
       { label: l('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), to: '/doctrine', description: l('Le KCC, la profession de foi, l’Alliance et le Prophète', 'The KCC, the profession of faith, the Covenant and the Prophet', 'O KCC, a profissão de fé, a Aliança e o Profeta') },
+      { label: l('La reconnaissance juridique', 'Legal recognition', 'O reconhecimento jurídico'), to: '/histoire/reconnaissance-juridique', description: l('Le chemin vers la personnalité civile (1966-1980)', 'The road to legal status (1966-1980)', 'O caminho até à personalidade civil (1966-1980)') },
       { label: l('Catéchisme', 'Catechism', 'Catecismo'), to: '/catechisme', description: l('Questions et réponses de la foi KCCiste', 'Questions and answers of the KCCist faith', 'Perguntas e respostas da fé KCCista') },
       { label: l('Rites et célébrations', 'Rites and celebrations', 'Ritos e celebrações'), to: '/liturgie', description: l('Sabbat, onction, Alliance, mariage, deuil…', 'Sabbath, anointing, Covenant, marriage, mourning…', 'Sábado, unção, Aliança, casamento, luto…') },
       { label: l('L’appel du Prophète', 'The Prophet’s calling', 'O chamamento do Profeta'), to: '/appel-du-prophete', description: l('Le livre « Mon Appel » à lire et télécharger', 'Read and download the book “Mon Appel”', 'Ler e descarregar o livro «Mon Appel»') },

@@ -7,8 +7,13 @@ const { startServer } = require('../server');
 test('adresse du direct : serveur + clé', () => {
   assert.equal(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2/', key: 'abcd-1234-efgh' }), 'rtmp://a.rtmp.youtube.com/live2/abcd-1234-efgh');
   assert.equal(outputUrl({ url: 'rtmps://live-api-s.facebook.com:443/rtmp', key: 'FB-1?s_bl=1&a=b' }), 'rtmps://live-api-s.facebook.com:443/rtmp/FB-1?s_bl=1&a=b');
-  assert.equal(outputUrl({ url: 'http://exemple', key: 'abcd' }), null);
-  assert.equal(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2', key: 'a b' }), null);
+  assert.ok(outputUrl({ url: 'http://exemple', key: 'abcd' }).error);
+  assert.ok(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2', key: '' }).error);
+  // copier-coller imparfaits
+  assert.equal(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2', key: ' ab cd-12\u200B34 \n' }), 'rtmp://a.rtmp.youtube.com/live2/abcd-1234');
+  assert.equal(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2', key: 'rtmp://a.rtmp.youtube.com/live2/abcd-1234' }), 'rtmp://a.rtmp.youtube.com/live2/abcd-1234');
+  assert.equal(outputUrl({ url: ' rtmp://a.rtmp.youtube.com/live2 ', key: 'xxxx-yyyy-zzzz-wwww-vvvv' }), 'rtmp://a.rtmp.youtube.com/live2/xxxx-yyyy-zzzz-wwww-vvvv');
+  assert.ok(outputUrl({ url: 'rtmp://a.rtmp.youtube.com/live2', key: 'rtmp://a.rtmp.youtube.com/live2' }).error);
 });
 
 test('les clés ne sont jamais affichées', () => {

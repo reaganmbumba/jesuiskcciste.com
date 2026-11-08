@@ -16,13 +16,22 @@ const QUALITIES = {
   1080: { size: '1920:1080', vb: 6000, ab: 160 },
 };
 
-/** URL complète « serveur/clé », vérifiée, ou null. */
+/** Nettoie un copier-coller : espaces, retours à la ligne, caractères invisibles, guillemets. */
+const clean = (v) => String(v || '').replace(/[\s​-‍⁠﻿"'«»]/g, '');
+
+/** URL complète « serveur/clé », ou { error } qui dit quoi corriger. */
 function outputUrl(o) {
-  const server = String(o?.url || '').trim().replace(/\/+$/, '');
-  const key = String(o?.key || '').trim();
-  if (/^(rtmps?:\/\/|srt:\/\/)/.test(server) && !key) return server; // URL complète déjà donnée
-  if (!/^rtmps?:\/\/[A-Za-z0-9.-]+(:\d+)?(\/[A-Za-z0-9._~\/-]*)?$/.test(server)) return null;
-  if (!/^[A-Za-z0-9._~\-?=&%:+]{4,300}$/.test(key)) return null;
+  let server = clean(o?.url).replace(/\/+$/, '');
+  let key = clean(o?.key).replace(/^\/+/, '');
+  // clé collée sous forme d'adresse complète (rtmp://…/live2/xxxx) : on la prend telle quelle
+  if (/^(rtmps?|srt):\/\//i.test(key)) { server = key.replace(/\/+$/, ''); key = ''; }
+  if (/^(rtmps?|srt):\/\/[^/]+\/.+/i.test(server) && !key) {
+    // adresse complète dans le champ serveur : il faut qu'elle contienne la clé (pas seulement /live2)
+    if (/youtube\.com\/live2$/i.test(server) || /facebook\.com(:\d+)?\/rtmp$/i.test(server)) return { error: 'clé de flux manquante' };
+    return server;
+  }
+  if (!/^(rtmps?|srt):\/\/[A-Za-z0-9.-]+(:\d+)?(\/[^\s]*)?$/i.test(server)) return { error: 'URL du serveur invalide (elle doit commencer par rtmp:// ou rtmps://)' };
+  if (key.length < 4 || key.length > 400) return { error: 'clé de flux manquante ou trop courte' };
   return `${server}/${key}`;
 }
 const teeEscape = (s) => s.replace(/([\\|\[\]])/g, '\\$1');
@@ -61,8 +70,15 @@ class LiveOutput extends EventEmitter {
   /** opts: { outputs:[{url,key}], quality:480|720|1080, encoder, testFile } */
   start(opts) {
     if (this.proc) this.stop();
-    const urls = opts.testFile ? [opts.testFile] : (opts.outputs || []).map(outputUrl).filter(Boolean);
-    if (!urls.length) throw new Error('Adresse du direct incomplète : collez l\'URL du serveur et la clé de flux.');
+    let urls;
+    if (opts.testFile) urls = [opts.testFile];
+    else {
+      const res = (opts.outputs || []).map((o) => ({ name: o.name || 'Destination', r: outputUrl(o) }));
+      const bad = res.filter((x) => typeof x.r !== 'string');
+      if (!res.length) throw new Error('Choisissez au moins une destination (YouTube…).');
+      if (bad.length) throw new Error(bad.map((x) => `${x.name} : ${x.r.error}`).join(' · ') + '. Vérifiez l\'onglet Diffusion.');
+      urls = res.map((x) => x.r);
+    }
     const q = QUALITIES[opts.quality] || QUALITIES[720];
     const out = urls.length === 1
       ? ['-f', 'flv', urls[0]]

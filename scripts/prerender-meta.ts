@@ -71,6 +71,9 @@ function setMeta(html: string, attr: string, key: string, value: string) {
 
 const base = readFileSync(join(DIST, 'index.html'), 'utf8');
 
+/** Pages publiques écrites ci-dessous : elles forment le plan du site (sitemap.xml) lu par Google. */
+const sitemapPaths: string[] = ['/'];
+
 interface Meta { title: string; description: string; image?: string | null; audio?: string | null; video?: string | null }
 
 function render(path: string, { title, description, image, audio, video }: Meta) {
@@ -105,6 +108,7 @@ function render(path: string, { title, description, image, audio, video }: Meta)
     const src = new URL(video, SITE).toString();
     html = html.replace('</head>', `    <meta property="og:video" content="${esc(src)}" />\n    <meta property="og:video:secure_url" content="${esc(src)}" />\n    <meta property="og:video:type" content="video/mp4" />\n    <meta property="og:video:width" content="1280" />\n    <meta property="og:video:height" content="854" />\n  </head>`);
   }
+  sitemapPaths.push(path);
   const file = join(DIST, `${path.slice(1)}.html`);
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, html);
@@ -168,3 +172,15 @@ for (const t of DEBATE_TOPICS) {
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);
+
+// Plan du site pour Google (Search Console) et les autres moteurs de recherche.
+// Les articles publiés plus tard dans Supabase n'y sont pas : Google les trouve par les liens du site.
+const today = new Date().toISOString().slice(0, 10);
+const priority = (p: string) => (p === '/' ? '1.0' : p.split('/').length === 2 ? '0.8' : '0.6');
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${[...new Set(sitemapPaths)].map((p) => `  <url><loc>${esc(SITE + encodeURI(p))}</loc><lastmod>${today}</lastmod><priority>${priority(p)}</priority></url>`).join('\n')}
+</urlset>
+`;
+writeFileSync(join(DIST, 'sitemap.xml'), sitemap);
+console.log(`prerender-meta : sitemap.xml avec ${new Set(sitemapPaths).size} adresses.`);

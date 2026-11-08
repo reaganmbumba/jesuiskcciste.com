@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self'; script-src 'self'">
+<title>Je suis KCCiste Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="regie.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><img src="img/logo-kcc.png" alt=""><span><b>Je suis KCCiste</b><small>Studio · régie de direct</small></span></div>
+    <div class="status">
+      <span class="pill" id="camCount" title="Téléphones connectés">📱 0 caméra</span>
+      <span class="pill" id="liveStats" hidden></span>
+      <span class="pill rec" id="recPill" hidden>⏺ <span id="recTime">00:00</span></span>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="recBtn" title="Enregistrer le direct sur ce PC (dossier Vidéos)">⏺ Enregistrer</button>
+    <button class="btn live" id="liveBtn"><span class="dot"></span><span id="liveLabel">PASSER EN DIRECT</span></button>
+  </header>
+
+  <main class="main">
+    <section class="monitors">
+      <figure class="mon pvw">
+        <figcaption><span class="tag green">APERÇU</span> <span id="pvwName">—</span></figcaption>
+        <div class="screen"><canvas id="pvw" width="960" height="540"></canvas></div>
+      </figure>
+      <div class="trans">
+        <button class="btn cut" id="cutBtn" title="Touche Entrée">COUPER<small>Entrée</small></button>
+        <button class="btn fade" id="fadeBtn" title="Touche Espace">FONDU<small>Espace</small></button>
+        <label class="mini">Durée
+          <select id="fadeDur"><option value="300">0,3 s</option><option value="600" selected>0,6 s</option><option value="1000">1 s</option><option value="2000">2 s</option></select>
+        </label>
+        <button class="btn ghost" id="ftbBtn" title="Fondu au noir">NOIR</button>
+      </div>
+      <figure class="mon pgm">
+        <figcaption><span class="tag red">ANTENNE</span> <span id="pgmName">—</span></figcaption>
+        <div class="screen"><canvas id="pgm" width="1280" height="720"></canvas></div>
+      </figure>
+    </section>
+
+    <section class="sources">
+      <div class="srchead">
+        <h2>Sources</h2>
+        <p class="hint">Cliquez une source pour la mettre en <b class="g">aperçu</b>, double-cliquez pour la passer directement à l'<b class="r">antenne</b>. Touches 1 à 9.</p>
+        <div class="spacer"></div>
+        <div class="addmenu">
+          <button class="btn small" id="addBtn">＋ Ajouter une source</button>
+          <div class="menu" id="addMenu" hidden>
+            <button data-add="device">🎥 Webcam ou carte d'acquisition du PC</button>
+            <button data-add="screen">🖥️ Écran ou fenêtre du PC (chants, PowerPoint)</button>
+            <button data-add="image">🖼️ Image (affiche, annonce)</button>
+            <button data-add="video">🎞️ Vidéo (fichier)</button>
+          </div>
+        </div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </section>
+  </main>
+
+  <aside class="side">
+    <nav class="tabs" role="tablist">
+      <button class="tab on" data-tab="phones">📱 Téléphones</button>
+      <button class="tab" data-tab="gfx">✨ Habillage</button>
+      <button class="tab" data-tab="audio">🎚️ Son</button>
+      <button class="tab" data-tab="out">📡 Diffusion</button>
+    </nav>
+
+    <!-- TÉLÉPHONES -->
+    <section class="pane on" data-pane="phones">
+      <div class="card qrcard">
+        <img id="qr" alt="Code QR de connexion">
+        <div>
+          <p class="big">Adresse de la régie</p>
+          <select id="addrSel"></select>
+          <p class="addr" id="addrTxt">…</p>
+        </div>
+      </div>
+      <ol class="steps">
+        <li>Les téléphones et ce PC doivent être sur <b>le même Wi-Fi</b>.</li>
+        <li>Première fois : scannez ce code avec l'appareil photo du téléphone pour télécharger l'application <b>KCC Studio Caméra</b>, puis installez-la.</li>
+        <li>Ouvrez l'application, touchez <b>Scanner le code</b> et visez ce code. Le téléphone apparaît dans les sources.</li>
+      </ol>
+      <h3>Caméras connectées</h3>
+      <div id="phoneList" class="phonelist"><p class="muted">Aucun téléphone pour l'instant.</p></div>
+      <p class="muted small" id="netWarn" hidden></p>
+    </section>
+
+    <!-- HABILLAGE -->
+    <section class="pane" data-pane="gfx">
+      <div class="card">
+        <h3>Toujours à l'écran</h3>
+        <label class="check"><input type="checkbox" id="logoOn"> Logo KCC en haut à droite</label>
+        <div class="row">
+          <label class="lab">Badge
+            <select id="badge"><option value="live">● EN DIRECT</option><option value="brand">JE SUIS KCCISTE</option><option value="none">Aucun</option></select>
+          </label>
+          <label class="check"><input type="checkbox" id="clockOn"> Heure</label>
+        </div>
+        <label class="check"><input type="checkbox" id="titleOn"> Titre en haut</label>
+        <input type="text" id="title" placeholder="Culte du dimanche — Paroisse de …">
+      </div>
+
+      <div class="card">
+        <h3>Bandeau du nom <span class="state" id="ltState">masqué</span></h3>
+        <input type="text" id="ltName" placeholder="Nom (ex. : Papa Pasteur …)">
+        <input type="text" id="ltRole" placeholder="Fonction (ex. : Prédication)">
+        <div class="row">
+          <button class="btn small gold" id="ltShow">Afficher</button>
+          <button class="btn small" id="ltHide">Masquer</button>
+          <button class="btn small ghost" id="ltSave" title="Garder ce nom dans la liste">＋ Garder</button>
+          <label class="lab inline">Auto
+            <select id="ltAuto"><option value="0">reste</option><option value="8">8 s</option><option value="15">15 s</option><option value="30">30 s</option></select>
+          </label>
+        </div>
+        <div class="chips" id="ltList"></div>
+      </div>
+
+      <div class="card">
+        <h3>Carte verset / annonce <span class="state" id="cardState">masquée</span></h3>
+        <textarea id="cardText" rows="3" placeholder="Car Dieu a tant aimé le monde…"></textarea>
+        <input type="text" id="cardRef" placeholder="Référence (ex. : Jean 3:16)">
+        <div class="row"><button class="btn small gold" id="cardShow">Afficher</button><button class="btn small" id="cardHide">Masquer</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Texte défilant</h3>
+        <label class="check"><input type="checkbox" id="tickerOn"> Afficher en bas</label>
+        <textarea id="ticker" rows="2" placeholder="Bienvenue sur la chaîne Je suis KCCiste · Abonnez-vous · jesuiskcciste.com"></textarea>
+        <label class="lab">Vitesse <input type="range" id="tickerSpeed" min="40" max="220" step="10"></label>
+      </div>
+
+      <div class="card">
+        <h3>Écran d'attente</h3>
+        <input type="text" id="sbLine1" placeholder="Le direct commence bientôt">
+        <input type="text" id="sbLine2" placeholder="Culte du dimanche">
+        <label class="lab">Compte à rebours jusqu'à <input type="time" id="sbTime"> <small class="muted">(vide = sans)</small></label>
+      </div>
+    </section>
+
+    <!-- SON -->
+    <section class="pane" data-pane="audio">
+      <div class="card">
+        <h3>Sortie (ce qui part en direct)</h3>
+        <div class="meter big"><i id="masterMeter"></i></div>
+        <div class="row">
+          <label class="lab grow">Volume général <input type="range" id="masterGain" min="0" max="2" step="0.05"></label>
+          <button class="btn small" id="muteAll">🔇 Couper</button>
+        </div>
+        <label class="check"><input type="checkbox" id="monitorOn"> Écouter dans le casque du PC</label>
+      </div>
+      <div class="card">
+        <h3>Entrée son du PC</h3>
+        <p class="muted small">Table de mixage, micro USB ou micro du PC.</p>
+        <select id="micSel"></select>
+      </div>
+      <div class="card">
+        <h3>Voies</h3>
+        <label class="check"><input type="checkbox" id="followOn"> Le son des téléphones suit la caméra à l'antenne</label>
+        <div id="channels"></div>
+      </div>
+    </section>
+
+    <!-- DIFFUSION -->
+    <section class="pane" data-pane="out">
+      <div class="card">
+        <h3>Où envoyer le direct</h3>
+        <div id="dests"></div>
+        <p class="muted small">La clé de flux YouTube se trouve dans <a href="#" id="ytHelp">YouTube Studio › Créer › Passer au direct › Diffusion</a>. Elle reste uniquement sur ce PC.</p>
+      </div>
+      <div class="card">
+        <h3>Qualité</h3>
+        <div class="row">
+          <label class="lab grow">Image
+            <select id="quality"><option value="480">480p (connexion faible, 1,6 Mb/s)</option><option value="720">720p HD (3,7 Mb/s conseillé)</option><option value="1080">1080p Full HD (6,2 Mb/s)</option></select>
+          </label>
+          <label class="lab grow">Encodeur
+            <select id="encoder"><option value="auto">Automatique</option></select>
+          </label>
+        </div>
+        <p class="muted small">Il faut un débit d'envoi internet au moins 1,5 fois plus grand que la qualité choisie.</p>
+      </div>
+      <div class="card">
+        <h3>Sur le site jesuiskcciste.com</h3>
+        <p class="muted small">Programmez le culte dans l'administration du site : le compte à rebours s'affiche sur l'accueil et le direct YouTube apparaît sur la page Direct.</p>
+        <div class="row"><button class="btn small" id="siteAdmin">Ouvrir /admin/directs</button><button class="btn small ghost" id="siteDirect">Voir /direct</button></div>
+      </div>
+      <div class="card">
+        <h3>Enregistrements</h3>
+        <p class="muted small" id="recDir"></p>
+        <button class="btn small" id="openRec">Ouvrir le dossier</button>
+      </div>
+      <div class="card">
+        <h3>Journal</h3>
+        <pre id="log" class="log"></pre>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="modal" id="modal" hidden><div class="box"><h3 id="mTitle"></h3><div id="mBody"></div><div class="row end" id="mBtns"></div></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="regie.js"></script>
+</body>
+</html>

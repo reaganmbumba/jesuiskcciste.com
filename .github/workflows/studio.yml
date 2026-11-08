@@ -1,0 +1,110 @@
+name: Je suis KCCiste Studio
+
+# Fabrique la régie Windows (.exe) et l'appli caméra Android (.apk),
+# puis les publie dans une version GitHub « studio-N ».
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'studio/**'
+      - '.github/workflows/studio.yml'
+
+permissions:
+  contents: write
+
+env:
+  KCC_VERSION_CODE: ${{ github.run_number }}
+  KCC_VERSION_NAME: 1.0.${{ github.run_number }}
+
+jobs:
+  android:
+    name: Appli caméra (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # même clé de signature d'une construction à l'autre (sinon il faudrait désinstaller avant chaque mise à jour)
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: kcc-studio-camera-key-v1
+      - name: Clé de signature (secret facultatif)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KCC_STUDIO_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/studio.jks"
+            echo "KCC_STUDIO_KEYSTORE_PATH=$RUNNER_TEMP/studio.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Construire l'APK
+        working-directory: studio/android
+        env:
+          KCC_STUDIO_KEYSTORE_PASSWORD: ${{ secrets.KCC_STUDIO_KEYSTORE_PASSWORD }}
+          KCC_STUDIO_KEY_ALIAS: ${{ secrets.KCC_STUDIO_KEY_ALIAS }}
+          KCC_STUDIO_KEY_PASSWORD: ${{ secrets.KCC_STUDIO_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          mkdir -p ../out
+          cp app/build/outputs/apk/debug/*.apk ../out/kcc-studio-camera.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcc-studio-camera
+          path: studio/out/kcc-studio-camera.apk
+
+  windows:
+    name: Régie Windows (.exe)
+    needs: android
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: studio/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: kcc-studio-camera
+          path: studio/desktop/camera-apk
+      - run: npm ci
+      - run: npm test
+      - run: npm version ${{ env.KCC_VERSION_NAME }} --no-git-tag-version --allow-same-version
+      - name: Construire l'installateur
+        run: npx electron-builder --win nsis --x64 --publish never
+      - name: Rassembler
+        shell: bash
+        run: |
+          mkdir -p ../out
+          cp dist/*.exe "../out/KCC-Studio-Setup.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kcc-studio-windows
+          path: studio/out/KCC-Studio-Setup.exe
+
+  release:
+    name: Publier
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: studio-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Je suis KCCiste Studio ${{ env.KCC_VERSION_NAME }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          body: |
+            Régie de direct Je suis KCCiste Studio.
+            - KCC-Studio-Setup.exe : à installer sur le PC Windows de la régie.
+            - kcc-studio-camera.apk : à installer sur chaque téléphone caméra (Android).
+          files: |
+            out/KCC-Studio-Setup.exe
+            out/kcc-studio-camera.apk

@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { RadioProvider } from '@/features/radio/RadioContext';
 import { MiniRadioPlayer } from '@/features/radio/RadioUi';
 import { MatriculeWelcome } from '@/features/news/MatriculeWelcome';
+import { RequiredPhotoGate } from '@/features/auth/RequiredPhotoGate';
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
                   <ScrollToTop />
                   <AppRoutes />
                   <MiniRadioPlayer />
+                  <RequiredPhotoGate />
                   <MatriculeWelcome />
                 </RadioProvider>
               </BrowserRouter>

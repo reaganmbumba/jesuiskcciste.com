@@ -10,6 +10,8 @@ import { DemoInline } from '@/components/common/DemoNotice';
 import { useAuth } from '@/features/auth/AuthContext';
 import { signupStep1, signupStep2, signupStep3, type SignupValues } from '@/features/auth/schemas';
 import { useAsync } from '@/hooks/useAsync';
+import { PhotoPicker } from '@/features/auth/PhotoPicker';
+import { fileToDataUrl, savePendingPhoto } from '@/features/auth/photo';
 import { parishesRepo, sectionsRepo } from '@/services';
 import { cn } from '@/utils/format';
 import type { ZodTypeAny } from 'zod';
@@ -30,6 +32,9 @@ export default function SignupPage({ matricule = false }: { matricule?: boolean 
   const [step, setStep] = useState(0);
   const [done, setDone] = useState<'email' | 'pending' | null>(null);
   const [serverError, setServerError] = useState('');
+  // Photo obligatoire (appareil photo ou galerie), envoyée à la première connexion.
+  const [photo, setPhoto] = useState<{ file: File; preview: string } | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const { data } = useAsync(() => Promise.all([parishesRepo.all(), sectionsRepo.all()]), []);
   const [parishes = [], sections = []] = data ?? [];
   const { register, handleSubmit, trigger, watch, formState: { errors, isSubmitting } } = useForm<SignupValues>({
@@ -44,10 +49,16 @@ export default function SignupPage({ matricule = false }: { matricule?: boolean 
   });
   const parishId = watch('parishId');
 
-  const next = async () => { if (await trigger(STEPS[step].fields)) setStep((s) => s + 1); };
+  const next = async () => {
+    const ok = await trigger(STEPS[step].fields);
+    if (step === 0 && !photo) { setPhotoError(tx('La photo est obligatoire : prenez une photo ou choisissez-la dans la galerie.', 'A photo is required: take one or choose it from your gallery.', 'A fotografia é obrigatória: tire uma ou escolha da galeria.')); return; }
+    if (ok) setStep((s) => s + 1);
+  };
   const onSubmit = handleSubmit(async (v) => {
     setServerError('');
+    if (!photo) { setStep(0); setPhotoError(tx('La photo est obligatoire.', 'A photo is required.', 'A fotografia é obrigatória.')); return; }
     try {
+      savePendingPhoto(v.email, await fileToDataUrl(photo.file));
       const r = await signUp({ ...v, middleName: v.middleName || undefined, phone: v.phone || undefined });
       if (r.needsEmailConfirmation) setDone('email'); else { setDone('pending'); setTimeout(() => navigate('/espace'), 1500); }
     } catch (e) { setServerError(e instanceof Error ? e.message : tx('Inscription impossible.', 'Sign-up failed.', 'Inscrição impossível.')); }
@@ -82,6 +93,7 @@ export default function SignupPage({ matricule = false }: { matricule?: boolean 
       <form onSubmit={step === 2 ? onSubmit : (e) => { e.preventDefault(); void next(); }} className="space-y-4" noValidate>
         {serverError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
         {step === 0 && (<>
+          <PhotoPicker value={photo?.preview ?? null} error={photoError} onChange={(file, preview) => { setPhoto({ file, preview }); setPhotoError(null); }} />
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={tx('Prénom', 'First name', 'Nome próprio')} error={errors.firstName?.message} required>{(p) => <Input {...p} {...register('firstName')} autoComplete="given-name" />}</Field>
             <Field label={tx('Nom', 'Surname', 'Apelido')} error={errors.lastName?.message} required>{(p) => <Input {...p} {...register('lastName')} autoComplete="family-name" />}</Field>

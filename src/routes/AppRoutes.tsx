@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
-  LayoutGrid, FileText, Radio, Headphones,
+  LayoutGrid, FileText, Radio, Headphones, UserRoundPlus,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -83,6 +83,7 @@ const NotificationsPage = lazy(() => import('@/pages/member/NotificationsPage'))
 const SettingsPage = lazy(() => import('@/pages/member/SettingsPage'));
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview'));
 const AdminMembers = lazy(() => import('@/pages/admin/AdminMembers'));
+const AdminRegistrations = lazy(() => import('@/pages/admin/AdminRegistrations'));
 const AdminParishes = lazy(() => import('@/pages/admin/AdminParishes'));
 const AdminEvents = lazy(() => import('@/pages/admin/AdminEvents'));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements'));
@@ -117,6 +118,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin', label: 'Vue d’ensemble', icon: BarChart3, end: true, permission: 'admin.access' },
   { to: '/admin/contenu', label: 'Contenu du site', icon: LayoutGrid, permission: 'settings.manage' },
   { to: '/admin/textes', label: 'Textes des pages', icon: FileText, permission: 'settings.manage' },
+  { to: '/admin/inscriptions', label: 'Inscriptions', icon: UserRoundPlus, permission: 'members.read_private' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
   { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
@@ -237,7 +239,7 @@ export function AppRoutes() {
       <Route element={<RequirePermission permission="admin.access" />}>
         <Route path="admin" element={<AdminShell />}>
           <Route index element={<AdminOverview />} />
-          <Route element={<RequirePermission permission="members.read_private" />}><Route path="membres" element={<AdminMembers />} /></Route>
+          <Route element={<RequirePermission permission="members.read_private" />}><Route path="membres" element={<AdminMembers />} /><Route path="inscriptions" element={<AdminRegistrations />} /></Route>
           <Route element={<RequirePermission permission="sections.manage" />}><Route path="paroisses" element={<AdminParishes />} /></Route>
           <Route path="annonces" element={<AdminAnnouncements />} />
           <Route element={<RequirePermission permission="events.manage" />}><Route path="evenements" element={<AdminEvents />} /></Route>

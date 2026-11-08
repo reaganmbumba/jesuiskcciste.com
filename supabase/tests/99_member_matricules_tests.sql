@@ -89,4 +89,14 @@ set request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000005';
 do $$ begin assert public.reader_device_status('appareil-telephone-5') = 'non_valide', 'compte suspendu bloqué'; end $$;
 reset role;
 
+-- L'administration centrale est prévenue de chaque inscription ; un compte révoqué perd son téléphone.
+do $$ begin
+  assert exists (select 1 from public.notifications where user_id = 'aaaaaaaa-0000-0000-0000-000000000001'
+                 and title = 'Nouvelle inscription' and body like 'Membre%Nouveau%' and link = '/admin/inscriptions'), 'alerte nouvelle inscription';
+  assert not exists (select 1 from public.notifications where user_id = 'aaaaaaaa-0000-0000-0000-000000000004' and title = 'Nouvelle inscription'), 'pas d''alerte aux simples membres';
+  assert exists (select 1 from public.reader_devices where user_id = 'aaaaaaaa-0000-0000-0000-000000000077'), 'téléphone autorisé avant révocation';
+  update public.profiles set status = 'suspended' where id = 'aaaaaaaa-0000-0000-0000-000000000077';
+  assert not exists (select 1 from public.reader_devices where user_id = 'aaaaaaaa-0000-0000-0000-000000000077'), 'révocation : téléphone retiré';
+end $$;
+
 \echo 'Matricules et lecture des articles : tous les tests passent.'

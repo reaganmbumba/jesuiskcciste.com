@@ -2,7 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 
-export function Modal({ open, onClose, title, children, footer, size = 'md' }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: 'md' | 'lg' }) {
+export function Modal({ open, onClose, title, children, footer, size = 'md', closable = true }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: 'md' | 'lg'; closable?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -23,7 +23,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: {
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="modal-title" className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-lift animate-fade-up sm:rounded-3xl ${size === 'lg' ? 'sm:max-w-2xl' : 'sm:max-w-lg'}`}>
         <div className="flex items-center justify-between border-b border-night/10 px-5 py-4">
           <h2 id="modal-title" className="font-display text-lg font-semibold text-night">{title}</h2>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-mist" aria-label="Fermer"><X className="h-5 w-5" /></button>
+          {closable && <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg hover:bg-mist" aria-label="Fermer"><X className="h-5 w-5" /></button>}
         </div>
         <div className="overflow-y-auto px-5 py-5">{children}</div>
         {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-night/10 bg-mist/60 px-5 py-3">{footer}</div>}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Ban, CheckCircle2, Copy, MessageCircle, Search, Send, UserRoundPlus } from 'lucide-react';
+import { Ban, Camera, CheckCircle2, Copy, MessageCircle, Search, Send, UserRoundPlus } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -21,20 +21,34 @@ import { formatDate } from '@/utils/format';
 const SEEN_KEY = 'kcc.admin.inscriptions.vu';
 const fullName = (m: Profile) => [m.lastName, m.middleName, m.firstName].filter(Boolean).join(' ');
 
-/** Rapport à coller dans le groupe WhatsApp : noms seulement, jamais les matricules (personnels). */
+/**
+ * Rapport à coller dans le groupe WhatsApp : noms seulement, jamais les matricules (personnels).
+ * Les inscrits sans photo sont signalés, avec un rappel pour l'ajouter.
+ */
 export function registrationReport(members: Profile[], parishName: (id?: string | null) => string | null, siteUrl: string): string {
   const list = members.map((m, i) => {
     const where = [parishName(m.parishId), m.city].filter(Boolean).join(', ');
-    return `${i + 1}. ${fullName(m)}${where ? ` — ${where}` : ''}`;
+    return `${i + 1}. ${fullName(m)}${where ? ` — ${where}` : ''}${m.avatarUrl ? '' : ' 📸 _photo manquante_'}`;
   });
+  const missing = members.filter((m) => !m.avatarUrl).length;
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-  return `📋 *JE SUIS KCCiste* — Rapport des inscriptions (${date})\n\nPaix à vous ! Voici les ${members.length} KCCistes déjà enregistrés sur le site :\n\n${list.join('\n')}\n\nVous n'êtes pas encore sur la liste ? Inscrivez-vous ici : ${siteUrl}/matricule\n\n🌐 ${siteUrl}\n💬 Groupe : ${WHATSAPP_GROUP_URL}`;
+  const reminder = missing
+    ? `\n\n📸 *${missing} inscrit${missing > 1 ? 's n’ont' : ' n’a'} pas encore de photo.* Connectez-vous sur ${siteUrl} : le site vous demandera d’ajouter votre photo (appareil photo ou galerie).`
+    : '';
+  return `📋 *JE SUIS KCCiste* — Rapport des inscriptions (${date})\n\nPaix à vous ! Voici les ${members.length} KCCistes déjà enregistrés sur le site :\n\n${list.join('\n')}${reminder}\n\nVous n'êtes pas encore sur la liste ? Inscrivez-vous ici : ${siteUrl}/matricule\n\n🌐 ${siteUrl}\n💬 Groupe : ${WHATSAPP_GROUP_URL}`;
+}
+
+/** Rappel ciblé : uniquement les inscrits à qui il manque la photo. */
+export function photoReminder(members: Profile[], siteUrl: string): string {
+  const list = members.map((m, i) => `${i + 1}. ${fullName(m)}`).join('\n');
+  return `📸 *JE SUIS KCCiste* — Photo manquante\n\nPaix à vous ! Ces KCCistes inscrits n’ont pas encore ajouté leur photo :\n\n${list}\n\nC’est simple : connectez-vous sur ${siteUrl}, le site vous demande aussitôt votre photo. Prenez-vous en photo ou choisissez-en une dans la galerie, puis touchez « Enregistrer ».\n\n💬 Groupe : ${WHATSAPP_GROUP_URL}`;
 }
 
 export default function AdminRegistrations() {
   const { profile } = useAuth();
   const { notify } = useToast();
   const [q, setQ] = useState('');
+  const [onlyNoPhoto, setOnlyNoPhoto] = useState(false);
   const [revoke, setRevoke] = useState<{ m: Profile; to: Profile['status'] } | null>(null);
   const [lastSeen] = useState(() => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } });
   const { data, loading, reload } = useAsync(async () => {
@@ -48,15 +62,18 @@ export default function AdminRegistrations() {
 
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return (data?.members ?? []).filter((m) => !t || `${fullName(m)} ${m.city} ${m.phone ?? ''} ${matOf(m) ?? ''}`.toLowerCase().includes(t));
+    return (data?.members ?? []).filter((m) => !onlyNoPhoto || (!m.avatarUrl && m.status !== 'suspended')).filter((m) => !t || `${fullName(m)} ${m.city} ${m.phone ?? ''} ${matOf(m) ?? ''}`.toLowerCase().includes(t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, q]);
+  }, [data, q, onlyNoPhoto]);
   if (loading || !data) return <PageLoader />;
 
   const registered = data.members.filter((m) => m.status === 'active' || m.status === 'pending');
   const revoked = data.members.filter((m) => m.status === 'suspended');
   const fresh = data.members.filter(isNew);
-  const report = registrationReport(registered, parishName, env.siteUrl || 'https://www.jesuiskcciste.com');
+  const site = env.siteUrl || 'https://www.jesuiskcciste.com';
+  const report = registrationReport(registered, parishName, site);
+  const noPhoto = registered.filter((m) => !m.avatarUrl);
+  const sendPhotoReminder = () => window.open(`https://wa.me/?text=${encodeURIComponent(photoReminder(noPhoto, site))}`, '_blank', 'noopener');
 
   const sendReport = () => window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank', 'noopener');
   const copyReport = async () => { try { await navigator.clipboard.writeText(report); notify('Rapport copié : collez-le dans le groupe WhatsApp.'); } catch { notify('Copie impossible sur cet appareil.', 'error'); } };
@@ -110,6 +127,17 @@ export default function AdminRegistrations() {
         <StatCard icon={<Ban className="h-5 w-5" />} label="Révoqués" value={revoked.length} />
       </div>
 
+      <div className={`flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center ${noPhoto.length ? 'border border-red-200 bg-red-50' : 'border border-emerald-200 bg-emerald-50'}`}>
+        <Camera className={`h-5 w-5 shrink-0 ${noPhoto.length ? 'text-red-600' : 'text-emerald-700'}`} />
+        <p className="flex-1 text-sm text-night">{noPhoto.length
+          ? <><b>{noPhoto.length} inscrit{noPhoto.length > 1 ? 's' : ''} sans photo</b> : {noPhoto.slice(0, 5).map(fullName).join(', ')}{noPhoto.length > 5 ? '…' : ''}</>
+          : <b>Tous les inscrits ont leur photo.</b>}</p>
+        {noPhoto.length > 0 && <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant={onlyNoPhoto ? 'primary' : 'outline'} onClick={() => setOnlyNoPhoto((v) => !v)}>{onlyNoPhoto ? 'Voir tout le monde' : 'Voir la liste'}</Button>
+          <Button size="sm" variant="outline" onClick={sendPhotoReminder} icon={<Send className="h-4 w-4" />}>Rappel au groupe</Button>
+        </div>}
+      </div>
+
       <div className="relative">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un nom, une ville, un matricule…" className="pl-10" />
@@ -127,7 +155,7 @@ export default function AdminRegistrations() {
                   <p className="flex flex-wrap items-center gap-2 font-semibold text-night">{fullName(m)}
                     {isNew(m) && <Badge tone="gold">Nouveau</Badge>}
                     {m.status === 'suspended' ? <Badge tone="red">Révoqué</Badge> : m.status === 'pending' ? <Badge tone="amber">En attente</Badge> : <Badge tone="green">Actif</Badge>}
-                    {!m.avatarUrl && <Badge tone="neutral">Sans photo</Badge>}
+                    {!m.avatarUrl && <Badge tone="red">Photo manquante</Badge>}
                   </p>
                   <p className="text-sm text-ink/60">{[parishName(m.parishId), m.city, m.country].filter(Boolean).join(' · ')}</p>
                   <p className="text-xs text-ink/50">{mat && <span className="mr-2 font-mono font-semibold text-night">{mat}</span>}{m.phone && <span className="mr-2">{m.phone}</span>}Inscrit le {formatDate(m.createdAt, 'fr', { dateStyle: 'medium' })}{r?.deviceLabel ? ` · lit sur ${r.deviceLabel}` : ''}</p>

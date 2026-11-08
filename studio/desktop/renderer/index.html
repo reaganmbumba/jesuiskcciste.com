@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self'; script-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file:; media-src 'self' blob: mediastream: file:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self'; script-src 'self'">
 <title>Je suis KCCiste Studio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="regie.css">
@@ -29,7 +29,8 @@
       </figure>
       <div class="trans">
         <button class="btn cut" id="cutBtn" title="Touche Entrée">COUPER<small>Entrée</small></button>
-        <button class="btn fade" id="fadeBtn" title="Touche Espace">FONDU<small>Espace</small></button>
+        <button class="btn fade" id="fadeBtn" title="Touche Espace"><span id="fadeBtnLabel">Fondu</span><small>Espace</small></button>
+        <label class="mini">Transition<select id="trans"></select></label>
         <label class="mini">Durée
           <select id="fadeDur"><option value="300">0,3 s</option><option value="600" selected>0,6 s</option><option value="1000">1 s</option><option value="2000">2 s</option></select>
         </label>
@@ -91,6 +92,26 @@
     <!-- HABILLAGE -->
     <section class="pane" data-pane="gfx">
       <div class="card">
+        <h3>Modèles de direct</h3>
+        <div class="row"><select id="modelSel" class="grow" style="width:auto;flex:1"></select><button class="btn small gold" id="modelLoad">Charger</button></div>
+        <div class="row"><button class="btn small" id="modelSave">💾 Enregistrer l'habillage actuel…</button><button class="btn small ghost" id="modelDel">Supprimer</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Incrustation <span class="state" id="pipState">masquée</span></h3>
+        <p class="muted small">Une deuxième source en petit sur l'antenne, ou les deux côte à côte (touche P).</p>
+        <select id="pipSrc"></select>
+        <div class="row">
+          <label class="lab grow">Position
+            <select id="pipPos"><option value="br">En bas à droite</option><option value="bl">En bas à gauche</option><option value="tr">En haut à droite</option><option value="tl">En haut à gauche</option><option value="side">Côte à côte</option></select>
+          </label>
+          <label class="lab grow">Taille
+            <select id="pipSize"><option value="0.22">Petite</option><option value="0.3">Moyenne</option><option value="0.4">Grande</option></select>
+          </label>
+        </div>
+        <div class="row"><button class="btn small gold" id="pipShow">Afficher</button><button class="btn small" id="pipHide">Masquer</button></div>
+      </div>
+      <div class="card">
         <h3>Toujours à l'écran</h3>
         <label class="check"><input type="checkbox" id="logoOn"> Logo KCC en haut à droite</label>
         <div class="row">
@@ -134,6 +155,10 @@
 
       <div class="card">
         <h3>Écran d'attente</h3>
+        <p class="muted small">Arrière-plan (cliquez pour changer, même pendant le direct) :</p>
+        <div class="bggrid" id="bgGrid"></div>
+        <div class="row"><button class="btn small" id="bgPhoto">＋ Ma photo</button><button class="btn small" id="bgVideo">＋ Ma vidéo (boucle)</button></div>
+        <label class="lab">Voile sombre sur mes photos et vidéos <input type="range" id="bgDim" min="0" max="0.85" step="0.05"></label>
         <input type="text" id="sbLine1" placeholder="Le direct commence bientôt">
         <input type="text" id="sbLine2" placeholder="Culte du dimanche">
         <label class="lab">Compte à rebours jusqu'à <input type="time" id="sbTime"> <small class="muted">(vide = sans)</small></label>
@@ -150,6 +175,15 @@
           <button class="btn small" id="muteAll">🔇 Couper</button>
         </div>
         <label class="check"><input type="checkbox" id="monitorOn"> Écouter dans le casque du PC</label>
+      </div>
+      <div class="card">
+        <h3>Musique et jingles <span class="muted small" id="musicPos"></span></h3>
+        <div id="musicList" class="mlist"></div>
+        <div class="row"><button class="btn small" id="musicAdd">＋ Ajouter un son</button><button class="btn small ghost" id="musicStop">■ Arrêter en fondu</button></div>
+        <div class="row">
+          <label class="lab grow">Volume <input type="range" id="musicVol" min="0" max="1.5" step="0.05"></label>
+          <label class="check small"><input type="checkbox" id="musicLoop"> En boucle</label>
+        </div>
       </div>
       <div class="card">
         <h3>Entrée son du PC</h3>
@@ -203,6 +237,8 @@
 <div class="modal" id="modal" hidden><div class="box"><h3 id="mTitle"></h3><div id="mBody"></div><div class="row end" id="mBtns"></div></div></div>
 <div class="toasts" id="toasts"></div>
 
+<script src="fonds.js"></script>
 <script src="regie.js"></script>
+<script src="pro.js"></script>
 </body>
 </html>

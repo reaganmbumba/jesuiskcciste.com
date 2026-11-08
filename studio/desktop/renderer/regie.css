@@ -152,3 +152,17 @@ h3{font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold
 .toast{background:#1d2436;border:1px solid var(--line);border-radius:10px;padding:10px 14px;box-shadow:0 10px 30px #000a;max-width:640px;display:flex;gap:10px;align-items:center}
 .toast.err{border-color:var(--red)}
 .toast.ok{border-color:var(--green)}
+
+.bggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bg{position:relative;background:var(--panel2);border:2px solid var(--line);border-radius:8px;padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;text-align:left}
+.bg canvas{width:100%;aspect-ratio:16/9;display:block}
+.bg span{font-size:10.5px;padding:3px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bg.on{border-color:var(--gold)}
+.bg i{position:absolute;right:3px;top:2px;font-style:normal;background:#000a;border-radius:4px;padding:0 5px}
+
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mrow{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:8px;background:var(--panel2)}
+.mrow.on{outline:1px solid var(--gold)}
+.mrow .mname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow i{font-style:normal;color:var(--muted);cursor:pointer;padding:0 4px}
+.mini select{width:100%}

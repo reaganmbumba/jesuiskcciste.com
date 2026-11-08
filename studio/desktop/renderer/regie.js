@@ -18,6 +18,8 @@ const DEFAULTS = {
   cardText: '', cardRef: '',
   tickerOn: false, ticker: 'Bienvenue sur la chaîne Je suis KCCiste · Abonnez-vous et partagez le direct · jesuiskcciste.com', tickerSpeed: 110,
   sbLine1: 'Le direct commence bientôt', sbLine2: '', sbTime: '',
+  trans: 'fade', pipOn: false, pipSrc: '', pipPos: 'br', pipSize: '0.3', music: [], musicVol: 0.6, musicLoop: true, models: [],
+  bg: 'nuit', customBgs: [], bgDim: 0.45, // arrière-plan de l'écran d'attente (voir fonds.js)
   fadeDur: '600', quality: '720', encoder: 'auto',
   dests: [
     { name: 'YouTube', url: 'rtmp://a.rtmp.youtube.com/live2', key: '', on: true },
@@ -102,6 +104,7 @@ function renderTiles() {
   });
   $('pvwName').textContent = byId(pvwId)?.name || '—';
   $('pgmName').textContent = byId(pgmId)?.name || '—';
+  if (typeof renderPipSources === 'function') renderPipSources();
 }
 function setPreview(id) { pvwId = id; renderTiles(); tally(); }
 
@@ -111,7 +114,7 @@ function take(id, mode) {
   if (id === pgmId) { ftb = false; return; }
   const old = pgmId;
   prevPgmId = old; pgmId = id;
-  transStart = performance.now(); transDur = mode === 'fade' ? Number(S.fadeDur) : 0;
+  transStart = performance.now(); transDur = mode === 'fade' ? transDuration() : 0;
   // l'ancienne antenne devient l'aperçu (comme une vraie régie)
   pvwId = old;
   ftb = false;
@@ -153,17 +156,15 @@ function wrap(ctx, txt, maxW) {
 
 function brandScreen(ctx, w, h, t, line1, line2, countdown) {
   const u = w / 1280;
-  const g = ctx.createRadialGradient(w / 2, h * .42, 0, w / 2, h * .42, Math.max(w, h) * .75);
-  g.addColorStop(0, '#1b3378'); g.addColorStop(.55, '#0b1f5c'); g.addColorStop(1, '#050b22');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-  ctx.save(); ctx.strokeStyle = 'rgba(243,210,122,.10)'; ctx.lineWidth = 1.5 * u;
-  for (let i = 0; i < 5; i++) { const r = (160 + i * 90) * u + Math.sin(t / 1600 + i) * 6 * u; ctx.beginPath(); ctx.arc(w / 2, h * .42, r, 0, Math.PI * 2); ctx.stroke(); }
-  ctx.fillStyle = 'rgba(243,210,122,.55)';
-  for (let i = 0; i < 40; i++) { const px = (Math.sin(i * 91.7) * .5 + .5) * w, py = ((Math.cos(i * 47.3) * .5 + .5) * h + t * 0.012 * (1 + i % 3)) % h; ctx.globalAlpha = .25 + .35 * Math.abs(Math.sin(t / 900 + i)); ctx.beginPath(); ctx.arc(px, py, (1 + i % 3) * u, 0, 7); ctx.fill(); }
-  ctx.restore();
+  Fonds.draw(ctx, w, h, t);
+  if (Fonds.isLight()) {
+    const v = ctx.createRadialGradient(w / 2, h * .55, 0, w / 2, h * .55, w * .42);
+    v.addColorStop(0, 'rgba(5,11,34,.62)'); v.addColorStop(.6, 'rgba(5,11,34,.35)'); v.addColorStop(1, 'rgba(5,11,34,0)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, w, h);
+  }
   const size = 190 * u;
   if (logo.complete && logo.naturalWidth) { ctx.save(); ctx.shadowColor = 'rgba(243,210,122,.55)'; ctx.shadowBlur = 30 * u; ctx.drawImage(logo, w / 2 - size / 2, h * .36 - size / 2, size, size); ctx.restore(); }
-  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 10 * u;
   ctx.font = `700 ${30 * u}px Cinzel, Georgia, serif`; ctx.fillStyle = '#f3d27a';
   if ('letterSpacing' in ctx) ctx.letterSpacing = (4 * u) + 'px';
   ctx.fillText('JE SUIS KCCISTE', w / 2, h * .36 + size / 2 + 36 * u);
@@ -294,10 +295,9 @@ function render() {
   setCanvasSize();
   // antenne
   const k = transDur ? clamp01((t - transStart) / transDur) : 1;
-  if (k < 1 && prevPgmId) {
-    drawSource(pctx, byId(prevPgmId), W, H, t);
-    pctx.globalAlpha = k; drawSource(pctx, byId(pgmId), W, H, t); pctx.globalAlpha = 1;
-  } else drawSource(pctx, byId(pgmId), W, H, t);
+  if (k < 1 && prevPgmId) drawTransition(pctx, byId(prevPgmId), byId(pgmId), k, t, W, H);
+  else if (typeof drawProgram === 'function') drawProgram(pctx, byId(pgmId), W, H, t);
+  else drawSource(pctx, byId(pgmId), W, H, t);
   if (S.logoOn) drawLogoCorner(pctx);
   drawBadge(pctx, t); drawTitle(pctx); drawCard(pctx, t); drawLowerThird(pctx, t); drawTicker(pctx, dt);
   if (ltOn && ltHideAt && Date.now() > ltHideAt) hideLt();
@@ -637,6 +637,7 @@ const Rec = (() => {
 /* ---------- habillage : formulaire ---------- */
 function bindInput(id, prop, kind = 'value', after) {
   const el = $(id); if (!el) return;
+  el.dataset.bind = prop;
   if (kind === 'checked') el.checked = !!S[prop]; else el.value = S[prop] ?? '';
   el.addEventListener(kind === 'checked' || el.tagName === 'SELECT' ? 'change' : 'input', () => {
     S[prop] = kind === 'checked' ? el.checked : (el.type === 'range' ? Number(el.value) : el.value); save(); after && after();
@@ -700,7 +701,10 @@ async function init() {
   $('ltSave').onclick = () => { if (!S.ltName.trim()) return; if (!S.ltList.some((p) => p.name === S.ltName && p.role === S.ltRole)) S.ltList.push({ name: S.ltName.trim(), role: S.ltRole.trim() }); save(); renderLtList(); };
   $('cardShow').onclick = () => { if (!S.cardText.trim()) { toast('Écrivez d\'abord le texte.', 'err'); return; } cardOn = true; cardOut = 0; cardAt = performance.now(); $('cardState').textContent = 'à l\'écran'; $('cardState').classList.add('on'); };
   $('cardHide').onclick = () => { if (!cardOn) return; cardOn = false; cardOut = performance.now(); $('cardState').textContent = 'masquée'; $('cardState').classList.remove('on'); };
-  renderLtList(); renderDests();
+  renderLtList(); renderDests(); Fonds.render();
+  bindInput('bgDim', 'bgDim');
+  $('bgPhoto').onclick = () => Fonds.addFile('image');
+  $('bgVideo').onclick = () => Fonds.addFile('video');
 
   document.querySelectorAll('.tab').forEach((t) => t.onclick = () => switchTab(t.dataset.tab));
   $('cutBtn').onclick = () => take(pvwId, 'cut');

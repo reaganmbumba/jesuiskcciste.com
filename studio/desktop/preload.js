@@ -1,10 +1,11 @@
 // Pont entre la fenêtre de la régie et Node (ffmpeg, fichiers, serveur local).
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const on = (ch) => (fn) => { const h = (_e, d) => fn(d); ipcRenderer.on(ch, h); return () => ipcRenderer.off(ch, h); };
 
 contextBridge.exposeInMainWorld('kcc', {
   info: () => ipcRenderer.invoke('info'),
+  pathFor: (file) => { try { return webUtils.getPathForFile(file) || ''; } catch { return ''; } },
   encoders: () => ipcRenderer.invoke('encoders'),
   screens: () => ipcRenderer.invoke('screens'),
   liveStart: (opts) => ipcRenderer.invoke('live-start', opts),

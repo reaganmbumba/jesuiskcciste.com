@@ -573,7 +573,7 @@ const Live = (() => {
   }
   async function launch() {
     if (!api) { toast('Disponible dans l\'application seulement.', 'err'); state = 'off'; ui(); return; }
-    const r = await api.liveStart({ outputs: selected().map((x) => ({ url: x.url, key: x.key })), quality: Number(S.quality), encoder: S.encoder });
+    const r = await api.liveStart({ outputs: selected().map((x) => ({ name: x.name, url: x.url, key: x.key })), quality: Number(S.quality), encoder: S.encoder });
     if (!r.ok) { toast(r.error, 'err', 8000); state = 'off'; ui(); return; }
     recorder = makeRecorder((buf) => api.liveChunk(buf));
     recorder.start(250);

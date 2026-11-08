@@ -125,6 +125,11 @@ describe('Inscription en trois étapes', () => {
     render(<AuthProvider><MemoryRouter><SignupPage /></MemoryRouter></AuthProvider>);
     fireEvent.change(screen.getByLabelText(/Prénom/), { target: { value: 'Reagan' } });
     fireEvent.change(screen.getByLabelText(/^Nom/), { target: { value: 'Mbumba' } });
+    // Sans photo, on ne passe pas à l'étape suivante.
+    fireEvent.click(screen.getByRole('button', { name: /Continuer|Suivant/ }));
+    expect(await screen.findByText(/La photo est obligatoire/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Galerie/), { target: { files: [new File(['photo'], 'moi.jpg', { type: 'image/jpeg' })] } });
+    await waitFor(() => expect(screen.queryByText(/La photo est obligatoire/)).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /Continuer|Suivant/ }));
     fireEvent.change(await screen.findByLabelText(/Ville/), { target: { value: 'Kinshasa' } });
     fireEvent.click(screen.getByRole('button', { name: /Continuer|Suivant/ }));

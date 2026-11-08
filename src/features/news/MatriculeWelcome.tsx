@@ -21,12 +21,12 @@ export function MatriculeWelcome() {
 
   useEffect(() => {
     setMatricule(null);
-    if (!profile || profile.status === 'suspended') return;
+    if (!profile || profile.status === 'suspended' || !profile.avatarUrl) return;
     try { if (localStorage.getItem(seenKey(profile.id))) return; } catch { return; }
     let alive = true;
     getMyMatricule(profile.id, true).then((m) => { if (alive && m) setMatricule(m); }).catch(() => undefined);
     return () => { alive = false; };
-  }, [profile?.id, profile?.status]);
+  }, [profile?.id, profile?.status, profile?.avatarUrl]);
 
   if (!profile || !matricule) return null;
   const close = () => {

@@ -1,0 +1,15 @@
+# JE SUIS KCCiste — https://jesuiskcciste.com
+# Les moteurs de recherche peuvent lire toutes les pages publiques.
+# Les espaces personnels et l'administration ne servent à rien dans Google.
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /espace
+Disallow: /connexion
+Disallow: /inscription
+Disallow: /mot-de-passe-oublie
+Disallow: /acces-refuse
+Disallow: /studio.html
+Disallow: /teleprompteur.html
+
+Sitemap: https://jesuiskcciste.com/sitemap.xml

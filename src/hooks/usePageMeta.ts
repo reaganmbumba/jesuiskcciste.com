@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export const SITE_NAME = 'JE SUIS KCCiste';
-export const DEFAULT_TITLE = 'JE SUIS KCCiste — La communauté KCCiste';
-export const DEFAULT_DESCRIPTION = 'JE SUIS KCCiste — La communauté KCCiste. Un seul peuple. Une même communauté.';
+// Gardés identiques à index.html : c'est ce que Google affiche pour l'accueil.
+export const DEFAULT_TITLE = 'JE SUIS KCCiste — Église Bon Nouveau Message (KCC), la communauté KCCiste';
+export const DEFAULT_DESCRIPTION = 'Je suis KCCiste : le site de la communauté KCCiste de l’Église Bon Nouveau Message (EBNM/KCC). Doctrine, cantiques, prédications, cultes en direct, radio, actualités et paroisses en RD Congo et dans la diaspora.';
 export const DEFAULT_SHARE_IMAGE = '/images/partage-jesuiskcciste.jpg';
 
 interface PageMeta {

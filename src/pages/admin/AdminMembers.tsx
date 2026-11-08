@@ -15,7 +15,7 @@ import type { Profile, RoleKey } from '@/types';
 import { isDemoMode } from '@/config/env';
 import { supabase } from '@/lib/supabase';
 import { env } from '@/config/env';
-import { adminReaderAction, adminSetMatricule, demoMatricule, listMatricules, matriculeMessage, type MatriculeRow, waNumber } from '@/features/news/readerAccess';
+import { adminReaderAction, adminSetMatricule, demoMatricule, matriculeInitials, listMatricules, matriculeMessage, type MatriculeRow, waNumber } from '@/features/news/readerAccess';
 
 const STATUS = { active: ['Actif', 'green'], pending: ['En attente', 'amber'], suspended: ['Suspendu', 'red'] } as const;
 
@@ -29,7 +29,7 @@ export default function AdminMembers() {
   const [statusChange, setStatusChange] = useState<{ m: Profile; to: Profile['status']; reload: () => void } | null>(null);
   const isCentral = hasRole(profile, 'central_admin');
   const mats = useAsync(() => listMatricules([]).catch(() => ({} as Record<string, MatriculeRow>)), []);
-  const matOf = (m: Profile) => mats.data?.[m.id]?.matricule ?? (isDemoMode ? demoMatricule(m.id) : null);
+  const matOf = (m: Profile) => mats.data?.[m.id]?.matricule ?? (isDemoMode ? demoMatricule(m.id, matriculeInitials(m)) : null);
   const [editMat, setEditMat] = useState<{ m: Profile; value: string } | null>(null);
   const sendWhatsApp = async (m: Profile) => {
     const mat = matOf(m);
@@ -119,7 +119,7 @@ export default function AdminMembers() {
       <ConfirmDialog open={!!statusChange} title={statusChange?.to === 'active' ? 'Valider ce compte ?' : 'Suspendre ce compte ?'} message={statusChange ? `${statusChange.m.firstName} ${statusChange.m.lastName}`.trim() + (statusChange.m.email ? ` — ${statusChange.m.email}` : '') : ''} danger={statusChange?.to === 'suspended'} onConfirm={applyStatus} onCancel={() => setStatusChange(null)} />
       <Modal open={!!editMat} onClose={() => setEditMat(null)} title="Modifier le matricule" footer={<><Button variant="outline" onClick={() => setEditMat(null)}>Annuler</Button><Button onClick={saveMatricule}>Enregistrer</Button></>}>
         <p className="mb-4 text-sm text-ink/70">{editMat?.m.firstName} {editMat?.m.lastName} — par exemple le numéro du registre de l’église. Laisser vide pour un nouveau numéro automatique. Le téléphone autorisé est libéré.</p>
-        <Field label="Matricule">{(p) => <Input {...p} value={editMat?.value ?? ''} onChange={(e) => setEditMat((x) => (x ? { ...x, value: e.target.value.toUpperCase() } : x))} placeholder="KCC-00012" />}</Field>
+        <Field label="Matricule">{(p) => <Input {...p} value={editMat?.value ?? ''} onChange={(e) => setEditMat((x) => (x ? { ...x, value: e.target.value.toUpperCase() } : x))} placeholder="KCC-MMR-00256" />}</Field>
       </Modal>
       <Modal open={!!roleFor} onClose={() => setRoleFor(null)} title="Attribuer un rôle" footer={<><Button variant="outline" onClick={() => setRoleFor(null)}>Annuler</Button><Button onClick={assignRole}>Attribuer</Button></>}>
         <p className="mb-4 text-sm text-ink/70">{roleFor?.firstName} {roleFor?.lastName} — le rôle est limité au périmètre de sa paroisse ou section. Seul l’administrateur central peut attribuer les rôles transverses.</p>

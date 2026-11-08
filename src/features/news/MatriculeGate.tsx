@@ -64,7 +64,7 @@ export function MatriculeGate({ status, onUnlocked }: { status: ReaderStatus; on
               : <p className="text-sm text-white/75">{tx('Saisissez votre matricule personnel. Il ne fonctionne que sur un seul téléphone à la fois : ne le partagez pas.', 'Enter your personal member number. It works on one phone at a time: do not share it.', 'Introduza a sua matrícula pessoal. Só funciona num telemóvel de cada vez: não a partilhe.')}</p>}
             <label className="mt-4 block text-sm font-medium text-white/85" htmlFor="matricule">{tx('Mon matricule', 'My member number', 'A minha matrícula')}</label>
             <div className="mt-1.5 flex flex-col gap-3 sm:flex-row">
-              <Input id="matricule" value={value} onChange={(e) => setValue(e.target.value.toUpperCase())} placeholder="KCC-00012" autoComplete="off" autoCapitalize="characters" className="!bg-white text-night sm:max-w-xs" />
+              <Input id="matricule" value={value} onChange={(e) => setValue(e.target.value.toUpperCase())} placeholder="KCC-MMR-00256" autoComplete="off" autoCapitalize="characters" className="!bg-white text-night sm:max-w-xs" />
               <Button type="submit" variant="gold" disabled={busy || !value.trim()} icon={<KeyRound className="h-4 w-4" />}>{busy ? tx('Vérification…', 'Checking…', 'A verificar…') : tx('Lire la suite', 'Read more', 'Ler o resto')}</Button>
             </div>
             {error && <p className="mt-3 text-sm text-red-300" role="alert">{error}</p>}

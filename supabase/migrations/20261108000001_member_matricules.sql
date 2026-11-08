@@ -1,7 +1,7 @@
 -- =====================================================================
 -- Matricule personnel des KCCistes et lecture des articles réservée.
 --
--- • Chaque compte reçoit un matricule unique (KCC-00001, …), attribué par
+-- • Chaque compte reçoit un matricule unique (KCC-MMR-00256 : initiales + numéro), attribué par
 --   la base dès la création du compte et affiché au membre à sa connexion.
 --   Il est personnel : seul le membre et l'administration le voient.
 -- • Pour lire un article en entier, le membre connecté saisit son
@@ -47,18 +47,29 @@ revoke all on public.reader_devices from anon, authenticated;
 grant select on public.reader_devices to authenticated;
 -- Aucune écriture directe : tout passe par les fonctions ci-dessous.
 
-create or replace function public.next_matricule() returns text
-language sql volatile security definer set search_path = public as $$
-  select 'KCC-' || lpad(nextval('public.member_matricule_seq')::text, 5, '0');
-$$;
-revoke all on function public.next_matricule() from public, anon, authenticated;
+-- Matricule = KCC- + initiales (Nom, Postnom, Prénom) + numéro d'ordre.
+-- Ex. Mbumba Mbumba Reagan → KCC-MMR-00256.
+create or replace function public.next_matricule(p_user_id uuid) returns text
+language plpgsql volatile security definer set search_path = public as $$
+declare v_initials text;
+begin
+  select string_agg(left(w, 1), '' order by o) into v_initials
+  from profiles p,
+       lateral unnest(array[p.last_name, p.middle_name, p.first_name]) with ordinality as n(name, o),
+       lateral (select upper(translate(trim(n.name), 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿÀÂÄÁÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝ', 'aaaaaaceeeeiiiinooooouuuuyyAAAAAACEEEEIIIINOOOOOUUUUY'))) x(w)
+  where p.id = p_user_id and coalesce(trim(n.name), '') <> '';
+  v_initials := left(regexp_replace(coalesce(v_initials, ''), '[^A-Z]', '', 'g'), 5);
+  return 'KCC-' || case when v_initials = '' then '' else v_initials || '-' end
+         || lpad(nextval('public.member_matricule_seq')::text, 5, '0');
+end $$;
+revoke all on function public.next_matricule(uuid) from public, anon, authenticated;
 
 -- Matricule attribué automatiquement dès la création du compte.
 create or replace function public.profile_assign_matricule() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
   if new.status in ('active', 'pending') and not exists (select 1 from member_matricules where user_id = new.id) then
-    insert into member_matricules (user_id, matricule) values (new.id, next_matricule()) on conflict do nothing;
+    insert into member_matricules (user_id, matricule) values (new.id, next_matricule(new.id)) on conflict do nothing;
   end if;
   return new;
 end $$;
@@ -68,7 +79,7 @@ create trigger profiles_assign_matricule after insert or update of status on pub
 
 -- Les comptes existants reçoivent leur matricule, dans l'ordre d'inscription.
 insert into public.member_matricules (user_id, matricule)
-select p.id, public.next_matricule() from (
+select p.id, public.next_matricule(p.id) from (
   select id from public.profiles where status in ('active', 'pending')
     and id not in (select user_id from public.member_matricules)
   order by created_at) p
@@ -120,7 +131,7 @@ returns text language plpgsql volatile security definer set search_path = public
 declare v text := upper(regexp_replace(coalesce(p_matricule, ''), '\s', '', 'g'));
 begin
   if not public.is_central_admin() then raise exception 'réservé à l''administration centrale' using errcode = '42501'; end if;
-  if v = '' then v := next_matricule(); end if;
+  if v = '' then v := next_matricule(p_user_id); end if;
   insert into member_matricules (user_id, matricule) values (p_user_id, v)
     on conflict (user_id) do update set matricule = excluded.matricule, sent_at = null;
   delete from reader_devices where user_id = p_user_id;

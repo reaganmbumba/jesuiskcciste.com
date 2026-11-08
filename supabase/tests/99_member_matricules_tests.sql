@@ -6,6 +6,7 @@
 set client_min_messages = warning;
 
 do $$ begin
+  assert (select matricule from public.member_matricules where user_id = 'aaaaaaaa-0000-0000-0000-000000000004') ~ '^KCC-DM-[0-9]{5}$', 'initiales Nom + Prénom (Deux Membre)';
   assert (select count(*) from public.member_matricules m join public.profiles p on p.id = m.user_id where p.status in ('active', 'pending'))
        = (select count(*) from public.profiles where status in ('active', 'pending')), 'chaque compte a un matricule';
 end $$;
@@ -75,7 +76,8 @@ reset role;
 do $$ begin
   insert into auth.users (id, email, raw_user_meta_data) values ('aaaaaaaa-0000-0000-0000-000000000077', 'nouveau@test.invalid', '{"first_name":"Nouveau","last_name":"Membre"}');
   assert (select status from public.profiles where id = 'aaaaaaaa-0000-0000-0000-000000000077') = 'pending', 'compte en attente';
-  assert exists (select 1 from public.member_matricules where user_id = 'aaaaaaaa-0000-0000-0000-000000000077' and matricule like 'KCC-%'), 'matricule dès l''inscription';
+  assert (select matricule from public.member_matricules where user_id = 'aaaaaaaa-0000-0000-0000-000000000077') ~ '^KCC-MN-[0-9]{5}$', 'matricule dès l''inscription (initiales Membre Nouveau)';
+  assert (select matricule from public.member_matricules where user_id = 'aaaaaaaa-0000-0000-0000-000000000003') = 'KCC2017001', 'matricule corrigé conservé';
   update public.profiles set status = 'suspended' where id = 'aaaaaaaa-0000-0000-0000-000000000005';
 end $$;
 set role authenticated;

@@ -49,11 +49,18 @@ function deviceLabel(): string {
   return `${kind} · ${new Date().toLocaleDateString('fr-FR')}`;
 }
 
+/** Initiales Nom + Postnom + Prénom, comme en base (ex. Mbumba Mbumba Reagan → MMR). */
+export function matriculeInitials(p: { lastName?: string | null; middleName?: string | null; firstName?: string | null }): string {
+  return [p.lastName, p.middleName, p.firstName]
+    .map((n) => (n ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').charAt(0).toUpperCase())
+    .filter((c) => /[A-Z]/.test(c)).join('').slice(0, 5);
+}
+
 /** Matricule de démonstration, dérivé de l'identifiant du compte. */
-export function demoMatricule(userId: string): string {
+export function demoMatricule(userId: string, initials = ''): string {
   let n = 0;
   for (const c of userId) n = (n * 31 + c.charCodeAt(0)) % 99999;
-  return `KCC-${String(n || 1).padStart(5, '0')}`;
+  return `KCC-${initials ? `${initials}-` : ''}${String(n || 1).padStart(5, '0')}`;
 }
 
 export async function getReaderStatus(signedIn: boolean, isEditor: boolean, isActive: boolean): Promise<ReaderStatus> {
@@ -74,7 +81,7 @@ export async function getReaderStatus(signedIn: boolean, isEditor: boolean, isAc
 export async function claimReaderDevice(matricule: string, userId: string): Promise<void> {
   const clean = matricule.replace(/\s/g, '').toUpperCase();
   if (isDemoMode) {
-    if (clean !== demoMatricule(userId)) throw new Error('matricule_incorrect');
+    if (clean.slice(-5) !== demoMatricule(userId).slice(-5)) throw new Error('matricule_incorrect');
     try { localStorage.setItem(DEMO_CLAIM_KEY, getDeviceId()); } catch { /* ignore */ }
     return;
   }

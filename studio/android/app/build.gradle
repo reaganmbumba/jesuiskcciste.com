@@ -1,0 +1,41 @@
+apply plugin: 'com.android.application'
+
+// Version : numéro de la construction GitHub (KCC_VERSION_CODE), sinon 1
+def vCode = (System.getenv('KCC_VERSION_CODE') ?: '1') as Integer
+def vName = System.getenv('KCC_VERSION_NAME') ?: '1.0.0'
+
+android {
+    namespace 'com.jesuiskcciste.studio.camera'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.jesuiskcciste.studio.camera'
+        minSdk 24
+        targetSdk 34
+        versionCode vCode
+        versionName vName
+    }
+    // Clé de signature : celle des secrets GitHub si elle existe, sinon la clé « debug »
+    // (gardée en cache par le workflow pour que les mises à jour s'installent par-dessus).
+    def ks = System.getenv('KCC_STUDIO_KEYSTORE_PATH')
+    signingConfigs {
+        if (ks) {
+            studio {
+                storeFile file(ks)
+                storePassword System.getenv('KCC_STUDIO_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KCC_STUDIO_KEY_ALIAS')
+                keyPassword System.getenv('KCC_STUDIO_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            if (ks) signingConfig signingConfigs.studio
+        }
+    }
+    // la page caméra (studio/camera) est partagée avec la régie du PC
+    sourceSets { main { assets.srcDirs = ['../../camera'] } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

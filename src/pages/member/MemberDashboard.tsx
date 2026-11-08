@@ -7,6 +7,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/States';
 import { AccountStatusBanner } from './AccountStatusBanner';
+import { MyMatriculeCard } from '@/features/news/MyMatriculeCard';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/features/auth/AuthContext';
 import { coursesRepo, listMyCertificates, listMyEnrollments, listMyNotifications, listPublishedAnnouncements, listUpcomingEvents, parishesRepo, sectionsRepo } from '@/services';
@@ -43,6 +44,8 @@ export default function MemberDashboard() {
           <ButtonLink to="/espace/profil" variant="light" size="sm">Modifier mon profil</ButtonLink>
         </div>
       </div>
+
+      <MyMatriculeCard />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard icon={<GraduationCap className="h-5 w-5" />} label="Formations en cours" value={data?.enrollments.filter((e) => e.progress < 100).length ?? '—'} />

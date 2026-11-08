@@ -22,7 +22,8 @@ const STEPS: { title: Tri; schema: ZodTypeAny; fields: (keyof SignupValues)[] }[
 ];
 
 /** Inscription progressive en 3 étapes ; le compte est créé « en attente de validation ». */
-export default function SignupPage() {
+/** `matricule` : formulaire publié dans le groupe WhatsApp pour obtenir son matricule KCCiste. */
+export default function SignupPage({ matricule = false }: { matricule?: boolean }) {
   const { signUp, isDemo } = useAuth();
   const { tx, pick } = useI18n();
   const navigate = useNavigate();
@@ -57,12 +58,17 @@ export default function SignupPage() {
       <div className="rounded-2xl bg-white p-6 text-center shadow-soft">
         <MailCheck className="mx-auto h-10 w-10 text-gold" />
         <p className="mt-3 text-ink/75">{done === 'email' ? tx('Un lien de confirmation vous a été envoyé. Cliquez dessus pour activer votre compte, puis connectez-vous.', 'A confirmation link has been sent to you. Click it to activate your account, then log in.', 'Foi-lhe enviada uma ligação de confirmação. Clique nela para ativar a sua conta e depois inicie sessão.') : isDemo ? tx('Démonstration : aucune donnée n’a été enregistrée. Une session fictive « en attente de validation » a été ouverte dans cet onglet.', 'Demo: no data was saved. A sample session “awaiting approval” has been opened in this tab.', 'Demonstração: nenhum dado foi guardado. Foi aberta neste separador uma sessão fictícia «a aguardar validação».') : tx('Votre compte est en attente de validation par un responsable de votre paroisse.', 'Your account is awaiting approval by a leader of your parish.', 'A sua conta aguarda validação por um responsável da sua paróquia.')}</p>
+        {matricule && <p className="mt-3 text-sm font-medium text-night">{tx('Dès votre connexion, votre matricule personnel s’affichera à l’écran : notez-le bien.', 'As soon as you log in, your personal number will be shown on screen: write it down.', 'Logo que iniciar sessão, a sua matrícula aparecerá no ecrã: anote-a.')}</p>}
       </div>
     </AuthShell>
   );
 
   return (
-    <AuthShell title={tx('Rejoindre la communauté', 'Join the community', 'Juntar-se à comunidade')} subtitle={tx('Trois étapes simples pour créer votre compte JE SUIS KCCiste.', 'Three simple steps to create your JE SUIS KCCiste account.', 'Três passos simples para criar a sua conta JE SUIS KCCiste.')}>
+    <AuthShell
+      title={matricule ? tx('Obtenir mon matricule KCCiste', 'Get my KCCiste member number', 'Obter a minha matrícula KCCista') : tx('Rejoindre la communauté', 'Join the community', 'Juntar-se à comunidade')}
+      subtitle={matricule
+        ? tx('Remplissez ce formulaire. Dès votre connexion, votre matricule personnel s’affiche à l’écran et vous pouvez vous l’envoyer sur WhatsApp : il permet de lire tous les articles du site.', 'Fill in this form. As soon as you log in, your personal number is shown on screen and you can send it to your WhatsApp: it lets you read every article on the site.', 'Preencha este formulário. Logo que iniciar sessão, a sua matrícula aparece no ecrã e pode enviá-la para o seu WhatsApp: permite ler todos os artigos do site.')
+        : tx('Trois étapes simples pour créer votre compte JE SUIS KCCiste.', 'Three simple steps to create your JE SUIS KCCiste account.', 'Três passos simples para criar a sua conta JE SUIS KCCiste.')}>
       <ol className="mb-8 flex items-center gap-2" aria-label={tx('Étapes', 'Steps', 'Passos')}>
         {STEPS.map((s, i) => (
           <li key={s.title.fr} className="flex flex-1 items-center gap-2">
@@ -81,7 +87,7 @@ export default function SignupPage() {
             <Field label={tx('Nom', 'Surname', 'Apelido')} error={errors.lastName?.message} required>{(p) => <Input {...p} {...register('lastName')} autoComplete="family-name" />}</Field>
           </div>
           <Field label={tx('Postnom', 'Middle name (postnom)', 'Pós-nome')} hint={tx('Facultatif', 'Optional', 'Facultativo')} error={errors.middleName?.message}>{(p) => <Input {...p} {...register('middleName')} />}</Field>
-          <Field label={tx('Téléphone', 'Phone', 'Telefone')} hint={tx('Facultatif · jamais affiché publiquement par défaut', 'Optional · never shown publicly by default', 'Facultativo · nunca mostrado publicamente por defeito')} error={errors.phone?.message}>{(p) => <Input {...p} {...register('phone')} type="tel" inputMode="tel" autoComplete="tel" placeholder="+243 …" />}</Field>
+          <Field label={matricule ? tx('Numéro WhatsApp', 'WhatsApp number', 'Número WhatsApp') : tx('Téléphone', 'Phone', 'Telefone')} hint={matricule ? tx('Pour recevoir votre matricule · jamais affiché publiquement', 'To receive your number · never shown publicly', 'Para receber a matrícula · nunca mostrado publicamente') : tx('Facultatif · jamais affiché publiquement par défaut', 'Optional · never shown publicly by default', 'Facultativo · nunca mostrado publicamente por defeito')} error={errors.phone?.message}>{(p) => <Input {...p} {...register('phone')} type="tel" inputMode="tel" autoComplete="tel" placeholder="+243 …" />}</Field>
         </>)}
         {step === 1 && (<>
           <div className="grid gap-4 sm:grid-cols-2">

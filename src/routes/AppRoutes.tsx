@@ -36,6 +36,7 @@ const LivePage = lazy(() => import('@/pages/public/LivePage'));
 const RadioPage = lazy(() => import('@/pages/public/RadioPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const AppInstallPage = lazy(() => import('@/pages/public/AppInstallPage'));
+const MatriculePage = lazy(() => import('@/pages/public/MatriculePage'));
 const PagnePage = lazy(() => import('@/pages/public/PagnePage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
 const ForbiddenPage = lazy(() => import('@/pages/public/ForbiddenPage'));
@@ -205,6 +206,7 @@ export function AppRoutes() {
         <Route path="solidarite/projets/:slug" element={<ProjectDetailPage />} />
         <Route path="confidentialite" element={<PrivacyPage />} />
         <Route path="application" element={<AppInstallPage />} />
+        <Route path="matricule" element={<MatriculePage />} />
         <Route path="pagne-kcc" element={<PagnePage />} />
         <Route path="acces-refuse" element={<ForbiddenPage />} />
         <Route element={<RedirectIfAuthenticated />}>

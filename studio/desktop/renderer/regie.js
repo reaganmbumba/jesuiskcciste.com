@@ -16,6 +16,9 @@ const DEFAULTS = {
   logoOn: true, badge: 'live', clockOn: false, titleOn: false, title: '',
   ltName: '', ltRole: '', ltAuto: '0', ltList: [],
   cardText: '', cardRef: '',
+  tvName: 'JE SUIS KCCISTE TV', tvSub: 'Le culte en direct', tvIntroTake: true,
+  tvFlashLabel: 'FLASH INFO', tvFlashText: '', tvFlashAuto: '0',
+  tvEnd1: "Merci d'avoir suivi le direct", tvEnd2: 'Abonnez-vous à la chaîne Je suis KCCiste', tvEnd3: 'jesuiskcciste.com',
   tickerOn: false, ticker: 'Bienvenue sur la chaîne Je suis KCCiste · Abonnez-vous et partagez le direct · jesuiskcciste.com', tickerSpeed: 110,
   sbLine1: 'Le direct commence bientôt', sbLine2: '', sbTime: '',
   trans: 'fade', pipOn: false, pipSrc: '', pipPos: 'br', pipSize: '0.3', music: [], musicVol: 0.6, musicLoop: true, models: [],
@@ -245,7 +248,7 @@ function drawLowerThird(ctx, t) {
   if (!ltOn && !ltOut) return;
   let k = ease(clamp01((t - ltShownAt) / 450));
   if (ltOut) { k = 1 - ease(clamp01((t - ltOut) / 400)); if (k <= 0) { ltOut = 0; return; } }
-  const m = 40 * U, bottom = H - (S.tickerOn ? 58 : 0) * U - 34 * U;
+  const m = 40 * U, bottom = H - (S.tickerOn ? 58 : 0) * U - 34 * U - (typeof Tv === 'object' ? Tv.flashSpace() : 0);
   ctx.save(); ctx.font = F(28, 800); const nw = ctx.measureText(S.ltName).width; ctx.font = F(17, 600); const rw = ctx.measureText(S.ltRole).width;
   const w = Math.min(Math.max(nw, rw) + 56 * U, W - 2 * m), h = (S.ltRole ? 86 : 58) * U, x = m - (1 - k) * (w + m), y = bottom - h;
   ctx.globalAlpha = k;
@@ -255,6 +258,7 @@ function drawLowerThird(ctx, t) {
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
   ctx.font = F(28, 800); ctx.fillStyle = '#fff'; ctx.fillText(S.ltName, x + 28 * U, y + (S.ltRole ? 30 : 29) * U, w - 40 * U);
   if (S.ltRole) { ctx.font = F(17, 600); ctx.fillStyle = '#f3d27a'; ctx.fillText(S.ltRole, x + 28 * U, y + 62 * U, w - 40 * U); }
+  if (!ltOut && typeof Tv === 'object') Tv.shine(ctx, x, y, w, h, t - ltShownAt);
   ctx.restore();
 }
 function drawCard(ctx, t) {
@@ -300,6 +304,7 @@ function render() {
   else drawSource(pctx, byId(pgmId), W, H, t);
   if (S.logoOn) drawLogoCorner(pctx);
   drawBadge(pctx, t); drawTitle(pctx); drawCard(pctx, t); drawLowerThird(pctx, t); drawTicker(pctx, dt);
+  if (typeof Tv === 'object') Tv.draw(pctx, t);
   if (ltOn && ltHideAt && Date.now() > ltHideAt) hideLt();
   // fondu au noir par-dessus tout
   const fk = ftb ? clamp01((t - ftbStart) / 800) : 0;

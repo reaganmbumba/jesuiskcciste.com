@@ -91,6 +91,27 @@
 
     <!-- HABILLAGE -->
     <section class="pane" data-pane="gfx">
+      <div class="card tvcard">
+        <h3>📺 Animations TV <span class="muted small">touches G · V · F · E</span></h3>
+        <p class="muted small">Générique d'ouverture <span class="state" id="tvIntroState">prêt</span></p>
+        <input type="text" id="tvName" placeholder="JE SUIS KCCISTE TV">
+        <input type="text" id="tvSub" placeholder="Le culte en direct">
+        <label class="check"><input type="checkbox" id="tvIntroTake"> À la fin du générique, passer l'aperçu à l'antenne</label>
+        <div class="row"><button class="btn small gold" id="tvIntro">▶ Générique d'ouverture (G)</button><button class="btn small" id="tvSting">✦ Virgule logo (V)</button></div>
+        <p class="muted small">Bandeau d'annonce <span class="state" id="tvFlashState">masqué</span></p>
+        <div class="row">
+          <select id="tvFlashLabel" style="width:auto"><option>FLASH INFO</option><option>ANNONCE</option><option>PRIÈRE</option><option>OFFRANDE</option><option>À SUIVRE</option><option>VERSET DU JOUR</option><option>EN DIRECT DE</option></select>
+          <label class="lab inline">Auto <select id="tvFlashAuto"><option value="0">reste</option><option value="10">10 s</option><option value="20">20 s</option><option value="40">40 s</option></select></label>
+        </div>
+        <input type="text" id="tvFlashText" placeholder="Ex. : Grande réunion des jeunes samedi à 14 h">
+        <div class="row"><button class="btn small gold" id="tvFlashShow">Afficher (F)</button><button class="btn small" id="tvFlashHide">Masquer</button></div>
+        <p class="muted small">Générique de fin <span class="state" id="tvEndState">masqué</span></p>
+        <input type="text" id="tvEnd1" placeholder="Merci d'avoir suivi le direct">
+        <input type="text" id="tvEnd2" placeholder="Abonnez-vous à la chaîne Je suis KCCiste">
+        <input type="text" id="tvEnd3" placeholder="jesuiskcciste.com">
+        <div class="row"><button class="btn small gold" id="tvEndShow">Afficher (E)</button><button class="btn small" id="tvEndHide">Masquer</button></div>
+      </div>
+
       <div class="card">
         <h3>Écran d'attente et arrière-plan</h3>
         <p class="muted small">Arrière-plan (cliquez pour changer, même pendant le direct) :</p>
@@ -241,5 +262,6 @@
 <script src="fonds.js"></script>
 <script src="regie.js"></script>
 <script src="pro.js"></script>
+<script src="tv.js"></script>
 </body>
 </html>

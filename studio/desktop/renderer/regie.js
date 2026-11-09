@@ -738,6 +738,9 @@ async function init() {
   if (api) {
     const info = await api.info();
     $('recDir').textContent = info.recDir;
+    // numéro de version visible : pour vérifier qu'on a bien la dernière
+    document.querySelector('.brand small').textContent = `Studio · régie de direct · v${info.version}`;
+    document.title = `Je suis KCCiste Studio ${info.version}`;
     const sel = $('addrSel');
     sel.innerHTML = info.addresses.map((a) => `<option>${a}</option>`).join('') || '<option>Pas de réseau</option>';
     const showAddr = () => { const a = sel.value; $('qr').src = info.qrs[a] || ''; $('addrTxt').textContent = info.qrs[a] ? `${a}:${info.port}` : 'Connectez ce PC au Wi-Fi'; };

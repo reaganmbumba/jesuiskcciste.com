@@ -92,6 +92,17 @@
     <!-- HABILLAGE -->
     <section class="pane" data-pane="gfx">
       <div class="card">
+        <h3>Écran d'attente et arrière-plan</h3>
+        <p class="muted small">Arrière-plan (cliquez pour changer, même pendant le direct) :</p>
+        <div class="bggrid" id="bgGrid"></div>
+        <div class="row"><button class="btn small" id="bgPhoto">＋ Ma photo</button><button class="btn small" id="bgVideo">＋ Ma vidéo (boucle)</button></div>
+        <label class="lab">Voile sombre sur mes photos et vidéos <input type="range" id="bgDim" min="0" max="0.85" step="0.05"></label>
+        <input type="text" id="sbLine1" placeholder="Le direct commence bientôt">
+        <input type="text" id="sbLine2" placeholder="Culte du dimanche">
+        <label class="lab">Compte à rebours jusqu'à <input type="time" id="sbTime"> <small class="muted">(vide = sans)</small></label>
+      </div>
+
+      <div class="card">
         <h3>Modèles de direct</h3>
         <div class="row"><select id="modelSel" class="grow" style="width:auto;flex:1"></select><button class="btn small gold" id="modelLoad">Charger</button></div>
         <div class="row"><button class="btn small" id="modelSave">💾 Enregistrer l'habillage actuel…</button><button class="btn small ghost" id="modelDel">Supprimer</button></div>
@@ -153,16 +164,6 @@
         <label class="lab">Vitesse <input type="range" id="tickerSpeed" min="40" max="220" step="10"></label>
       </div>
 
-      <div class="card">
-        <h3>Écran d'attente</h3>
-        <p class="muted small">Arrière-plan (cliquez pour changer, même pendant le direct) :</p>
-        <div class="bggrid" id="bgGrid"></div>
-        <div class="row"><button class="btn small" id="bgPhoto">＋ Ma photo</button><button class="btn small" id="bgVideo">＋ Ma vidéo (boucle)</button></div>
-        <label class="lab">Voile sombre sur mes photos et vidéos <input type="range" id="bgDim" min="0" max="0.85" step="0.05"></label>
-        <input type="text" id="sbLine1" placeholder="Le direct commence bientôt">
-        <input type="text" id="sbLine2" placeholder="Culte du dimanche">
-        <label class="lab">Compte à rebours jusqu'à <input type="time" id="sbTime"> <small class="muted">(vide = sans)</small></label>
-      </div>
     </section>
 
     <!-- SON -->

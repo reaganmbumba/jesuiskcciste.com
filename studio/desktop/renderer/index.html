@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file:; media-src 'self' blob: mediastream: file:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self'; script-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file:; media-src 'self' blob: mediastream: file:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self' https://anawpwprqvzxgzcpqqwu.supabase.co; script-src 'self'">
 <title>Je suis KCCiste Studio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="regie.css">
@@ -240,7 +240,19 @@
       </div>
       <div class="card">
         <h3>Sur le site jesuiskcciste.com</h3>
-        <p class="muted small">Programmez le culte dans l'administration du site : le compte à rebours s'affiche sur l'accueil et le direct YouTube apparaît sur la page Direct.</p>
+        <div id="siteLogin">
+          <p class="muted small">Connectez la régie à votre compte d'administration du site, <b>une seule fois</b>. Ensuite, chaque fois que vous passez en direct, le direct apparaît tout seul sur l'accueil et sur la page Direct.</p>
+          <input type="email" id="siteEmail" placeholder="Adresse e-mail du compte du site" autocomplete="username">
+          <input type="password" id="sitePass" placeholder="Mot de passe" autocomplete="current-password">
+          <div class="row"><button class="btn small gold" id="siteLoginBtn">Connecter la régie au site</button></div>
+        </div>
+        <div id="siteOn" hidden>
+          <p class="small">✓ Connectée au site avec <b id="siteWho"></b> <button class="btn small ghost" id="siteLogout">Se déconnecter</button></p>
+          <label class="check"><input type="checkbox" id="siteAuto"> Annoncer automatiquement chaque direct sur le site</label>
+          <input type="text" id="siteTitle" placeholder="Titre sur le site (ex. : Culte du dimanche)">
+          <label class="lab inline">Durée prévue <select id="siteDur"><option value="90">1 h 30</option><option value="120">2 h</option><option value="180">3 h</option><option value="240">4 h</option><option value="360">6 h</option></select></label>
+          <p class="small" id="siteCur" hidden>🌐 Le direct est affiché sur le site. <button class="btn small ghost" id="siteEndNow">Le retirer du site</button></p>
+        </div>
         <div class="row"><button class="btn small" id="siteAdmin">Ouvrir /admin/directs</button><button class="btn small ghost" id="siteDirect">Voir /direct</button></div>
       </div>
       <div class="card">
@@ -263,5 +275,6 @@
 <script src="regie.js"></script>
 <script src="pro.js"></script>
 <script src="tv.js"></script>
+<script src="site.js"></script>
 </body>
 </html>

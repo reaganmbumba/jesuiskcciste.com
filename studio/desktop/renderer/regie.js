@@ -18,6 +18,7 @@ const DEFAULTS = {
   cardText: '', cardRef: '',
   tvName: 'JE SUIS KCCISTE TV', tvSub: 'Le culte en direct', tvIntroTake: true,
   tvFlashLabel: 'FLASH INFO', tvFlashText: '', tvFlashAuto: '0',
+  siteAuto: true, siteTitle: 'Culte en direct · Je suis KCCiste', siteDur: '180',
   tvEnd1: "Merci d'avoir suivi le direct", tvEnd2: 'Abonnez-vous à la chaîne Je suis KCCiste', tvEnd3: 'jesuiskcciste.com',
   tickerOn: false, ticker: 'Bienvenue sur la chaîne Je suis KCCiste · Abonnez-vous et partagez le direct · jesuiskcciste.com', tickerSpeed: 110,
   sbLine1: 'Le direct commence bientôt', sbLine2: '', sbTime: '',
@@ -589,6 +590,7 @@ const Live = (() => {
     const ok = await modal('Arrêter le direct ?', '<p>Le direct s\'arrête pour tout le monde.</p>', [{ label: 'Continuer le direct', value: false, cls: 'ghost' }, { label: 'Arrêter', value: true, cls: 'gold' }]);
     if (!ok) return;
     clearTimeout(retryT); state = 'off'; stopRecorder(); await api.liveStop(); ui(); logLine('Direct arrêté');
+    if (typeof Site === 'object') Site.liveEnded();
     toast('Direct terminé. Durée : ' + dur(Date.now() - startedAt), 'ok');
   }
   function onExit(e) {
@@ -603,7 +605,7 @@ const Live = (() => {
     retryT = setTimeout(async () => { if (state === 'retry') { await launch(); } }, wait);
   }
   function onStats(s) {
-    if (state === 'starting' || state === 'retry') { if (s.frame > 30) { state = 'live'; retries = 0; ui(); toast('● Vous êtes en direct !', 'ok'); } }
+    if (state === 'starting' || state === 'retry') { if (s.frame > 30) { state = 'live'; retries = 0; ui(); toast('● Vous êtes en direct !', 'ok'); if (typeof Site === 'object') Site.liveStarted(); } }
     lastStats = Date.now();
     const el = $('liveStats');
     const slow = s.speed && s.speed < 0.9;

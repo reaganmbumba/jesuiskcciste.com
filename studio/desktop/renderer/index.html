@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file:; media-src 'self' blob: mediastream: file:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self'; script-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: file:; media-src 'self' blob: mediastream: file:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com 'self'; connect-src ws://127.0.0.1:* 'self' https://anawpwprqvzxgzcpqqwu.supabase.co; script-src 'self'">
 <title>Je suis KCCiste Studio</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="regie.css">
@@ -110,6 +110,46 @@
         <input type="text" id="tvEnd2" placeholder="Abonnez-vous à la chaîne Je suis KCCiste">
         <input type="text" id="tvEnd3" placeholder="jesuiskcciste.com">
         <div class="row"><button class="btn small gold" id="tvEndShow">Afficher (E)</button><button class="btn small" id="tvEndHide">Masquer</button></div>
+      </div>
+
+      <div class="card">
+        <h3>✨ Animations en direct <span class="muted small">touches A · Q · C · R · K</span></h3>
+        <div class="row">
+          <label class="lab grow">Logo du coin
+            <select id="logoAnim"><option value="fixe">Fixe</option><option value="reflet">Reflet doré</option><option value="respire">Respiration lumineuse</option><option value="retourne">Retournement 3D</option><option value="halo">Halo de rayons</option></select>
+          </label>
+          <label class="lab grow">Texte sous le logo (alterne)
+            <input type="text" id="logoLabel2" placeholder="EN DIRECT">
+          </label>
+        </div>
+        <div class="row">
+          <label class="lab grow">Titre du haut
+            <select id="titleAnim"><option value="fixe">Fixe</option><option value="glisse">Glissé + reflet</option><option value="alterne">Alterne avec la 2e ligne</option><option value="defile">Défile s'il est long</option></select>
+          </label>
+          <label class="lab grow">Bandeau du nom
+            <select id="ltStyle"><option value="classique">Classique (glissé)</option><option value="moderne">Moderne (filet doré)</option></select>
+          </label>
+        </div>
+        <input type="text" id="title2" placeholder="2e ligne du titre (ex. : Prédication : La foi qui sauve)">
+        <div class="row">
+          <button class="btn small gold" id="animSub">🔔 Abonnez-vous (A)</button>
+          <button class="btn small" id="animSoc">Réseaux sociaux (R) <span class="state" id="socState">masqué</span></button>
+          <button class="btn small" id="animRain">✨ Pluie dorée (K) <span class="state" id="rainState">arrêtée</span></button>
+        </div>
+        <p class="muted small">Code QR à l'écran <span class="state" id="qrState">masqué</span></p>
+        <div class="row">
+          <select id="qrWhat" style="width:auto"><option value="site">Site jesuiskcciste.com</option><option value="whatsapp">Groupe WhatsApp</option><option value="youtube">Chaîne YouTube</option><option value="autre">Autre lien…</option></select>
+          <button class="btn small gold" id="animQr">Afficher / masquer (Q)</button>
+        </div>
+        <input type="text" id="qrCustom" placeholder="https://…">
+        <input type="text" id="qrText" placeholder="Texte sous le code (facultatif)">
+        <p class="muted small">Chronomètre <span class="state" id="chronoState">arrêté</span></p>
+        <div class="row">
+          <select id="chronoMode" style="width:auto"><option value="chrono">Chronomètre</option><option value="rebours">Compte à rebours</option></select>
+          <label class="lab inline">Minutes <input type="number" id="chronoMin" min="1" max="600" style="width:70px"></label>
+          <button class="btn small gold" id="animChrono">Démarrer / arrêter (C)</button>
+        </div>
+        <input type="text" id="chronoLabel" placeholder="Étiquette (ex. : Prédication)">
       </div>
 
       <div class="card">
@@ -240,7 +280,19 @@
       </div>
       <div class="card">
         <h3>Sur le site jesuiskcciste.com</h3>
-        <p class="muted small">Programmez le culte dans l'administration du site : le compte à rebours s'affiche sur l'accueil et le direct YouTube apparaît sur la page Direct.</p>
+        <div id="siteLogin">
+          <p class="muted small">Connectez la régie à votre compte d'administration du site, <b>une seule fois</b>. Ensuite, chaque fois que vous passez en direct, le direct apparaît tout seul sur l'accueil et sur la page Direct.</p>
+          <input type="email" id="siteEmail" placeholder="Adresse e-mail du compte du site" autocomplete="username">
+          <input type="password" id="sitePass" placeholder="Mot de passe" autocomplete="current-password">
+          <div class="row"><button class="btn small gold" id="siteLoginBtn">Connecter la régie au site</button></div>
+        </div>
+        <div id="siteOn" hidden>
+          <p class="small">✓ Connectée au site avec <b id="siteWho"></b> <button class="btn small ghost" id="siteLogout">Se déconnecter</button></p>
+          <label class="check"><input type="checkbox" id="siteAuto"> Annoncer automatiquement chaque direct sur le site</label>
+          <input type="text" id="siteTitle" placeholder="Titre sur le site (ex. : Culte du dimanche)">
+          <label class="lab inline">Durée prévue <select id="siteDur"><option value="90">1 h 30</option><option value="120">2 h</option><option value="180">3 h</option><option value="240">4 h</option><option value="360">6 h</option></select></label>
+          <p class="small" id="siteCur" hidden>🌐 Le direct est affiché sur le site. <button class="btn small ghost" id="siteEndNow">Le retirer du site</button></p>
+        </div>
         <div class="row"><button class="btn small" id="siteAdmin">Ouvrir /admin/directs</button><button class="btn small ghost" id="siteDirect">Voir /direct</button></div>
       </div>
       <div class="card">
@@ -262,6 +314,8 @@
 <script src="fonds.js"></script>
 <script src="regie.js"></script>
 <script src="pro.js"></script>
+<script src="anim.js"></script>
 <script src="tv.js"></script>
+<script src="site.js"></script>
 </body>
 </html>

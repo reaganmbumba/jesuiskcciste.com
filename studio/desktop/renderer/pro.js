@@ -157,7 +157,7 @@ const Music = (() => {
 })();
 
 /* ---------- modèles de direct ---------- */
-const MODEL_KEYS = ['title', 'titleOn', 'badge', 'logoOn', 'clockOn', 'ltName', 'ltRole', 'ltList', 'ltAuto', 'cardText', 'cardRef', 'tickerOn', 'ticker', 'tickerSpeed', 'sbLine1', 'sbLine2', 'sbTime', 'bg', 'bgDim', 'trans', 'fadeDur', 'pipPos', 'pipSize', 'tvName', 'tvSub', 'tvIntroTake', 'tvFlashLabel', 'tvFlashText', 'tvFlashAuto', 'tvEnd1', 'tvEnd2', 'tvEnd3'];
+const MODEL_KEYS = ['title', 'titleOn', 'badge', 'logoOn', 'clockOn', 'ltName', 'ltRole', 'ltList', 'ltAuto', 'cardText', 'cardRef', 'tickerOn', 'ticker', 'tickerSpeed', 'sbLine1', 'sbLine2', 'sbTime', 'bg', 'bgDim', 'trans', 'fadeDur', 'pipPos', 'pipSize', 'tvName', 'tvSub', 'tvIntroTake', 'tvFlashLabel', 'tvFlashText', 'tvFlashAuto', 'tvEnd1', 'tvEnd2', 'tvEnd3', 'logoAnim', 'logoLabel2', 'titleAnim', 'title2', 'ltStyle', 'qrWhat', 'qrCustom', 'qrText', 'chronoMode', 'chronoMin', 'chronoLabel'];
 function renderModels() {
   const sel = $('modelSel'); if (!sel) return;
   sel.innerHTML = S.models.length ? S.models.map((m, i) => `<option value="${i}">${esc(m.name)}</option>`).join('') : '<option value="">Aucun modèle</option>';

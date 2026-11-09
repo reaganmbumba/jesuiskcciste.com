@@ -18,6 +18,9 @@ const DEFAULTS = {
   cardText: '', cardRef: '',
   tvName: 'JE SUIS KCCISTE TV', tvSub: 'Le culte en direct', tvIntroTake: true,
   tvFlashLabel: 'FLASH INFO', tvFlashText: '', tvFlashAuto: '0',
+  siteAuto: true, siteTitle: 'Culte en direct · Je suis KCCiste', siteDur: '180',
+  logoAnim: 'reflet', logoLabel2: 'EN DIRECT', titleAnim: 'glisse', title2: '', ltStyle: 'moderne',
+  qrWhat: 'site', qrCustom: '', qrText: '', chronoMode: 'chrono', chronoMin: '30', chronoLabel: '',
   tvEnd1: "Merci d'avoir suivi le direct", tvEnd2: 'Abonnez-vous à la chaîne Je suis KCCiste', tvEnd3: 'jesuiskcciste.com',
   tickerOn: false, ticker: 'Bienvenue sur la chaîne Je suis KCCiste · Abonnez-vous et partagez le direct · jesuiskcciste.com', tickerSpeed: 110,
   sbLine1: 'Le direct commence bientôt', sbLine2: '', sbTime: '',
@@ -302,8 +305,9 @@ function render() {
   if (k < 1 && prevPgmId) drawTransition(pctx, byId(prevPgmId), byId(pgmId), k, t, W, H);
   else if (typeof drawProgram === 'function') drawProgram(pctx, byId(pgmId), W, H, t);
   else drawSource(pctx, byId(pgmId), W, H, t);
-  if (S.logoOn) drawLogoCorner(pctx);
+  if (S.logoOn) drawLogoCorner(pctx, t);
   drawBadge(pctx, t); drawTitle(pctx); drawCard(pctx, t); drawLowerThird(pctx, t); drawTicker(pctx, dt);
+  if (typeof Anim === 'object') Anim.draw(pctx, t);
   if (typeof Tv === 'object') Tv.draw(pctx, t);
   if (ltOn && ltHideAt && Date.now() > ltHideAt) hideLt();
   // fondu au noir par-dessus tout
@@ -589,6 +593,7 @@ const Live = (() => {
     const ok = await modal('Arrêter le direct ?', '<p>Le direct s\'arrête pour tout le monde.</p>', [{ label: 'Continuer le direct', value: false, cls: 'ghost' }, { label: 'Arrêter', value: true, cls: 'gold' }]);
     if (!ok) return;
     clearTimeout(retryT); state = 'off'; stopRecorder(); await api.liveStop(); ui(); logLine('Direct arrêté');
+    if (typeof Site === 'object') Site.liveEnded();
     toast('Direct terminé. Durée : ' + dur(Date.now() - startedAt), 'ok');
   }
   function onExit(e) {
@@ -603,7 +608,7 @@ const Live = (() => {
     retryT = setTimeout(async () => { if (state === 'retry') { await launch(); } }, wait);
   }
   function onStats(s) {
-    if (state === 'starting' || state === 'retry') { if (s.frame > 30) { state = 'live'; retries = 0; ui(); toast('● Vous êtes en direct !', 'ok'); } }
+    if (state === 'starting' || state === 'retry') { if (s.frame > 30) { state = 'live'; retries = 0; ui(); toast('● Vous êtes en direct !', 'ok'); if (typeof Site === 'object') Site.liveStarted(); } }
     lastStats = Date.now();
     const el = $('liveStats');
     const slow = s.speed && s.speed < 0.9;

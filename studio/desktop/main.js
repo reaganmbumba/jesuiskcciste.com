@@ -71,6 +71,7 @@ app.on('window-all-closed', () => { live?.stop(); rec?.stop(); server?.close(); 
 
 function awake() { if (keepAwake === null) keepAwake = powerSaveBlocker.start('prevent-display-sleep'); }
 
+ipcMain.handle('qr', async (_e, text) => QRCode.toDataURL(String(text || '').slice(0, 800), { margin: 1, width: 400, color: { dark: '#0b1530', light: '#ffffff' } }));
 ipcMain.handle('info', async () => {
   const port = server?.port || 0;
   const addrs = lanAddresses().map((a) => a.address);

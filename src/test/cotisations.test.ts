@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { addMonths, cotisationsCsv, groupReminder, memberSituation, monthsBetween, sumByCurrency, type Cotisation, type CotisationSettings } from '@/features/cotisations/cotisations';
+import { addMonths, priceText, cotisationsCsv, groupReminder, memberSituation, monthsBetween, sumByCurrency, type Cotisation, type CotisationSettings } from '@/features/cotisations/cotisations';
 
-const settings: CotisationSettings = { monthlyAmount: 5, currency: 'USD', startMonth: '2026-09', purpose: 'Assistance' };
+const settings: CotisationSettings = { amountUsd: 2, amountCdf: 5000, startMonth: '2026-09', purpose: 'Assistance' };
 const now = new Date(2026, 11, 15); // décembre 2026
 
 describe('cotisations mensuelles', () => {
@@ -16,7 +16,7 @@ describe('cotisations mensuelles', () => {
     const s = memberSituation([{ month: '2026-09' }, { month: '2026-11' }], settings, '2026-01-10T00:00:00Z', now);
     expect(s.due).toEqual(['2026-09', '2026-10', '2026-11', '2026-12']);
     expect(s.unpaid).toEqual(['2026-10', '2026-12']);
-    expect(s.owed).toBe(10);
+    expect(priceText(settings, s.unpaid.length)).toMatch(/^4 \$ ou 10\s000 FC$/);
     expect(s.upToDate).toBe(false);
   });
 

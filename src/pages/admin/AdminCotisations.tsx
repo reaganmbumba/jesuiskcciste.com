@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { env, isDemoMode } from '@/config/env';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
-  COTISATION_METHODS, CotisationsNotInstalled, DEFAULT_SETTINGS, addMonths, cotisationsCsv, deleteCotisation, formatMoney, getCotisationSettings,
+  COTISATION_METHODS, CotisationsNotInstalled, amountFor, priceText, DEFAULT_SETTINGS, addMonths, cotisationsCsv, deleteCotisation, formatMoney, getCotisationSettings,
   groupReminder, listCotisations, memberSituation, monthKey, monthLabel, monthsBetween, personalReminder, recordCotisations, saveCotisationSettings, sumByCurrency,
   type Cotisation, type CotisationCurrency, type CotisationMethod, type CotisationSettings, type MemberSituation,
 } from '@/features/cotisations/cotisations';
@@ -107,7 +107,7 @@ export default function AdminCotisations() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-semibold text-night">Cotisations mensuelles</h1>
-          <p className="text-sm text-ink/60">{formatMoney(settings.monthlyAmount, settings.currency)} par mois depuis {monthLabel(settings.startMonth).toLowerCase()}{settings.purpose ? ` · ${settings.purpose}` : ''}</p>
+          <p className="text-sm text-ink/60">{priceText(settings)} par mois depuis {monthLabel(settings.startMonth).toLowerCase()}{settings.purpose ? ` · ${settings.purpose}` : ''}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setPaying('choisir')} icon={<Plus className="h-4 w-4" />}>Enregistrer un paiement</Button>
@@ -125,7 +125,7 @@ export default function AdminCotisations() {
       {late.length > 0 && (
         <div className="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center">
           <AlertTriangle className="h-5 w-5 shrink-0 text-amber-700" />
-          <p className="flex-1 text-sm text-night"><b>{late.length} membre{late.length > 1 ? 's' : ''} en retard</b>, {formatMoney(late.reduce((s, l) => s + l.s.owed, 0), settings.currency)} au total. Le rappel au groupe donne seulement les noms et le nombre de mois.</p>
+          <p className="flex-1 text-sm text-night"><b>{late.length} membre{late.length > 1 ? 's' : ''} en retard</b>, {late.reduce((s, l) => s + l.s.unpaid.length, 0)} mois non payés au total ({priceText(settings, late.reduce((s, l) => s + l.s.unpaid.length, 0))}). Le rappel au groupe donne seulement les noms et le nombre de mois.</p>
           <Button size="sm" variant="outline" onClick={sendGroupReminder} icon={<Send className="h-4 w-4" />}>Rappel au groupe</Button>
         </div>
       )}
@@ -150,7 +150,7 @@ export default function AdminCotisations() {
               <Avatar person={l.m} url={l.m.avatarUrl} size={48} />
               <div className="min-w-0 space-y-1">
                 <p className="flex flex-wrap items-center gap-2 font-semibold text-night">{fullName(l.m)}
-                  {l.s.upToDate ? <Badge tone="green">À jour</Badge> : <Badge tone="red">{l.s.unpaid.length} mois dû{l.s.unpaid.length > 1 ? 's' : ''} · {formatMoney(l.s.owed, settings.currency)}</Badge>}
+                  {l.s.upToDate ? <Badge tone="green">À jour</Badge> : <Badge tone="red">{l.s.unpaid.length} mois dû{l.s.unpaid.length > 1 ? 's' : ''} · {formatMoney(l.s.unpaid.length * settings.amountUsd, 'USD')}</Badge>}
                 </p>
                 <p className="text-xs text-ink/55">{l.mat && <span className="mr-2 font-mono font-semibold text-night">{l.mat}</span>}{l.s.coveredUntil ? `Payé jusqu’à ${monthLabel(l.s.coveredUntil).toLowerCase()}` : 'Aucun paiement'}</p>
                 <MonthChips line={l} months={last6} />
@@ -212,8 +212,9 @@ function PaymentModal({ members, preset, settings, onClose, onSaved }: { members
     const l = members.find((x) => x.m.id === preset?.id);
     return l ? [l.s.unpaid[0] ?? options[0] ?? monthKey()].filter(Boolean) : [];
   });
-  const [amount, setAmount] = useState(String(settings.monthlyAmount));
-  const [currency, setCurrency] = useState<CotisationCurrency>(settings.currency);
+  const [currency, setCurrency] = useState<CotisationCurrency>('USD');
+  const [amount, setAmount] = useState(String(settings.amountUsd));
+  const changeCurrency = (c: CotisationCurrency) => { setCurrency(c); setAmount(String(amountFor(settings, c))); };
   const [method, setMethod] = useState<CotisationMethod>('orange_money');
   const [reference, setReference] = useState('');
   const [note, setNote] = useState('');
@@ -283,7 +284,7 @@ function PaymentModal({ members, preset, settings, onClose, onSaved }: { members
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Montant par mois" required>{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
-          <Field label="Monnaie">{(p) => <Select {...p} value={currency} onChange={(e) => setCurrency(e.target.value as CotisationCurrency)}><option value="USD">Dollars ($)</option><option value="CDF">Francs congolais (FC)</option></Select>}</Field>
+          <Field label="Monnaie">{(p) => <Select {...p} value={currency} onChange={(e) => changeCurrency(e.target.value as CotisationCurrency)}><option value="USD">Dollars ($)</option><option value="CDF">Francs congolais (FC)</option></Select>}</Field>
           <Field label="Moyen de paiement">{(p) => <Select {...p} value={method} onChange={(e) => setMethod(e.target.value as CotisationMethod)}>{Object.entries(COTISATION_METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</Select>}</Field>
           <Field label="Payé le">{(p) => <Input {...p} type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} />}</Field>
           <Field label="Référence (facultatif)" className="sm:col-span-2">{(p) => <Input {...p} value={reference} maxLength={100} onChange={(e) => setReference(e.target.value)} placeholder="N° de transaction Orange Money / M-Pesa" />}</Field>
@@ -296,25 +297,26 @@ function PaymentModal({ members, preset, settings, onClose, onSaved }: { members
 }
 
 function SettingsModal({ settings, onClose, onSaved }: { settings: CotisationSettings; onClose: () => void; onSaved: () => void }) {
-  const [amount, setAmount] = useState(String(settings.monthlyAmount));
-  const [currency, setCurrency] = useState<CotisationCurrency>(settings.currency);
+  const [usd, setUsd] = useState(String(settings.amountUsd));
+  const [cdf, setCdf] = useState(String(settings.amountCdf));
   const [start, setStart] = useState(settings.startMonth);
   const [purpose, setPurpose] = useState(settings.purpose);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
   const save = async () => {
-    const n = Number(amount.replace(',', '.'));
-    if (!(n >= 0) || !/^\d{4}-\d{2}$/.test(start)) { setErr('Vérifiez le montant et le mois de départ.'); return; }
+    const u = Number(usd.replace(',', '.'));
+    const f = Number(cdf.replace(/\s/g, '').replace(',', '.'));
+    if (!(u >= 0) || !(f >= 0) || !/^\d{4}-\d{2}$/.test(start)) { setErr('Vérifiez le montant et le mois de départ.'); return; }
     setSaving(true); setErr('');
-    try { await saveCotisationSettings({ monthlyAmount: n, currency, startMonth: start, purpose }); onSaved(); } catch (e) { setErr(errMsg(e)); } finally { setSaving(false); }
+    try { await saveCotisationSettings({ amountUsd: u, amountCdf: f, startMonth: start, purpose }); onSaved(); } catch (e) { setErr(errMsg(e)); } finally { setSaving(false); }
   };
   return (
     <Modal open onClose={onClose} title="Réglages des cotisations"
       footer={<><Button variant="ghost" onClick={onClose}>Annuler</Button><Button onClick={() => void save()} loading={saving}>Enregistrer</Button></>}>
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Montant mensuel" required>{(p) => <Input {...p} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}</Field>
-          <Field label="Monnaie">{(p) => <Select {...p} value={currency} onChange={(e) => setCurrency(e.target.value as CotisationCurrency)}><option value="USD">Dollars ($)</option><option value="CDF">Francs congolais (FC)</option></Select>}</Field>
+          <Field label="Par mois en dollars ($)" required>{(p) => <Input {...p} inputMode="decimal" value={usd} onChange={(e) => setUsd(e.target.value)} />}</Field>
+          <Field label="ou en francs congolais (FC)" required>{(p) => <Input {...p} inputMode="decimal" value={cdf} onChange={(e) => setCdf(e.target.value)} />}</Field>
         </div>
         <Field label="Premier mois de cotisation" hint="Un membre inscrit plus tard ne doit qu’à partir de son mois d’inscription.">{(p) => <Input {...p} type="month" value={start} onChange={(e) => setStart(e.target.value)} />}</Field>
         <Field label="À quoi sert la cotisation">{(p) => <Input {...p} value={purpose} maxLength={300} onChange={(e) => setPurpose(e.target.value)} />}</Field>
@@ -331,7 +333,7 @@ function NotInstalled() {
       <Card><CardBody className="space-y-2 text-sm text-ink/75">
         <p className="font-semibold text-night">Une dernière étape : installer les cotisations dans la base de données.</p>
         <p>Ouvrez Supabase → SQL Editor, collez le fichier « cotisations-a-coller-dans-supabase.sql » puis touchez « Run ». Rechargez ensuite cette page.</p>
-        <p className="text-xs text-ink/50">Réglages par défaut : {formatMoney(DEFAULT_SETTINGS.monthlyAmount, DEFAULT_SETTINGS.currency)} par mois, modifiables ici ensuite.</p>
+        <p className="text-xs text-ink/50">Réglages par défaut : {priceText(DEFAULT_SETTINGS)} par mois, depuis novembre 2026, modifiables ici ensuite.</p>
       </CardBody></Card>
     </div>
   );

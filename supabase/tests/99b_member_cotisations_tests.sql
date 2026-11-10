@@ -19,8 +19,9 @@ do $$ begin
     raise exception 'mois payé deux fois'; exception when unique_violation then null; end;
   begin insert into public.member_cotisations (user_id, month, amount, currency) values ('aaaaaaaa-0000-0000-0000-000000000003', '2026-10-15', 5, 'USD');
     raise exception 'mois mal formé accepté'; exception when check_violation then null; end;
-  update public.cotisation_settings set monthly_amount = 10, currency = 'USD', start_month = '2026-11-01';
-  assert (select monthly_amount from public.cotisation_settings) = 10, 'réglages modifiés';
+  assert (select amount_usd from public.cotisation_settings) = 2 and (select amount_cdf from public.cotisation_settings) = 5000, 'réglages par défaut';
+  update public.cotisation_settings set amount_usd = 3, start_month = '2026-11-01';
+  assert (select amount_usd from public.cotisation_settings) = 3, 'réglages modifiés';
 end $$;
 reset role;
 
@@ -29,10 +30,10 @@ set role authenticated;
 set request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000003';
 do $$ declare n int; begin
   assert (select count(*) from public.member_cotisations) = 2, 'le membre ne voit que ses cotisations';
-  assert (select monthly_amount from public.cotisation_settings) = 10, 'le membre lit les réglages';
+  assert (select amount_usd from public.cotisation_settings) = 3, 'le membre lit les réglages';
   begin insert into public.member_cotisations (user_id, month, amount, currency) values ('aaaaaaaa-0000-0000-0000-000000000003', '2027-01-01', 5, 'USD');
     raise exception 'un membre s''ajoute un paiement'; exception when insufficient_privilege then null; end;
-  update public.cotisation_settings set monthly_amount = 0;
+  update public.cotisation_settings set amount_usd = 0;
   get diagnostics n = row_count;
   assert n = 0, 'un membre change le montant';
   delete from public.member_cotisations;

@@ -6,7 +6,7 @@ import { env } from '@/config/env';
 import { DONATION_ACCOUNTS } from '@/content/solidarite';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
-  COTISATION_METHODS, CotisationsNotInstalled, formatMoney, getCotisationSettings, listCotisations, memberSituation, monthKey, monthLabel, monthsBetween, proofMessage,
+  COTISATION_METHODS, CotisationsNotInstalled, priceText, formatMoney, getCotisationSettings, listCotisations, memberSituation, monthKey, monthLabel, monthsBetween, proofMessage,
 } from '@/features/cotisations/cotisations';
 import { getMyMatricule, waNumber } from '@/features/news/readerAccess';
 import { useAsync } from '@/hooks/useAsync';
@@ -45,7 +45,7 @@ export default function MyCotisationsPage() {
   return (
     <div className="space-y-6">
       {title}
-      <p className="text-sm text-ink/65">{formatMoney(settings.monthlyAmount, settings.currency)} {tx('par mois', 'per month', 'por mês')}{settings.purpose ? ` · ${settings.purpose}` : ''}. {tx('Seuls vous et l’administration voyez ces informations.', 'Only you and the administration can see this.', 'Só você e a administração veem estas informações.')}</p>
+      <p className="text-sm text-ink/65">{priceText(settings)} {tx('par mois', 'per month', 'por mês')}{settings.purpose ? ` · ${settings.purpose}` : ''}. {tx('Seuls vous et l’administration voyez ces informations.', 'Only you and the administration can see this.', 'Só você e a administração veem estas informações.')}</p>
 
       <div className={cn('flex items-start gap-4 rounded-2xl border p-5', s.upToDate ? 'border-emerald-200 bg-emerald-50' : 'border-amber-300 bg-amber-50')}>
         {s.upToDate ? <CheckCircle2 className="h-7 w-7 shrink-0 text-emerald-700" /> : <Clock className="h-7 w-7 shrink-0 text-amber-700" />}
@@ -53,7 +53,7 @@ export default function MyCotisationsPage() {
           <p className="font-display text-lg font-semibold text-night">{s.upToDate ? tx('Vous êtes à jour. Merci !', 'You are up to date. Thank you!', 'Está em dia. Obrigado!') : tx(`${s.unpaid.length} mois à régler`, `${s.unpaid.length} month(s) due`, `${s.unpaid.length} mês(es) em atraso`)}</p>
           <p className="text-sm text-ink/70">{s.upToDate
             ? (s.coveredUntil ? tx(`Payé jusqu’à ${monthLabel(s.coveredUntil, loc).toLowerCase()}.`, `Paid until ${monthLabel(s.coveredUntil, loc)}.`, `Pago até ${monthLabel(s.coveredUntil, loc).toLowerCase()}.`) : tx('Aucun mois dû pour le moment.', 'Nothing due yet.', 'Nada em dívida por agora.'))
-            : `${s.unpaid.map((m) => monthLabel(m, loc)).join(', ')} — ${formatMoney(s.owed, settings.currency)}`}</p>
+            : `${s.unpaid.map((m) => monthLabel(m, loc)).join(', ')} — ${priceText(settings, s.unpaid.length)}`}</p>
           {matricule && <p className="text-xs text-ink/55">{tx('Matricule', 'Number', 'Matrícula')} <span className="font-mono font-semibold text-night">{matricule}</span></p>}
         </div>
       </div>

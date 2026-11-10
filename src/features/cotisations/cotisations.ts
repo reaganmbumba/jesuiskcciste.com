@@ -26,8 +26,10 @@ export const COTISATION_METHODS: Record<CotisationMethod, string> = {
 };
 
 export interface CotisationSettings {
-  monthlyAmount: number;
-  currency: CotisationCurrency;
+  /** Montant mensuel si l'on paie en dollars… */
+  amountUsd: number;
+  /** …ou en francs congolais (l'un OU l'autre). */
+  amountCdf: number;
   /** Premier mois dû, « AAAA-MM ». */
   startMonth: string;
   purpose: string;
@@ -100,6 +102,15 @@ export function sumByCurrency(list: Pick<Cotisation, 'amount' | 'currency'>[]): 
   return parts.length ? parts.join(' + ') : '0';
 }
 
+/** Prix de `months` mois : « 4 $ ou 10 000 FC ». */
+export function priceText(settings: Pick<CotisationSettings, 'amountUsd' | 'amountCdf'>, months = 1): string {
+  return `${formatMoney(settings.amountUsd * months, 'USD')} ou ${formatMoney(settings.amountCdf * months, 'CDF')}`;
+}
+
+export function amountFor(settings: Pick<CotisationSettings, 'amountUsd' | 'amountCdf'>, currency: CotisationCurrency): number {
+  return currency === 'USD' ? settings.amountUsd : settings.amountCdf;
+}
+
 // ---------------------------------------------------------------- situation d'un membre
 
 export interface MemberSituation {
@@ -112,8 +123,6 @@ export interface MemberSituation {
   /** Mois payés (y compris d'avance). */
   paid: string[];
   upToDate: boolean;
-  /** Montant restant dû, dans la monnaie des réglages. */
-  owed: number;
   /** Dernier mois couvert (payé), ou null. */
   coveredUntil: string | null;
 }
@@ -128,7 +137,6 @@ export function memberSituation(payments: Pick<Cotisation, 'month'>[], settings:
   return {
     firstDue, due, unpaid, paid,
     upToDate: unpaid.length === 0,
-    owed: unpaid.length * settings.monthlyAmount,
     coveredUntil: paid.length ? paid[paid.length - 1] : null,
   };
 }
@@ -138,14 +146,14 @@ export function memberSituation(payments: Pick<Cotisation, 'month'>[], settings:
 /** Rappel personnel (envoyé au numéro du membre). */
 export function personalReminder(firstName: string, s: MemberSituation, settings: CotisationSettings, siteUrl: string): string {
   const months = s.unpaid.map((m) => monthLabel(m)).join(', ');
-  return `Paix à vous ${firstName} !\n\nPetit rappel de la *cotisation mensuelle KCCiste* (${formatMoney(settings.monthlyAmount, settings.currency)} par mois). Il reste ${s.unpaid.length} mois à régler : ${months}, soit ${formatMoney(s.owed, settings.currency)}.\n\nVous pouvez voir vos cotisations dans « Mon espace » sur ${siteUrl}/espace/cotisations\n\nMerci pour votre fidélité. Que Dieu vous bénisse.`;
+  return `Paix à vous ${firstName} !\n\nPetit rappel de la *cotisation mensuelle KCCiste* (${priceText(settings)} par mois). Il reste ${s.unpaid.length} mois à régler : ${months}, soit ${priceText(settings, s.unpaid.length)}.\n\nVous pouvez voir vos cotisations dans « Mon espace » sur ${siteUrl}/espace/cotisations\n\nMerci pour votre fidélité. Que Dieu vous bénisse.`;
 }
 
 /** Rappel au groupe : noms et nombre de mois seulement (jamais les matricules ni les numéros). */
 export function groupReminder(late: { name: string; months: number }[], settings: CotisationSettings, siteUrl: string): string {
   const date = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   const list = late.map((l, i) => `${i + 1}. ${l.name} — ${l.months} mois`).join('\n');
-  return `💛 *JE SUIS KCCiste* — Cotisations mensuelles (${date})\n\nPaix à vous ! La cotisation est de *${formatMoney(settings.monthlyAmount, settings.currency)} par mois*${settings.purpose ? ` (${settings.purpose})` : ''}.\n\nMerci à tous ceux qui sont à jour. Les KCCistes suivants ont encore des mois à régler :\n\n${list}\n\nChacun peut voir ses cotisations dans « Mon espace » : ${siteUrl}/espace/cotisations\n\n💬 Groupe : ${WHATSAPP_GROUP_URL}`;
+  return `💛 *JE SUIS KCCiste* — Cotisations mensuelles (${date})\n\nPaix à vous ! La cotisation est de *${priceText(settings)} par mois*${settings.purpose ? ` (${settings.purpose})` : ''}.\n\nMerci à tous ceux qui sont à jour. Les KCCistes suivants ont encore des mois à régler :\n\n${list}\n\nChacun peut voir ses cotisations dans « Mon espace » : ${siteUrl}/espace/cotisations\n\n💬 Groupe : ${WHATSAPP_GROUP_URL}`;
 }
 
 /** Message du membre pour envoyer sa preuve de paiement. */
@@ -156,7 +164,7 @@ export function proofMessage(name: string, matricule: string | null, months: str
 
 // ---------------------------------------------------------------- données
 
-export const DEFAULT_SETTINGS: CotisationSettings = { monthlyAmount: 5, currency: 'USD', startMonth: '2026-11', purpose: 'Assistance des cas de premier degré (deuils proches…)' };
+export const DEFAULT_SETTINGS: CotisationSettings = { amountUsd: 2, amountCdf: 5000, startMonth: '2026-11', purpose: 'Assistance des cas de premier degré (deuils proches…)' };
 
 /** Tant que le SQL n'a pas été collé dans Supabase, les tables n'existent pas. */
 export class CotisationsNotInstalled extends Error {
@@ -179,16 +187,16 @@ const fromRow = (r: Row): Cotisation => ({ id: r.id, userId: r.user_id, month: r
 
 export async function getCotisationSettings(): Promise<CotisationSettings> {
   if (isDemoMode) return demoRead(DEMO_SETTINGS_KEY, DEFAULT_SETTINGS);
-  const { data, error } = await supabase!.from('cotisation_settings').select('monthly_amount, currency, start_month, purpose').eq('id', 1).maybeSingle();
+  const { data, error } = await supabase!.from('cotisation_settings').select('amount_usd, amount_cdf, start_month, purpose').eq('id', 1).maybeSingle();
   if (error) { if (missingTable(error)) throw new CotisationsNotInstalled(); throw error; }
   if (!data) return DEFAULT_SETTINGS;
-  return { monthlyAmount: Number(data.monthly_amount), currency: data.currency as CotisationCurrency, startMonth: String(data.start_month).slice(0, 7), purpose: data.purpose ?? '' };
+  return { amountUsd: Number(data.amount_usd), amountCdf: Number(data.amount_cdf), startMonth: String(data.start_month).slice(0, 7), purpose: data.purpose ?? '' };
 }
 
 export async function saveCotisationSettings(s: CotisationSettings): Promise<void> {
   if (isDemoMode) { demoWrite(DEMO_SETTINGS_KEY, s); return; }
   const { data, error } = await supabase!.from('cotisation_settings')
-    .update({ monthly_amount: s.monthlyAmount, currency: s.currency, start_month: `${s.startMonth}-01`, purpose: s.purpose.trim(), updated_at: new Date().toISOString() })
+    .update({ amount_usd: s.amountUsd, amount_cdf: s.amountCdf, start_month: `${s.startMonth}-01`, purpose: s.purpose.trim(), updated_at: new Date().toISOString() })
     .eq('id', 1).select('id');
   if (error) throw new Error(error.message);
   if (!data?.length) throw new Error('Modification refusée : réservé à l’administration.');

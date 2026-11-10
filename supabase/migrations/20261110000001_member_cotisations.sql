@@ -9,12 +9,13 @@
 -- • Chaque membre voit ses propres cotisations dans « Mon espace ».
 -- =====================================================================
 
--- Réglages (une seule ligne) : montant mensuel, monnaie, mois de départ.
+-- Réglages (une seule ligne) : montant mensuel en dollars OU en francs, mois de départ.
+-- Choix de Reagan (10/11/2026) : 2 $ ou 5 000 FC par mois, à partir de novembre 2026.
 create table if not exists public.cotisation_settings (
   id smallint primary key default 1 check (id = 1),
-  monthly_amount numeric(12, 2) not null default 5 check (monthly_amount >= 0),
-  currency text not null default 'USD' check (currency in ('USD', 'CDF')),
-  start_month date not null default date_trunc('month', now())::date check (extract(day from start_month) = 1),
+  amount_usd numeric(12, 2) not null default 2 check (amount_usd >= 0),
+  amount_cdf numeric(12, 2) not null default 5000 check (amount_cdf >= 0),
+  start_month date not null default '2026-11-01' check (extract(day from start_month) = 1),
   purpose text not null default 'Assistance des cas de premier degré (deuils proches…)' check (char_length(purpose) <= 300),
   updated_at timestamptz not null default now()
 );

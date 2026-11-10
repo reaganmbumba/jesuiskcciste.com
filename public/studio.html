@@ -2327,7 +2327,7 @@ const Relay = {
     this.status('Connexion au relais…');
     let ws; try{ ws=new WebSocket(url); }catch(e){ this.status('Adresse du relais invalide.', true); return; }
     ws.binaryType='arraybuffer'; this.ws=ws;
-    ws.onopen=()=>ws.send(JSON.stringify({type:'start', token, quality:S.q, outputs:outs.map(o=>({url:o.url, key:o.key}))}));
+    ws.onopen=()=>ws.send(JSON.stringify({type:'start', token, quality:S.q, vcodec: /h264|avc1/.test(['video/webm;codecs=h264,opus','video/x-matroska;codecs=avc1,opus'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'') ? 'h264' : 'vp8', outputs:outs.map(o=>({url:o.url, key:o.key}))}));
     ws.onmessage=e=>{
       let m; try{ m=JSON.parse(e.data); }catch(err){ return; }
       if(m.type==='started'){ this.retry=0; this.rec(ws); this.status('● Envoi en cours vers '+outs.map(o=>o.name).join(' et ')+'.'); }
@@ -2342,8 +2342,10 @@ const Relay = {
   rec(ws){
     audio();
     const st=new MediaStream([...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()]);
-    const mime=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
-    const mr=new MediaRecorder(st, mime ? {mimeType:mime, videoBitsPerSecond:S.q===1080?5000000:3000000, audioBitsPerSecond:128000} : undefined);
+    // H.264 d'abord : le relais le transmet tel quel à YouTube/Facebook (presque aucun calcul côté serveur).
+    const mime=['video/webm;codecs=h264,opus','video/x-matroska;codecs=avc1,opus','video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||'';
+    const opts = mime ? {mimeType:mime, videoBitsPerSecond:S.q===1080?4500000:2500000, audioBitsPerSecond:128000, videoKeyFrameIntervalDuration:2000} : undefined;
+    let mr; try{ mr=new MediaRecorder(st, opts); }catch(e){ const o={...opts}; delete o.videoKeyFrameIntervalDuration; mr=new MediaRecorder(st, o); }
     mr.ondataavailable=e=>{ if(e.data && e.data.size && ws.readyState===1) e.data.arrayBuffer().then(b=>ws.readyState===1 && ws.send(b)); };
     mr.start(500); this.mr=mr;
     clearInterval(this.pingT); this.pingT=setInterval(()=>{ if(ws.readyState===1) ws.send(JSON.stringify({type:'ping', t:Date.now()})); if(ws.bufferedAmount>20e6) this.status('Connexion internet trop lente pour l’envoi vers YouTube/Facebook.', true); }, 5000);

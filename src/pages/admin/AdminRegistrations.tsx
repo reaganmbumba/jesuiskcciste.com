@@ -49,6 +49,8 @@ export default function AdminRegistrations() {
   const { notify } = useToast();
   const [q, setQ] = useState('');
   const [onlyNoPhoto, setOnlyNoPhoto] = useState(false);
+  const [validating, setValidating] = useState<string | null>(null);
+  const [confirmAll, setConfirmAll] = useState(false);
   const [revoke, setRevoke] = useState<{ m: Profile; to: Profile['status'] } | null>(null);
   const [lastSeen] = useState(() => { try { return localStorage.getItem(SEEN_KEY); } catch { return null; } });
   const { data, loading, reload } = useAsync(async () => {
@@ -73,6 +75,7 @@ export default function AdminRegistrations() {
   const site = env.siteUrl || 'https://www.jesuiskcciste.com';
   const report = registrationReport(registered, parishName, site);
   const noPhoto = registered.filter((m) => !m.avatarUrl);
+  const pending = data.members.filter((m) => m.status === 'pending');
   const sendPhotoReminder = () => window.open(`https://wa.me/?text=${encodeURIComponent(photoReminder(noPhoto, site))}`, '_blank', 'noopener');
 
   const sendReport = () => window.open(`https://wa.me/?text=${encodeURIComponent(report)}`, '_blank', 'noopener');
@@ -82,6 +85,29 @@ export default function AdminRegistrations() {
     if (!mat) { notify('Pas encore de matricule pour ce compte.', 'error'); return; }
     window.open(`https://wa.me/${waNumber(m.phone) ?? ''}?text=${encodeURIComponent(matriculeMessage(m.firstName, mat, env.siteUrl || 'https://www.jesuiskcciste.com'))}`, '_blank', 'noopener');
     void adminReaderAction(m.id, 'envoye').catch(() => undefined);
+  };
+  /** Validation des comptes « En attente » (un seul ou tous d'un coup). */
+  const validate = async (members: Profile[]) => {
+    if (!members.length) return;
+    setValidating(members.length === 1 ? members[0].id : 'all');
+    try {
+      const ids = members.map((m) => m.id);
+      if (isDemoMode) await Promise.all(ids.map((id) => membersRepo.update(id, { status: 'active' })));
+      else {
+        const { data: rows, error } = await supabase!.from('profiles').update({ status: 'active' }).in('id', ids).select('id');
+        if (error) throw error;
+        if (!rows?.length) throw new Error('Modification refusée : ces membres ne sont pas dans votre périmètre.');
+      }
+      const actor = profile ? `${profile.firstName} ${profile.lastName}` : '';
+      await Promise.all(ids.map((id) => writeAudit(actor, 'member.active', 'profiles', id)));
+      notify(members.length === 1 ? `${fullName(members[0])} est validé(e).` : `${members.length} membres validés.`);
+      setConfirmAll(false);
+      reload();
+    } catch (e) {
+      notify(`Échec : ${e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e)}`, 'error');
+    } finally {
+      setValidating(null);
+    }
   };
   const applyRevoke = async () => {
     if (!revoke) return;
@@ -118,6 +144,14 @@ export default function AdminRegistrations() {
         <div className="flex items-center gap-3 rounded-2xl border border-gold/40 bg-gold-50 p-4 text-sm text-night">
           <UserRoundPlus className="h-5 w-5 shrink-0 text-gold-700" />
           <span><b>{fresh.length} nouvelle{fresh.length > 1 ? 's' : ''} inscription{fresh.length > 1 ? 's' : ''}</b> depuis votre dernière visite : {fresh.slice(0, 4).map(fullName).join(', ')}{fresh.length > 4 ? '…' : ''}</span>
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-amber-700" />
+          <p className="flex-1 text-sm text-night"><b>{pending.length} inscription{pending.length > 1 ? 's' : ''} en attente de validation</b> : {pending.slice(0, 5).map(fullName).join(', ')}{pending.length > 5 ? '…' : ''}</p>
+          <Button size="sm" onClick={() => setConfirmAll(true)} loading={validating === 'all'} icon={<CheckCircle2 className="h-4 w-4" />}>Tout valider ({pending.length})</Button>
         </div>
       )}
 
@@ -162,6 +196,7 @@ export default function AdminRegistrations() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
+                {m.status === 'pending' && <Button size="sm" onClick={() => void validate([m])} loading={validating === m.id} icon={<CheckCircle2 className="h-4 w-4" />}>Valider</Button>}
                 {m.status !== 'suspended' && <Button size="sm" variant="outline" onClick={() => sendMatricule(m)} icon={<MessageCircle className="h-4 w-4" />}>Matricule</Button>}
                 {m.status === 'suspended'
                   ? <Button size="sm" variant="outline" onClick={() => setRevoke({ m, to: 'active' })} icon={<CheckCircle2 className="h-4 w-4" />}>Rétablir</Button>
@@ -177,6 +212,9 @@ export default function AdminRegistrations() {
         title={revoke?.to === 'suspended' ? 'Révoquer cet accès ?' : 'Rétablir cet accès ?'}
         message={revoke ? `${fullName(revoke.m)} — ${revoke.to === 'suspended' ? 'le compte est suspendu : il ne peut plus lire les articles ni utiliser son matricule.' : 'le compte redevient actif avec le même matricule.'}` : ''}
         onConfirm={applyRevoke} onCancel={() => setRevoke(null)} />
+      <ConfirmDialog open={confirmAll} title={`Valider les ${pending.length} inscriptions en attente ?`}
+        message={pending.map(fullName).join(', ')}
+        onConfirm={() => validate(pending)} onCancel={() => setConfirmAll(false)} />
     </div>
   );
 }

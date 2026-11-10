@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
-  LayoutGrid, FileText, Radio, Headphones, UserRoundPlus,
+  LayoutGrid, FileText, Radio, Headphones, UserRoundPlus, CalendarCheck,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -76,6 +76,7 @@ const MyCoursesPage = lazy(() => import('@/pages/member/MyCoursesPage'));
 const MyActivitiesPage = lazy(() => import('@/pages/member/MyActivitiesPage'));
 const MyCertificatesPage = lazy(() => import('@/pages/member/MyCertificatesPage'));
 const MyContributionsPage = lazy(() => import('@/pages/member/MyContributionsPage'));
+const MyCotisationsPage = lazy(() => import('@/pages/member/MyCotisationsPage'));
 const MyPurchasesPage = lazy(() => import('@/pages/member/MyPurchasesPage'));
 const MessagesPage = lazy(() => import('@/pages/member/MessagesPage'));
 const ConversationPage = lazy(() => import('@/pages/member/ConversationPage'));
@@ -84,6 +85,7 @@ const SettingsPage = lazy(() => import('@/pages/member/SettingsPage'));
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview'));
 const AdminMembers = lazy(() => import('@/pages/admin/AdminMembers'));
 const AdminRegistrations = lazy(() => import('@/pages/admin/AdminRegistrations'));
+const AdminCotisations = lazy(() => import('@/pages/admin/AdminCotisations'));
 const AdminParishes = lazy(() => import('@/pages/admin/AdminParishes'));
 const AdminEvents = lazy(() => import('@/pages/admin/AdminEvents'));
 const AdminAnnouncements = lazy(() => import('@/pages/admin/AdminAnnouncements'));
@@ -107,6 +109,7 @@ const MEMBER_MENU: SideItem[] = [
   { to: '/espace/formations', label: 'Mes formations', icon: GraduationCap },
   { to: '/espace/activites', label: 'Mes activités', icon: CalendarDays },
   { to: '/espace/certificats', label: 'Mes certificats', icon: Award },
+  { to: '/espace/cotisations', label: 'Mes cotisations', icon: CalendarCheck },
   { to: '/espace/contributions', label: 'Mes contributions', icon: HandCoins },
   { to: '/espace/achats', label: 'Mes achats', icon: ShoppingBag },
   { to: '/espace/messages', label: 'Messages', icon: MessageCircle },
@@ -119,6 +122,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/contenu', label: 'Contenu du site', icon: LayoutGrid, permission: 'settings.manage' },
   { to: '/admin/textes', label: 'Textes des pages', icon: FileText, permission: 'settings.manage' },
   { to: '/admin/inscriptions', label: 'Inscriptions', icon: UserRoundPlus, permission: 'members.read_private' },
+  { to: '/admin/cotisations', label: 'Cotisations mensuelles', icon: CalendarCheck, permission: 'contributions.manage' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
   { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
@@ -227,6 +231,7 @@ export function AppRoutes() {
           <Route path="formations" element={<MyCoursesPage />} />
           <Route path="activites" element={<MyActivitiesPage />} />
           <Route path="certificats" element={<MyCertificatesPage />} />
+          <Route path="cotisations" element={<MyCotisationsPage />} />
           <Route path="contributions" element={<MyContributionsPage />} />
           <Route path="achats" element={<MyPurchasesPage />} />
           <Route path="messages" element={<MessagesPage />} />
@@ -240,6 +245,7 @@ export function AppRoutes() {
         <Route path="admin" element={<AdminShell />}>
           <Route index element={<AdminOverview />} />
           <Route element={<RequirePermission permission="members.read_private" />}><Route path="membres" element={<AdminMembers />} /><Route path="inscriptions" element={<AdminRegistrations />} /></Route>
+          <Route element={<RequirePermission permission="contributions.manage" />}><Route path="cotisations" element={<AdminCotisations />} /></Route>
           <Route element={<RequirePermission permission="sections.manage" />}><Route path="paroisses" element={<AdminParishes />} /></Route>
           <Route path="annonces" element={<AdminAnnouncements />} />
           <Route element={<RequirePermission permission="events.manage" />}><Route path="evenements" element={<AdminEvents />} /></Route>

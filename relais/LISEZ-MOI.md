@@ -8,7 +8,18 @@ clé de stream » collée dans le studio. Les clés ne sont jamais enregistrées
 Seul un administrateur central du site peut s'en servir (vérification par la
 base Supabase, comme pour le studio).
 
-## Installer sur Render (le plus simple)
+## Installer sur Render en un clic (fichier `render.yaml`)
+
+1. Se connecter sur https://render.com avec le compte GitHub du site.
+2. **New › Blueprint**, choisir le dépôt `jesuiskcciste.com`, puis **Apply**.
+   Render crée le service `relais-kcc` avec les bons réglages.
+3. Coller l'adresse obtenue dans le studio (voir l'étape 6 ci-dessous).
+
+Le studio envoie l'image en H.264 : le relais la transmet telle quelle et ne
+convertit que le son. L'offre gratuite suffit donc pour commencer ; si le direct
+se coupe après 15 minutes ou rame, passer le service en *Starter*.
+
+## Installer sur Render à la main
 
 1. Créer un compte sur https://render.com avec le compte GitHub qui gère le site.
 2. **New › Web Service**, choisir le dépôt `jesuiskcciste.com`.

@@ -129,11 +129,16 @@ server.on('upgrade', (req, socket) => {
         current = socket; authed = true; started = Date.now();
         const tee = urls.map((u) => `[f=flv:onfail=ignore]${teeEscape(u)}`).join('|');
         const q = m.quality === 1080 ? { s: '1920:1080', b: '4500k' } : { s: '1280:720', b: '2500k' };
-        const args = ['-hide_banner', '-loglevel', 'warning', '-fflags', '+genpts+discardcorrupt', '-thread_queue_size', '1024', '-i', 'pipe:0',
-          '-map', '0:v:0', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-pix_fmt', 'yuv420p',
+        // Vidéo déjà en H.264 (navigateur) : transmise telle quelle, seul le son est converti → un petit serveur suffit.
+        // Sinon (VP8) : réencodage complet, il faut alors un serveur plus puissant.
+        const copy = m.vcodec === 'h264' && !process.env.RELAY_FORCE_ENCODE;
+        const video = copy ? ['-c:v', 'copy'] : ['-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-pix_fmt', 'yuv420p',
           '-vf', `scale=${q.s}:force_original_aspect_ratio=decrease,pad=${q.s}:(ow-iw)/2:(oh-ih)/2,fps=30`,
-          '-b:v', q.b, '-maxrate', q.b, '-bufsize', String(parseInt(q.b) * 2) + 'k', '-g', '60', '-keyint_min', '60', '-sc_threshold', '0',
+          '-b:v', q.b, '-maxrate', q.b, '-bufsize', String(parseInt(q.b) * 2) + 'k', '-g', '60', '-keyint_min', '60', '-sc_threshold', '0'];
+        const args = ['-hide_banner', '-loglevel', 'warning', '-fflags', '+genpts+discardcorrupt', '-thread_queue_size', '1024', '-i', 'pipe:0',
+          '-map', '0:v:0', '-map', '0:a:0?', ...video,
           '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2', '-f', 'tee', tee];
+        log('mode vidéo :', copy ? 'copie H.264' : 'réencodage');
         ff = spawn('ffmpeg', args, { stdio: ['pipe', 'ignore', 'pipe'] });
         ff.stdin.on('error', () => {});
         ff.stderr.on('data', (d) => { const t = d.toString().trim(); if (t) { log('ffmpeg:', t.slice(0, 300)); say({ type: 'log', text: t.slice(0, 200) }); } });

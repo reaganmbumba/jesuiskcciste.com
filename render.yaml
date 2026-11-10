@@ -1,0 +1,14 @@
+# Relais du studio → YouTube / Facebook, hébergé sur Render (voir relais/LISEZ-MOI.md)
+services:
+  - type: web
+    name: relais-kcc
+    runtime: docker
+    rootDir: relais
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /sante
+    envVars:
+      - key: SUPABASE_URL
+        value: https://anawpwprqvzxgzcpqqwu.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: sb_publishable_hnpwDEfVVCC0BhYkxOgdwQ_E745c7rK

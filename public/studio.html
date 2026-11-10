@@ -2303,7 +2303,7 @@ async function liveStop(){
 
 
 /* ---------- Envoi vers YouTube, Facebook… par le relais ---------- */
-const RELAY_DEFAULT = '';   // adresse du relais une fois installé (ex. wss://relais-kcc.onrender.com)
+const RELAY_DEFAULT = 'wss://relais-kcc.onrender.com';   // relais installé sur Render (relais/LISEZ-MOI.md)
 const Relay = {
   ws:null, mr:null, want:false, retry:0, pingT:0,
   outputs(){

@@ -54,6 +54,13 @@ export const CHALLENGES: Challenge[] = [
         video: '/videos/challenges/libondeli-na-ngai.mp4',
         poster: '/images/challenges/libondeli-na-ngai.jpg',
       },
+      {
+        id: 'bellvie-llb',
+        authorName: '@bellvie.llb',
+        tiktokHandle: 'bellvie.llb',
+        video: '/videos/challenges/libondeli-na-ngai-bellvie.mp4',
+        poster: '/images/challenges/libondeli-na-ngai-bellvie.jpg',
+      },
     ],
   },
 ];

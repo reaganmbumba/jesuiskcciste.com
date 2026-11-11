@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, Building2, CalendarClock, ExternalLink, MapPin, Search, ShieldAlert, Users } from 'lucide-react';
+import { Briefcase, Building2, CalendarClock, ExternalLink, Flame, MapPin, Search, ShieldAlert, Users } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Badge } from '@/components/ui/Badge';
 import { buttonClass } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { formatDate } from '@/utils/format';
 import { CONTRACT_LABELS, JOBS_WHATSAPP_URL, SOURCE_LINKS, applyHref, jobShareText, translateTerms, useCommunityOffers, useDailyJobs, type DailyJob } from '@/features/jobs/jobs';
 import type { JobOffer } from '@/types';
+import { TRADES, jobTrades } from '@/features/jobs/trades';
 
 type Filter = 'all' | 'rdc' | 'angola';
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -53,19 +54,26 @@ function ShareJob({ text, link, locale }: { text: string; link: string; locale: 
 
 /** Rubrique « Opportunités et emplois » : offres de la communauté puis les 50 offres du jour (RD Congo et Angola). */
 export default function JobsPage() {
-  const { tx, locale } = useI18n();
+  const { tx, pick, locale } = useI18n();
   const { profile } = useAuth();
   const daily = useDailyJobs();
   const community = useCommunityOffers();
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [trade, setTrade] = useState<string | null>(null);
 
   const all = useMemo(() => daily.data?.jobs ?? [], [daily.data]);
+  const inCountry = useMemo(() => all.filter((j) => filter === 'all' || (filter === 'angola' ? isAngola(j) : !isAngola(j))), [all, filter]);
+  const tradeCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const j of inCountry) for (const k of jobTrades(j)) c[k] = (c[k] ?? 0) + 1;
+    return c;
+  }, [inCountry]);
   const jobs = useMemo(() => {
     const q = norm(query.trim());
-    return all.filter((j) => (filter === 'all' || (filter === 'angola' ? isAngola(j) : !isAngola(j)))
+    return inCountry.filter((j) => (!trade || jobTrades(j).includes(trade))
       && (!q || norm([j.title, j.organization, j.location, j.country, j.category].filter(Boolean).join(' ')).includes(q)));
-  }, [all, filter, query]);
+  }, [inCountry, trade, query]);
   const counts: Record<Filter, number> = { all: all.length, rdc: all.filter((j) => !isAngola(j)).length, angola: all.filter(isAngola).length };
   const filters: [Filter, string][] = [
     ['all', tx('Toutes', 'All', 'Todas')],
@@ -144,6 +152,24 @@ export default function JobsPage() {
           </label>
         </div>
 
+        {!!all.length && (
+          <div className="mb-6 rounded-3xl border border-night/[0.06] bg-white p-5 shadow-soft">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-night"><Flame className="h-4 w-4 text-orange-500" aria-hidden />{tx('Les métiers les plus recherchés', 'The most sought-after jobs', 'As profissões mais procuradas')}</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setTrade(null)} aria-pressed={!trade}
+                className={`rounded-full border px-3 py-1 text-xs transition ${!trade ? 'border-gold-500 bg-gold-50 font-semibold text-gold-700' : 'border-night/10 text-ink/70 hover:border-gold'}`}>
+                {tx('Tous les métiers', 'All jobs', 'Todas as profissões')}
+              </button>
+              {TRADES.filter((t) => tradeCounts[t.key]).map((t) => (
+                <button key={t.key} type="button" onClick={() => setTrade(trade === t.key ? null : t.key)} aria-pressed={trade === t.key}
+                  className={`rounded-full border px-3 py-1 text-xs transition ${trade === t.key ? 'border-gold-500 bg-gold-50 font-semibold text-gold-700' : 'border-night/10 text-ink/70 hover:border-gold'}`}>
+                  {pick(t.label)} <span className="opacity-60">({tradeCounts[t.key]})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {daily.loading && <p className="rounded-2xl bg-white p-6 text-sm text-ink/60 shadow-soft">{tx('Chargement des offres du jour…', 'Loading today’s offers…', 'A carregar as ofertas do dia…')}</p>}
         {!daily.loading && (daily.error || !all.length) && (
           <p className="rounded-2xl bg-white p-6 text-sm text-ink/70 shadow-soft">
@@ -204,7 +230,8 @@ function CommunityCard({ o, date }: { o: JobOffer; date: DateFn }) {
 }
 
 function DailyJobCard({ j, date }: { j: DailyJob; date: DateFn }) {
-  const { tx, locale } = useI18n();
+  const { tx, pick, locale } = useI18n();
+  const trade = TRADES.find((t) => t.key === jobTrades(j)[0]);
   const posted = date(j.postedAt);
   const closing = date(j.closingAt);
   const country = translateTerms(j.country, locale) ?? tx('RD Congo', 'DR Congo', 'RD Congo');
@@ -213,6 +240,7 @@ function DailyJobCard({ j, date }: { j: DailyJob; date: DateFn }) {
     <li className="flex h-full flex-col rounded-3xl border border-night/[0.06] bg-white p-5 shadow-soft transition hover:border-gold/50">
       <div className="flex flex-wrap gap-2">
         <Badge tone={isAngola(j) ? 'blue' : 'green'}><MapPin className="h-3 w-3" aria-hidden />{country}</Badge>
+        {trade && <Badge tone="amber"><Flame className="h-3 w-3" aria-hidden />{pick(trade.label)}</Badge>}
         {j.contract && <Badge><Briefcase className="h-3 w-3" aria-hidden />{translateTerms(j.contract, locale)}</Badge>}
       </div>
       <h3 className="mt-3 font-display text-lg font-semibold leading-snug text-night">

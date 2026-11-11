@@ -60,7 +60,7 @@ export default function JobsPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
 
-  const all = useMemo(() => (daily.data?.jobs ?? []).filter((j) => !j.remote), [daily.data]);
+  const all = useMemo(() => daily.data?.jobs ?? [], [daily.data]);
   const jobs = useMemo(() => {
     const q = norm(query.trim());
     return all.filter((j) => (filter === 'all' || (filter === 'angola' ? isAngola(j) : !isAngola(j)))

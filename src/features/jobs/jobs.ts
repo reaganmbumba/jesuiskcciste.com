@@ -33,7 +33,7 @@ export interface DailyJob {
 }
 
 /** Version de la liste du jour (RD Congo + Angola). */
-export const JOBS_FEED_VERSION = 2;
+export const JOBS_FEED_VERSION = 3;
 
 export interface DailyJobs { date: string; generatedAt: string; sources: Record<string, 'ok' | 'off' | 'error'>; jobs: DailyJob[] }
 

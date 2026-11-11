@@ -7,7 +7,7 @@
  * est écartée.
  *
  *  1. mediacongo.net (RD Congo) : la page publique des offres d'emploi.
- *  2. Jobartis (Angola) : les premières pages publiques des offres.
+ *  2. Jobartis (Angola) : les 5 premières pages publiques des offres.
  *  3. ReliefWeb (ONU / OCHA) : offres des ONG et des agences de l'ONU en RD
  *     Congo et en Angola. Gratuit, mais ReliefWeb exige un « appname » demandé
  *     sur apidoc.reliefweb.int : tant que la variable RELIEFWEB_APPNAME n'est
@@ -17,6 +17,8 @@
  * quelques fois par jour. /api/emplois?diagnostic=1 indique ce que chaque
  * source a donné (sans cache).
  */
+
+import { jobTrades } from '../src/features/jobs/trades';
 
 export interface JobsEnv { RELIEFWEB_APPNAME?: string }
 
@@ -223,7 +225,7 @@ export async function fetchMediacongo(): Promise<JobItem[]> {
 }
 
 export async function fetchJobartis(): Promise<JobItem[]> {
-  const pages = await Promise.all([1, 2, 3].map((p) => getHtml(`https://www.jobartis.com/vagas-emprego${p > 1 ? `?page=${p}` : ''}`).catch((e) => (p === 1 ? Promise.reject(e) : ''))));
+  const pages = await Promise.all([1, 2, 3, 4, 5].map((p) => getHtml(`https://www.jobartis.com/vagas-emprego${p > 1 ? `?page=${p}` : ''}`).catch((e) => (p === 1 ? Promise.reject(e) : ''))));
   const seen = new Set<string>();
   return pages.flatMap((h) => parseJobartis(h)).filter((j) => (seen.has(j.url) ? false : (seen.add(j.url), true)));
 }
@@ -231,14 +233,24 @@ export async function fetchJobartis(): Promise<JobItem[]> {
 const time = (s: string | null) => (s ? new Date(s).getTime() || 0 : 0);
 
 /**
- * Les 50 offres du jour : environ 30 pour la RD Congo et 20 pour l'Angola,
- * les plus récentes d'abord ; si un pays en a moins, l'autre complète.
+ * Met d'abord les offres des métiers les plus recherchés (voir TRADES), en
+ * gardant l'ordre d'origine (les plus récentes d'abord) à l'intérieur de chaque groupe.
+ */
+export function byDemand(list: JobItem[]): JobItem[] {
+  const popular = list.filter((j) => jobTrades(j).length > 0);
+  return [...popular, ...list.filter((j) => !popular.includes(j))];
+}
+
+/**
+ * Les 50 offres du jour : environ 30 pour la RD Congo et 20 pour l'Angola ;
+ * d'abord les métiers les plus recherchés, puis les plus récentes ; si un pays
+ * en a moins, l'autre complète.
  */
 export function pickDaily(rdc: JobItem[], angola: JobItem[], max = DAILY_JOBS): JobItem[] {
   const seen = new Set<string>();
   const uniq = (list: JobItem[]) => list.filter((j) => (seen.has(j.url) ? false : (seen.add(j.url), true)));
-  const a = uniq([...rdc].sort((x, y) => time(y.postedAt) - time(x.postedAt)));
-  const b = uniq(angola);
+  const a = uniq(byDemand([...rdc].sort((x, y) => time(y.postedAt) - time(x.postedAt))));
+  const b = uniq(byDemand(angola));
   const share = Math.round(max * 0.6);
   const takeA = Math.min(a.length, Math.max(share, max - b.length));
   return [...a.slice(0, takeA), ...b.slice(0, max - takeA)];
@@ -249,7 +261,7 @@ export async function handleJobs(request: Request, env: JobsEnv, ctx?: Ctx): Pro
   const diag = new URL(request.url).searchParams.has('diagnostic');
   const today = new Date().toISOString().slice(0, 10);
   const cache = (globalThis as unknown as { caches?: { default?: CacheLike } }).caches?.default;
-  const key = new Request(`https://cache.jesuiskcciste.com/api/emplois/v2/${today}/${env.RELIEFWEB_APPNAME ? 'rw' : 'nrw'}`);
+  const key = new Request(`https://cache.jesuiskcciste.com/api/emplois/v3/${today}/${env.RELIEFWEB_APPNAME ? 'rw' : 'nrw'}`);
   if (!diag) {
     const hit = await cache?.match(key).catch(() => undefined);
     if (hit) return hit;

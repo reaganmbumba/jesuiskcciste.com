@@ -98,3 +98,20 @@ describe('traduction des termes ReliefWeb', () => {
     expect(translateTerms('Freelance', 'fr')).toBe('Freelance');
   });
 });
+
+describe('métiers les plus recherchés', () => {
+  it('reconnaît les métiers en français, portugais et anglais', async () => {
+    const { jobTrades } = await import('@/features/jobs/trades');
+    expect(jobTrades({ title: 'Comptable senior' })).toContain('compta');
+    expect(jobTrades({ title: 'Motorista' })).toContain('chauffeur');
+    expect(jobTrades({ title: 'Enfermeira' })).toContain('sante');
+    expect(jobTrades({ title: 'Estágio em Marketing' })).toEqual(expect.arrayContaining(['stage', 'commerce']));
+    expect(jobTrades({ title: 'Deputy Safety Advisor (DSA)', organization: 'INSO (International NGO Safety Organisation)' })).toEqual(expect.arrayContaining(['securite', 'humanitaire']));
+    expect(jobTrades({ title: 'Directeur général' })).toEqual([]);
+  });
+  it('met ces offres en premier dans les offres du jour', async () => {
+    const { byDemand } = await import('../../worker/jobs');
+    const mk = (title: string) => ({ id: title, title, organization: null, location: null, country: 'RD Congo', remote: false, category: null, contract: null, url: `https://x/${title}`, source: 'mediacongo.net' as const, postedAt: null, closingAt: null });
+    expect(byDemand([mk('Directeur'), mk('Comptable'), mk('Chef'), mk('Chauffeur')]).map((j) => j.title)).toEqual(['Comptable', 'Chauffeur', 'Directeur', 'Chef']);
+  });
+});

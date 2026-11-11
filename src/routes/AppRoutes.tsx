@@ -3,7 +3,7 @@ import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
-  LayoutGrid, FileText, Radio, Headphones, UserRoundPlus, CalendarCheck,
+  LayoutGrid, FileText, Radio, Headphones, Briefcase, UserRoundPlus, CalendarCheck,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -34,6 +34,7 @@ const ApostleBiographiesPage = lazy(() => import('@/pages/public/ApostleBiograph
 const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const LivePage = lazy(() => import('@/pages/public/LivePage'));
 const RadioPage = lazy(() => import('@/pages/public/RadioPage'));
+const JobsPage = lazy(() => import('@/pages/public/JobsPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const AppInstallPage = lazy(() => import('@/pages/public/AppInstallPage'));
 const MatriculePage = lazy(() => import('@/pages/public/MatriculePage'));
@@ -97,6 +98,7 @@ const AdminApostles = lazy(() => import('@/pages/admin/AdminApostles'));
 const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminLivestreams = lazy(() => import('@/pages/admin/AdminLivestreams'));
 const AdminRadio = lazy(() => import('@/pages/admin/AdminRadio'));
+const AdminJobs = lazy(() => import('@/pages/admin/AdminJobs'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
@@ -135,6 +137,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
   { to: '/admin/directs', label: 'Directs des cultes', icon: Radio, permission: 'settings.manage' },
   { to: '/admin/radio', label: 'Radio Je suis KCCiste', icon: Headphones, permission: 'settings.manage' },
+  { to: '/admin/emplois', label: 'Opportunités et emplois', icon: Briefcase, permission: 'settings.manage' },
   { to: '/reunions', label: 'Réunions en vidéo', icon: Video, permission: 'moderation' },
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
@@ -182,6 +185,7 @@ export function AppRoutes() {
         <Route path="videos" element={<VideosPage />} />
         <Route path="direct" element={<LivePage />} />
         <Route path="radio" element={<RadioPage />} />
+        <Route path="emplois" element={<JobsPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />
         <Route path="communaute/membres/:id" element={<MemberProfilePage />} />
@@ -257,6 +261,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="directs" element={<AdminLivestreams />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="radio" element={<AdminRadio />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="emplois" element={<AdminJobs />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="contenu" element={<AdminSiteContent />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="textes" element={<AdminPageTexts />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>

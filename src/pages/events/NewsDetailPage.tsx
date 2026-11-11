@@ -60,7 +60,7 @@ export default function NewsDetailPage() {
             ? <div className="mb-6 grid gap-3 sm:grid-cols-3">{data.gallery.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="aspect-[3/4] w-full rounded-2xl object-cover" loading="lazy" /></a>)}</div>
             : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
         <Card className={locked ? 'relative overflow-hidden' : undefined}>
-          <CardBody className="prose-kcc">{shown.map((p, i) => (isHeading(p) ? <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3> : <p key={i}>{p}</p>))}</CardBody>
+          <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map((p, i) => (isHeading(p) ? <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3> : <p key={i}>{p}</p>))}</CardBody>
           {locked && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" aria-hidden />}
         </Card>
         {locked && reader.data && <MatriculeGate status={reader.data} onUnlocked={reader.reload} />}

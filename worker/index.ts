@@ -16,9 +16,10 @@
 
 import { findApostleBiography } from '../src/content/apotres-biographies';
 import { handleLive } from './live';
+import { handleJobs } from './jobs';
 
 interface Fetcher { fetch(input: Request | string | URL, init?: RequestInit): Promise<Response> }
-interface Env { ASSETS: Fetcher; SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string }
+interface Env { ASSETS: Fetcher; SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string; RELIEFWEB_APPNAME?: string }
 
 /* Types minimaux de l'API HTMLRewriter du runtime Workers. */
 interface ElementLike { setAttribute(name: string, value: string): void; setInnerContent(content: string): void; remove(): void }
@@ -109,8 +110,9 @@ function withMeta(page: Response, meta: Meta, url: URL): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === '/api/emplois') return handleJobs(request, env, ctx);
     const live = /^\/api\/live\/(publish|watch|answer)$/.exec(url.pathname);
     if (live) return handleLive(request, env, live[1]);
     if (request.method === 'GET') {

@@ -32,6 +32,9 @@ export interface DailyJob {
   closingAt: string | null;
 }
 
+/** Version de la liste du jour (RD Congo + Angola). */
+export const JOBS_FEED_VERSION = 2;
+
 export interface DailyJobs { date: string; generatedAt: string; sources: Record<string, 'ok' | 'off' | 'error'>; jobs: DailyJob[] }
 
 export const SOURCE_LINKS: Record<DailyJob['source'], string> = {
@@ -108,7 +111,8 @@ export function applyHref(applyTo: string): string | null {
 }
 
 export async function fetchDailyJobs(signal?: AbortSignal): Promise<DailyJobs> {
-  const r = await fetch('/api/emplois', { headers: { Accept: 'application/json' }, signal });
+  // « v » change quand le format de la liste change : un téléphone ne réutilise jamais une ancienne liste gardée en mémoire.
+  const r = await fetch(`/api/emplois?v=${JOBS_FEED_VERSION}`, { headers: { Accept: 'application/json' }, cache: 'no-cache', signal });
   if (!r.ok || !(r.headers.get('content-type') ?? '').includes('json')) throw new Error('indisponible');
   const data = (await r.json()) as DailyJobs;
   if (!Array.isArray(data.jobs)) throw new Error('indisponible');

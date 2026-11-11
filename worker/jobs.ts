@@ -266,7 +266,7 @@ export async function handleJobs(request: Request, env: JobsEnv, ctx?: Ctx): Pro
     env.RELIEFWEB_APPNAME ? run('reliefweb', fetchReliefWeb(env.RELIEFWEB_APPNAME)) : Promise.resolve([] as JobItem[]),
   ]);
   const jobs = pickDaily([...mc, ...rw.filter((j) => j.country !== 'Angola')], [...ja, ...rw.filter((j) => j.country === 'Angola')]);
-  const res = json({ date: today, generatedAt: new Date().toISOString(), sources: status, jobs }, jobs.length && !diag ? 1800 : 0);
+  const res = json({ date: today, generatedAt: new Date().toISOString(), sources: status, jobs }, jobs.length && !diag ? 600 : 0);
   // Une liste vide (sites injoignables) n'est pas gardée : on réessaiera à la prochaine visite.
   if (cache && jobs.length && !diag) {
     const stored = new Response(res.clone().body, res);

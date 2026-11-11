@@ -24,7 +24,7 @@ export default function SermonsPage() {
 
   return (
     <>
-      <PageHeader eyebrow={tx('Parole de l’Éternel', 'Word of the Eternal', 'Palavra do Eterno')} title={tx('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários')} description={tx('Des prédications à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église (2003-2015).', 'Sermons to listen to, and the teaching of His Eminence the Spiritual Leader taken from the Church’s sermon notes and seminar reports (2003-2015).', 'Pregações para ouvir, e o ensino de Sua Eminência o Chefe Espiritual tirado das notas de pregações e dos relatórios de seminários da Igreja (2003-2015).')} />
+      <PageHeader views="/predications" eyebrow={tx('Parole de l’Éternel', 'Word of the Eternal', 'Palavra do Eterno')} title={tx('Prédications et séminaires', 'Sermons and seminars', 'Pregações e seminários')} description={tx('Des prédications à écouter, et l’enseignement de Son Éminence le Chef Spirituel tiré des notes de prédications et des rapports de séminaires de l’Église (2003-2015).', 'Sermons to listen to, and the teaching of His Eminence the Spiritual Leader taken from the Church’s sermon notes and seminar reports (2003-2015).', 'Pregações para ouvir, e o ensino de Sua Eminência o Chefe Espiritual tirado das notas de pregações e dos relatórios de seminários da Igreja (2003-2015).')} />
 
       <AudioSermonsSection />
 

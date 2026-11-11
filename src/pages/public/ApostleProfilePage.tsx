@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, Hourglass, ImagePlus, MapPin, PencilLine } from 'lucide-react';
@@ -74,6 +75,7 @@ function Profile({ apostle: a, onPropose }: { apostle: Apostle; onPropose: (m: P
         {a.status !== 'unknown' && (
           <Badge tone={deceased ? 'neutral' : 'green'} className="mt-3">{deceased ? tx('Décédé', 'Deceased', 'Falecido') : tx('En vie', 'Living', 'Vivo')}</Badge>
         )}
+        <ViewCount path={`/apotres/${a.id}`} record className="mt-3" />
         <ShareButtons size="sm" url={`/apotres/${a.id}`} title={`${a.title} ${a.fullName}`} image={a.photoUrl || biography?.image} className="mt-5 justify-center" />
       </div>
 

@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Lightbulb, RotateCcw, Sparkles, Trophy, ArrowRight, Shuffle } from 'lucide-react';
 import { usePageMeta } from '@/hooks/usePageMeta';
@@ -216,6 +217,7 @@ export default function ThreeSignsGamePage() {
           <div>
             <p className="eyebrow text-gold-300">{tx('Jeux pour apprendre', 'Games to learn', 'Jogos para aprender')}</p>
             <h1 className="mt-1 font-display text-[1.7rem] font-medium leading-tight sm:text-4xl">{title}</h1>
+            <ViewCount path="/jeux/trois-signes" record tone="dark" className="mt-1" />
           </div>
           <ShareButtons title={title} text={shareText} image={SHARE_IMAGE} tone="dark" size="sm" showLabel={false} />
         </div>

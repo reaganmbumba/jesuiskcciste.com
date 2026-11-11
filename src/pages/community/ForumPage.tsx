@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { EyeOff, Lock, MessageSquare, Pin, Plus } from 'lucide-react';
@@ -65,6 +66,7 @@ export default function ForumPage() {
                     <span className="inline-flex items-center gap-1.5 font-semibold text-gold-700"><MessageSquare className="h-3.5 w-3.5" aria-hidden />
                       {t.commentCount === 0 ? tx('Aucun commentaire', 'No comments', 'Sem comentários') : t.commentCount === 1 ? tx('1 commentaire', '1 comment', '1 comentário') : tx(`${t.commentCount} commentaires`, `${t.commentCount} comments`, `${t.commentCount} comentários`)}
                     </span>
+                    <ViewCount path={`/forum/${t.id}`} hideZero className="text-xs" />
                     <span>{tx('Publié le', 'Posted on', 'Publicado a')} {formatDate(t.createdAt, locale)}</span>
                     {t.lastCommentAt && <span>{tx('Dernier commentaire le', 'Last comment on', 'Último comentário a')} {formatDate(t.lastCommentAt, locale)}</span>}
                   </p>

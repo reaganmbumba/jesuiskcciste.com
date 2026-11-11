@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { cn, initials } from '@/utils/format';
 import { ShareButtons } from '@/components/common/ShareButtons';
 import { usePageMeta } from '@/hooks/usePageMeta';
+import { ViewCount } from '@/features/views/ViewCount';
 
 export function ProgressBar({ value, label, tone = 'gold' }: { value: number; label?: string; tone?: 'gold' | 'night' }) {
   const v = Math.max(0, Math.min(100, Math.round(value)));
@@ -41,8 +42,10 @@ export function SectionHeading({ eyebrow, title, description, action, light }: {
  * En-tête des pages publiques. Il fixe aussi le titre et l'aperçu de partage de la page
  * et affiche les boutons de partage (désactivables avec `share={false}`).
  * `metaDescription` remplace `description` dans l'aperçu sans être affiché.
+ * La visite est comptée et le nombre de lectures affiché (« 👁 N lectures ») :
+ * `views` donne une autre adresse à compter, ou `false` pour ne rien compter.
  */
-export function PageHeader({ eyebrow, title, description, children, image, metaDescription, share = true }: { eyebrow?: string; title: string; description?: string; children?: ReactNode; image?: string | null; metaDescription?: string; share?: boolean }) {
+export function PageHeader({ eyebrow, title, description, children, image, metaDescription, share = true, views = true }: { eyebrow?: string; title: string; description?: string; children?: ReactNode; image?: string | null; metaDescription?: string; share?: boolean; views?: boolean | string }) {
   const summary = metaDescription ?? description;
   usePageMeta({ title, description: summary, image });
   return (
@@ -56,7 +59,8 @@ export function PageHeader({ eyebrow, title, description, children, image, metaD
         <h1 className="font-display text-[2.2rem] font-medium leading-[1.08] sm:text-6xl">{title}</h1>
         {description && <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-white/70 sm:text-lg">{description}</p>}
         {children && <div className="mt-6">{children}</div>}
-        {share && <ShareButtons tone="dark" title={title} text={summary} image={image} className="mt-7" />}
+        {views !== false && <ViewCount record tone="dark" path={typeof views === 'string' ? views : undefined} className="mt-5 flex w-fit" />}
+        {share && <ShareButtons tone="dark" title={title} text={summary} image={image} className={views !== false ? 'mt-4' : 'mt-7'} />}
       </div>
     </header>
   );

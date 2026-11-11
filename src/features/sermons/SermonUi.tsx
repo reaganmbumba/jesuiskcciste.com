@@ -11,6 +11,8 @@ import { useI18n } from '@/i18n';
 import { cn, formatDate, formatDuration } from '@/utils/format';
 import type { AudioSermon } from '@/types';
 import { listPublicSermons } from './sermons';
+import { ViewCount } from '@/features/views/ViewCount';
+import { recordView } from '@/features/views/views';
 
 const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -29,6 +31,9 @@ const pauseOthers = (e: SyntheticEvent<HTMLAudioElement>) => {
   document.querySelectorAll('audio').forEach((a) => { if (a !== e.currentTarget) a.pause(); });
 };
 
+/** Adresse comptée pour une prédication audio (écoute ou lien partagé ouvert). */
+const sermonPath = (id: string) => `/predications/audio/${id}`;
+
 /** Rubrique « Prédications audio » de la page /predications. */
 export function AudioSermonsSection() {
   const { tx, locale } = useI18n();
@@ -44,6 +49,8 @@ export function AudioSermonsSection() {
     const id = sharedId ? `audio-${sharedId}` : decodeURIComponent(hash.slice(1));
     if (id === 'audio' || id.startsWith('audio-') || id === 'ecrites') setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
   }, [loading, hash, sharedId]);
+  // Ouvrir le lien partagé d'une prédication compte une lecture.
+  useEffect(() => { if (sharedId) void recordView(sermonPath(sharedId)); }, [sharedId]);
   const shown = useMemo(() => {
     const k = norm(q.trim());
     return k ? sermons.filter((s) => [s.title, s.preacherName, s.preacherTitle, s.parish, s.bibleText].some((v) => v && norm(v).includes(k))) : sermons;
@@ -86,9 +93,10 @@ export function AudioSermonsSection() {
                       {s.preachedOn && <Badge><CalendarDays className="h-3 w-3" aria-hidden />{formatDate(s.preachedOn, locale, { dateStyle: 'long' }, 'UTC')}</Badge>}
                       {!!s.durationSeconds && <Badge><Clock className="h-3 w-3" aria-hidden />{formatDuration(s.durationSeconds)}</Badge>}
                     </div>
+                    <ViewCount path={sermonPath(s.id)} className="mt-3" />
                     {s.description && <p className="mt-3 text-sm text-ink/70">{s.description}</p>}
                     {s.audioUrl ? (
-                      <audio controls preload="none" src={s.audioUrl} onPlay={pauseOthers} className="mt-4 w-full" aria-label={`${s.title} — ${s.preacherName}`} />
+                      <audio controls preload="none" src={s.audioUrl} onPlay={(e) => { pauseOthers(e); void recordView(sermonPath(s.id)); }} className="mt-4 w-full" aria-label={`${s.title} — ${s.preacherName}`} />
                     ) : (
                       <p className="mt-4 text-xs text-amber-700">{tx('Audio bientôt disponible.', 'Audio coming soon.', 'Áudio disponível em breve.')}</p>
                     )}

@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Building2, Eye, EyeOff, Lock, LockOpen, MessageSquare, Pencil, Pin, PinOff, Send, Trash2 } from 'lucide-react';
@@ -103,6 +104,7 @@ export default function ForumTopicPage() {
                   </div>
                   <h1 className="mt-3 font-display text-3xl font-semibold leading-tight text-night sm:text-4xl">{t.title}</h1>
                   <p className="mt-2 text-sm text-ink/55">{tx('Publié par l’administration le', 'Posted by the administration on', 'Publicado pela administração a')} {formatDate(t.createdAt, locale)}</p>
+                  <ViewCount path={`/forum/${t.id}`} record className="mt-2" />
                   {t.body && <Paragraphs text={t.body} className="prose-kcc mt-5" />}
                   <ShareButtons size="sm" url={`/forum/${t.id}`} title={t.title} className="mt-6" />
                 </div>

@@ -10,8 +10,13 @@ import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
 
+/** « mardi 27 octobre, 11:30 » à l'heure de Kinshasa. */
+function showTime(iso: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kinshasa' }).format(new Date(iso));
+}
+
 export default function RadioPage() {
-  const { tx } = useI18n();
+  const { tx, locale } = useI18n();
   const { profile } = useAuth();
   const r = useRadio();
   const { prepare } = r;
@@ -63,6 +68,11 @@ export default function RadioPage() {
             </div>
 
             {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
+            {r.upcomingShow && (
+              <p className="mt-4 rounded-xl bg-white/[0.06] px-4 py-3 text-sm text-white/80">
+                {tx('Émission programmée', 'Scheduled show', 'Emissão programada')} · <span className="font-semibold text-white">{showTime(r.upcomingShow.startsAt, locale)}</span>{tx(' (heure de Kinshasa)', ' (Kinshasa time)', ' (hora de Kinshasa)')} : <span className="font-semibold text-white">{r.upcomingShow.title}</span>. {tx('La radio y passe d’elle-même à l’heure dite.', 'The radio switches to it by itself at that time.', 'A rádio passa para ela sozinha à hora marcada.')}
+              </p>
+            )}
             {r.callUrl && (
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm text-white/80">{tx('Intervenez en direct : appelez l’émission. La radio se coupe pendant l’appel, vous entendez l’animateur dans l’appel, et tous les auditeurs vous entendent à l’antenne.', 'Join the show live: call in. The radio stops during the call, you hear the host in the call, and every listener hears you on air.', 'Participe em direto: ligue para a emissão. A rádio para durante a chamada, ouve o animador na chamada e todos os ouvintes o ouvem no ar.')}</p>

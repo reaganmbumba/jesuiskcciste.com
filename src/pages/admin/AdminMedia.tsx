@@ -37,7 +37,7 @@ export default function AdminMedia() {
             { key: 'videoUrl', label: 'Vidéo (lien, facultatif)', type: 'url' },
             { key: 'broadcastRights', label: 'Autorisation de diffusion', type: 'select', required: true, options: RIGHTS, hint: 'Seuls les chants « Diffusion autorisée » peuvent être écoutés sur le site.' },
             { key: 'priceAmount', label: 'Prix de vente', type: 'number', hint: PRICE_HINT }, { key: 'priceCurrency', label: 'Devise', type: 'select', options: CURRENCIES },
-            { key: 'saleFilePath', label: 'Fichier vendu (chemin dans le stockage privé « music »)', type: 'text', hint: 'Facultatif : sinon l’acheteur reçoit le fichier d’écoute.' },
+            { key: 'saleFilePath', label: 'Fichier vendu (chemin dans le stockage privé « music »)', type: 'text', hint: 'Le chant entier (ex. chants/samba.mp3). Rempli : le site ne fait écouter que le fichier d’écoute (l’extrait) ; l’acheteur et les responsables musique écoutent le chant entier.' },
             { key: 'lyrics', label: 'Paroles (si autorisées)', type: 'textarea' },
           ]}
           defaults={{ broadcastRights: 'authorized', durationSeconds: 0, category: 'Chants' }}

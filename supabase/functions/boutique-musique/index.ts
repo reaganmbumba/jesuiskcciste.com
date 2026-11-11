@@ -18,6 +18,7 @@
 //   checkout  { itemType: 'track'|'album', itemId, provider, phone } → { orderId, status }
 //   status    { orderId }  → { status, message }
 //   download  { orderId }  → { files: [{ title, url }] }
+//   ecoute    { trackId }  → { url } chant entier (acheteur ou responsable musique), sinon { url: null }
 //   callback  (appelé par FlexPay : ?action=callback&order=…&secret=…)
 // Un paiement n'est JAMAIS marqué payé sur la foi du webhook : la fonction
 // interroge toujours FlexPay (« check ») avant de valider.
@@ -32,6 +33,7 @@ const SUPABASE_URL = env('SUPABASE_URL');
 const SERVICE_KEY = env('SUPABASE_SERVICE_ROLE_KEY');
 const FLEXPAY_BASE = env('FLEXPAY_BASE_URL') || (env('FLEXPAY_ENV') === 'dev' ? 'https://beta-backend.flexpay.cd/api/rest/v1' : 'https://backend.flexpay.cd/api/rest/v1');
 const SITE_URL = env('SITE_URL') || 'https://jesuiskcciste.com';
+const ANON_KEY = env('SUPABASE_ANON_KEY');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -187,6 +189,34 @@ async function download(req: Request, db: SupabaseClient, body: Record<string, u
   return { files };
 }
 
+/**
+ * Chant entier pour l'écoute : le site public ne contient que la première moitié
+ * (audio_url). Le fichier complet (sale_file_path, bucket privé) n'est délivré,
+ * par lien signé de courte durée, qu'à un responsable musique ou à un acheteur
+ * du titre ou de son album. Sinon : { url: null } et le lecteur garde l'extrait.
+ */
+async function ecoute(req: Request, db: SupabaseClient, body: Record<string, unknown>) {
+  const userId = await currentUserId(req, db);
+  const { data: track, error } = await db.from('tracks').select('id, album_id, sale_file_path').eq('id', String(body.trackId ?? '')).maybeSingle();
+  if (error) throw new HttpError(500, error.message);
+  if (!track?.sale_file_path) return { url: null };
+
+  // has_permission() lit auth.uid() : on l'appelle avec la session de l'utilisateur.
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const asUser = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false, autoRefreshToken: false } });
+  const { data: manager } = ANON_KEY ? await asUser.rpc('has_permission', { p_permission: 'music.manage' }) : { data: false };
+
+  let allowed = manager === true;
+  if (!allowed) {
+    const ors = [`track_id.eq.${track.id}`, ...(track.album_id ? [`album_id.eq.${track.album_id}`] : [])].join(',');
+    const { data: owned } = await db.from('music_orders').select('id').eq('user_id', userId).eq('status', 'paid').or(ors).limit(1).maybeSingle();
+    allowed = !!owned;
+  }
+  if (!allowed) return { url: null };
+  const { data: signed } = await db.storage.from('music').createSignedUrl(track.sale_file_path, 60 * 60 * 3);
+  return { url: signed?.signedUrl ?? null };
+}
+
 async function callback(url: URL, db: SupabaseClient) {
   const secret = env('CALLBACK_SECRET');
   if (secret && url.searchParams.get('secret') !== secret) throw new HttpError(403, 'Accès refusé.');
@@ -207,6 +237,7 @@ Deno.serve(async (req) => {
       case 'checkout': return json(await checkout(req, db, body));
       case 'status': return json(await status(req, db, body));
       case 'download': return json(await download(req, db, body));
+      case 'ecoute': return json(await ecoute(req, db, body));
       default: throw new HttpError(400, 'Action inconnue.');
     }
   } catch (e) {

@@ -87,6 +87,15 @@ export async function getDownloads(orderId: string): Promise<DownloadFile[]> {
   return (await call<{ files: DownloadFile[] }>({ action: 'download', orderId })).files;
 }
 
+/**
+ * Lien du chant entier si l'utilisateur connecté y a droit (acheteur ou
+ * responsable musique), sinon null : le lecteur garde alors l'extrait public.
+ */
+export async function getFullAudio(trackId: string): Promise<string | null> {
+  if (isDemoMode) return null;
+  try { return (await call<{ url: string | null }>({ action: 'ecoute', trackId })).url; } catch { return null; }
+}
+
 /** Commandes de l'utilisateur connecté (la RLS ne renvoie que les siennes). */
 export async function listMyOrders(userId: string): Promise<MusicOrder[]> {
   if (isDemoMode) return [];

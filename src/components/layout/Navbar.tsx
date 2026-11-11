@@ -116,7 +116,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
                 <ButtonLink to="/inscription" variant="outline" size="sm" className="hidden 2xl:inline-flex">{t('nav.signup')}</ButtonLink>
               </div>
             )}
-            <ButtonLink to="/solidarite#don" variant="gold" size="sm" icon={<Heart className="h-4 w-4" />} className="hidden sm:inline-flex">{tx('Faire un don', 'Donate', 'Fazer um donativo')}</ButtonLink>
+            <ButtonLink to="/don" variant="gold" size="sm" icon={<Heart className="h-4 w-4" />} className="hidden sm:inline-flex">{tx('Faire un don', 'Donate', 'Fazer um donativo')}</ButtonLink>
             <button onClick={() => setOpen((v) => !v)} className={cn('grid h-10 w-10 place-items-center rounded-full xl:hidden', solid ? 'text-night hover:bg-night/5' : 'text-white hover:bg-white/10')} aria-label={open ? tx('Fermer le menu', 'Close menu', 'Fechar o menu') : tx('Ouvrir le menu', 'Open menu', 'Abrir o menu')} aria-expanded={open} aria-controls="menu-mobile">
               {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -146,6 +146,7 @@ export function Navbar({ transparent }: { transparent?: boolean }) {
               {can(profile, 'admin.access') && (
                 <Link to="/admin" className="flex items-center gap-3 rounded-2xl bg-night px-4 py-3 text-sm font-semibold text-white"><Shield className="h-5 w-5 text-gold" aria-hidden /> {t('nav.admin')}</Link>
               )}
+              <Link to="/don" className="flex items-center gap-3 rounded-2xl bg-gold px-4 py-3 text-sm font-semibold text-night"><Heart className="h-5 w-5" aria-hidden /> {tx('Faire un don', 'Make a donation', 'Fazer um donativo')}</Link>
               <Link to="/application" className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-gold-50 px-4 py-3 text-sm font-semibold text-night"><Smartphone className="h-5 w-5 text-gold-600" aria-hidden /> {tx('Installer l’application sur mon téléphone', 'Install the app on my phone', 'Instalar a aplicação no meu telemóvel')}</Link>
               <div className="flex gap-2 border-t border-night/10 pt-4">
                 {profile ? (

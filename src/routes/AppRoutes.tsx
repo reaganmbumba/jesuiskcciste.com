@@ -52,6 +52,8 @@ const ForumTopicPage = lazy(() => import('@/pages/community/ForumTopicPage'));
 const MeetingsPage = lazy(() => import('@/pages/community/MeetingsPage'));
 const DebatesPage = lazy(() => import('@/pages/community/DebatesPage'));
 const DebatePage = lazy(() => import('@/pages/community/DebatePage'));
+const ChallengesPage = lazy(() => import('@/pages/community/ChallengesPage'));
+const ChallengePage = lazy(() => import('@/pages/community/ChallengePage'));
 const NewsPage = lazy(() => import('@/pages/events/NewsPage'));
 const NewsDetailPage = lazy(() => import('@/pages/events/NewsDetailPage'));
 const AgendaPage = lazy(() => import('@/pages/events/AgendaPage'));
@@ -197,6 +199,8 @@ export function AppRoutes() {
         <Route path="reunions" element={<MeetingsPage />} />
         <Route path="debats" element={<DebatesPage />} />
         <Route path="debats/:id" element={<DebatePage />} />
+        <Route path="challenges" element={<ChallengesPage />} />
+        <Route path="challenges/:id" element={<ChallengePage />} />
         <Route path="actualites" element={<NewsPage />} />
         <Route path="actualites/:id" element={<NewsDetailPage />} />
         <Route path="agenda" element={<AgendaPage />} />

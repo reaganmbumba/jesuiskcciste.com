@@ -6,10 +6,10 @@ import type { Tri } from '@/i18n';
 /**
  * Rubrique « Opportunités et emplois » (/emplois).
  *
- *  - Les offres du jour : jusqu'à 50 offres réelles par jour, lues par le
- *    Worker du site (GET /api/emplois, voir worker/jobs.ts) chez ReliefWeb
- *    (RD Congo et région) et Jobicy (télétravail). Chaque offre garde le lien
- *    de l'annonce d'origine ; le site n'en invente aucune.
+ *  - Les offres du jour : jusqu'à 50 offres réelles par jour en RD Congo et
+ *    en Angola, lues par le Worker du site (GET /api/emplois, voir
+ *    worker/jobs.ts) sur mediacongo.net, Jobartis et ReliefWeb. Chaque offre
+ *    garde le lien de l'annonce d'origine ; le site n'en invente aucune.
  *  - Les offres de la communauté : publiées par l'administration
  *    (/admin/emplois, table `job_offers`), avec leur source.
  */
@@ -27,7 +27,7 @@ export interface DailyJob {
   category: string | null;
   contract: string | null;
   url: string;
-  source: 'ReliefWeb' | 'Jobicy';
+  source: 'mediacongo.net' | 'Jobartis' | 'ReliefWeb';
   postedAt: string | null;
   closingAt: string | null;
 }
@@ -35,8 +35,9 @@ export interface DailyJob {
 export interface DailyJobs { date: string; generatedAt: string; sources: Record<string, 'ok' | 'off' | 'error'>; jobs: DailyJob[] }
 
 export const SOURCE_LINKS: Record<DailyJob['source'], string> = {
+  'mediacongo.net': 'https://www.mediacongo.net/emplois.html',
+  Jobartis: 'https://www.jobartis.com/vagas-emprego',
   ReliefWeb: 'https://reliefweb.int/jobs',
-  Jobicy: 'https://jobicy.com',
 };
 
 export const jobOffersRepo: Repository<JobOffer> = repository<JobOffer>('job_offers', [], 'job');
@@ -54,6 +55,7 @@ export const CONTRACT_LABELS: Record<JobContractType, Tri> = {
 /** Pays et types de contrat que ReliefWeb donne en anglais. */
 const TERMS: Record<string, Tri> = {
   'democratic republic of the congo': { fr: 'RD Congo', en: 'DR Congo', pt: 'RD Congo' },
+  'rd congo': { fr: 'RD Congo', en: 'DR Congo', pt: 'RD Congo' },
   congo: { fr: 'Congo-Brazzaville', en: 'Congo-Brazzaville', pt: 'Congo-Brazzaville' },
   angola: { fr: 'Angola', en: 'Angola', pt: 'Angola' },
   job: { fr: 'Emploi', en: 'Job', pt: 'Emprego' },
@@ -139,6 +141,25 @@ export function useCommunityOffers(): Load<JobOffer[]> {
     return () => { alive = false; };
   }, []);
   return state;
+}
+
+/** Texte partagé sur WhatsApp ou Facebook pour une offre : l'offre, son lien, puis le site et le groupe. */
+export function jobShareText(o: { title: string; organization?: string | null; location?: string | null; country?: string | null; link: string; closing?: string | null }, locale: keyof Tri = 'fr'): string {
+  const where = [o.location, o.country && !(o.location ?? '').includes(o.country) ? o.country : null].filter(Boolean).join(', ');
+  const L = {
+    fr: { offer: 'Offre d’emploi', until: 'Date limite', apply: 'Pour postuler', more: 'Chaque jour, 50 offres en RD Congo et en Angola sur le site JE SUIS KCCiste', group: 'Groupe WhatsApp Je suis KCCiste 4 Opportunité et emploi' },
+    en: { offer: 'Job offer', until: 'Deadline', apply: 'To apply', more: 'Every day, 50 job offers in the DR Congo and Angola on the JE SUIS KCCiste website', group: 'WhatsApp group Je suis KCCiste 4 Opportunité et emploi' },
+    pt: { offer: 'Oferta de emprego', until: 'Prazo', apply: 'Para se candidatar', more: 'Todos os dias, 50 ofertas na RD Congo e em Angola no site JE SUIS KCCiste', group: 'Grupo WhatsApp Je suis KCCiste 4 Opportunité et emploi' },
+  }[locale];
+  return [
+    `💼 *${L.offer} : ${o.title}*`,
+    [o.organization, where].filter(Boolean).join(' · '),
+    o.closing ? `${L.until} : ${o.closing}` : '',
+    `${L.apply} : ${o.link}`,
+    '',
+    `${L.more} : https://jesuiskcciste.com/emplois`,
+    `${L.group} : ${JOBS_WHATSAPP_URL}`,
+  ].filter((l, i) => l !== '' || i === 4).join('\n');
 }
 
 /** Message lisible pour l'administration. */

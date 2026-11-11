@@ -68,6 +68,7 @@ const MusicPage = lazy(() => import('@/pages/music/MusicPage'));
 const ArtistsPage = lazy(() => import('@/pages/music/ArtistsPage'));
 const LibraryPage = lazy(() => import('@/pages/music/LibraryPage'));
 const SolidarityPage = lazy(() => import('@/pages/solidarity/SolidarityPage'));
+const DonatePage = lazy(() => import('@/pages/solidarity/DonatePage'));
 const ProjectsPage = lazy(() => import('@/pages/solidarity/ProjectsPage'));
 const ProjectDetailPage = lazy(() => import('@/pages/solidarity/ProjectDetailPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
@@ -218,6 +219,7 @@ export function AppRoutes() {
         <Route path="musique" element={<MusicPage />} />
         <Route path="musique/artistes" element={<ArtistsPage />} />
         <Route path="bibliotheque" element={<LibraryPage />} />
+        <Route path="don" element={<DonatePage />} />
         <Route path="solidarite" element={<SolidarityPage />} />
         <Route path="solidarite/projets" element={<ProjectsPage />} />
         <Route path="solidarite/projets/:slug" element={<ProjectDetailPage />} />

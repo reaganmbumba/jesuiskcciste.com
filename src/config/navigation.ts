@@ -71,6 +71,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.solidarity', to: '/solidarite', children: [
       { label: l('Solidarité KCC', 'KCC Solidarity', 'Solidariedade KCC'), to: '/solidarite', description: l('Agir ensemble', 'Acting together', 'Agir juntos') },
+      { label: l('Faire un don', 'Make a donation', 'Fazer um donativo'), to: '/don', description: l('Ponctuel ou mensuel, par Mobile Money', 'One-off or monthly, by Mobile Money', 'Pontual ou mensal, por Mobile Money') },
       { label: l('Projets de solidarité', 'Solidarity projects', 'Projetos de solidariedade'), to: '/solidarite/projets', description: l('Projets en cours et bilans', 'Current projects and reports', 'Projetos em curso e balanços') },
       { label: l('Pagnes KCC — 25 $', 'KCC cloths — $25', 'Panos KCC — 25 $'), to: '/pagne-kcc', description: l('Choisir son modèle et commander', 'Choose a design and order', 'Escolher o modelo e encomendar') },
       { label: l('Caisse d’assistance sociale', 'Social assistance fund', 'Caixa de assistência social'), to: '/enseignements#caisse', description: l('Règlement deuil et maladie', 'Bereavement and illness rules', 'Regulamento de luto e doença') },

@@ -58,6 +58,7 @@ const PAGES: Record<string, [string, string]> = {
   '/musique/artistes': ['Artistes et chorales', 'Les artistes et chorales de la communauté KCCiste.'],
   '/bibliotheque': ['Bibliothèque numérique', 'Documents, supports de formation, vidéos et rapports, classés selon leur niveau d’accès.'],
   '/solidarite': ['Servir ensemble, en toute transparence', 'Des projets suivis, documentés et rendus publics, au service de la communauté.'],
+  '/don': ['Faire un don', 'Soutenez l’œuvre de l’Église Bon Nouveau Message : don ponctuel ou mensuel, en francs congolais ou en dollars, par M-Pesa ou Orange Money.'],
   '/solidarite/projets': ['Projets de solidarité', 'Les projets de solidarité de la communauté KCCiste.'],
   '/confidentialite': ['Confidentialité et conditions d’utilisation', 'Comment JE SUIS KCCiste protège vos données.'],
   '/application': ['JE SUIS KCCiste sur votre téléphone', 'Installez l’application JE SUIS KCCiste sur votre téléphone Android, iPhone ou ordinateur : gratuit, en quelques secondes.'],

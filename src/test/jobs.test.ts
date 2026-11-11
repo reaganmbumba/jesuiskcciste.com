@@ -102,11 +102,16 @@ describe('traduction des termes ReliefWeb', () => {
 describe('métiers les plus recherchés', () => {
   it('reconnaît les métiers en français, portugais et anglais', async () => {
     const { jobTrades } = await import('@/features/jobs/trades');
-    expect(jobTrades({ title: 'Comptable senior' })).toContain('compta');
-    expect(jobTrades({ title: 'Motorista' })).toContain('chauffeur');
+    expect(jobTrades({ title: 'Comptable senior' })).toContain('finance');
+    expect(jobTrades({ title: 'Motorista' })).toContain('logistique');
     expect(jobTrades({ title: 'Enfermeira' })).toContain('sante');
     expect(jobTrades({ title: 'Estágio em Marketing' })).toEqual(expect.arrayContaining(['stage', 'commerce']));
-    expect(jobTrades({ title: 'Deputy Safety Advisor (DSA)', organization: 'INSO (International NGO Safety Organisation)' })).toEqual(expect.arrayContaining(['securite', 'humanitaire']));
+    expect(jobTrades({ title: 'Ingénieur minier' })).toContain('mines');
+    expect(jobTrades({ title: 'Data Analyst' })).toContain('informatique');
+    expect(jobTrades({ title: 'Chef de chantier' })).toContain('btp');
+    expect(jobTrades({ title: 'Ingénieur agronome' })).toContain('agriculture');
+    expect(jobTrades({ title: 'Secrétaire de direction' })).toContain('administration');
+    expect(jobTrades({ title: 'Professeur d’université' })).toContain('enseignement');
     expect(jobTrades({ title: 'Directeur général' })).toEqual([]);
   });
   it('met ces offres en premier dans les offres du jour', async () => {

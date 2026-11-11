@@ -4,5 +4,5 @@ insert into public.audio_sermons (id, title, preacher_name, preacher_title, pari
   ('a0d10000-0000-4000-8000-000000000001', 'Respectons les lois de Yahwé et observons fidèlement les enseignements que notre Prophète nous a laissés', 'KAPAPA MUANDA Bossin', 'Disciple', 'Paroisse d’Aéroport',
    '/predications/bossin-kapapa.jpg', '/predications/bossin-kapapa-genese-3.mp3', 1141, 'Genèse 3 : 1-5', true, '2026-10-22T10:55:00Z'),
   ('a0d10000-0000-4000-8000-000000000002', 'Le choix du mariage', 'KAPAPA MUANDA Bossin', 'Disciple', 'Paroisse d’Aéroport',
-   '/predications/bossin-kapapa.jpg', '/predications/bossin-kapapa-mariage.mp3', 1140, 'Genèse 24 : 1-4', true, '2026-11-11T09:30:00Z')
+   '/predications/bossin-kapapa.jpg', '/predications/bossin-kapapa-choix-du-mariage.mp3', 1140, 'Genèse 24 : 1-4', true, '2026-11-11T09:30:00Z')
 on conflict (id) do nothing;

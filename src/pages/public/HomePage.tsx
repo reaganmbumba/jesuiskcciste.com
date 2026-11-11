@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, Medal, MessageCircle, MessagesSquare, Mic, Music2, Phone, PlayCircle, ScrollText, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Briefcase, Building2, CalendarDays, ChevronLeft, ChevronRight, Clock, FileText, GraduationCap, HandHeart, Images, Mail, MapPin, Medal, MessageCircle, MessagesSquare, Mic, Music2, Phone, PlayCircle, ScrollText, Sparkles, Users } from 'lucide-react';
 import { KccIcon } from '@/components/common/KccIcon';
 import { useI18n, type Tri } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -43,9 +43,9 @@ const QUICK: { title: Tri; text: Tri; to: string; icon: typeof Users; from: stri
   { title: T('Musique', 'Music', 'Música'), text: T('Cantiques, chorales et albums', 'Hymns, choirs and albums', 'Hinos, coros e álbuns'), to: '/musique', icon: Music2, from: '#EC4899', to2: '#9D174D' },
   { title: T('Vidéos', 'Videos', 'Vídeos'), text: T('Notre chaîne YouTube', 'Our YouTube channel', 'O nosso canal YouTube'), to: '/videos', icon: PlayCircle, from: '#EF4444', to2: '#7F1D1D' },
   { title: T('Documents', 'Documents', 'Documentos'), text: T('Bibliothèque et publications', 'Library and publications', 'Biblioteca e publicações'), to: '/bibliotheque', icon: FileText, from: '#14B8A6', to2: '#115E59' },
-  { title: T('Prédications audio', 'Audio sermons', 'Pregações em áudio'), text: T('Écouter les prédicateurs', 'Listen to the preachers', 'Ouvir os pregadores'), to: '/predications#audio', icon: Mic, from: '#0EA5E9', to2: '#075985' },
   { title: T('Révérends Apôtres', 'Reverend Apostles', 'Reverendos Apóstolos'), text: T('En vie et décédés, avec leur photo', 'Living and deceased, with their photo', 'Vivos e falecidos, com a sua foto'), to: '/apotres', icon: Medal, from: '#A78BFA', to2: '#5B21B6' },
   { title: T('Forum', 'Forum', 'Fórum'), text: T('Discuter entre membres', 'Talk with other members', 'Conversar entre membros'), to: '/forum', icon: MessagesSquare, from: '#84CC16', to2: '#3F6212' },
+  { title: T('Emplois', 'Jobs', 'Empregos'), text: T('50 offres réelles chaque jour', '50 real offers every day', '50 ofertas reais por dia'), to: '/emplois', icon: Briefcase, from: '#F59E0B', to2: '#92400E' },
 ];
 
 /** Rubriques « La Foi » mises en avant sur l'accueil (icônes neutres, sans symbole religieux). */

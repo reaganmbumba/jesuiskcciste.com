@@ -558,3 +558,22 @@ export interface ArticleLikes {
   likes: number;
   liked: boolean;
 }
+
+// ——— Opportunités et emplois ———
+export type JobContractType = 'emploi' | 'stage' | 'consultance' | 'benevolat' | 'bourse' | 'formation' | 'autre';
+/** Offre publiée par l'administration (table `job_offers`). */
+export interface JobOffer {
+  id: UUID;
+  title: string;
+  organization: string;
+  location?: string | null;
+  contractType: JobContractType;
+  description?: string | null;
+  /** Lien de l'offre, adresse e-mail ou numéro où postuler. */
+  applyTo: string;
+  /** D'où vient l'offre (site, affiche, communiqué…). */
+  source: string;
+  closingDate?: string | null;
+  published: boolean;
+  createdAt?: string;
+}

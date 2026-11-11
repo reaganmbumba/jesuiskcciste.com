@@ -14,6 +14,7 @@ export const MAIN_NAV: NavGroup[] = [
       { label: l('Débats audio', 'Audio debates', 'Debates em áudio'), to: '/debats', description: l('Écouter le sujet et répondre en vocal', 'Listen to the topic and reply by voice', 'Ouvir o tema e responder por voz') },
       { label: l('Réunions en vidéo', 'Video meetings', 'Reuniões por vídeo'), to: '/reunions', description: l('Se réunir en visioconférence', 'Meet by video call', 'Reunir-se por videoconferência') },
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
+      { label: l('Opportunités et emplois', 'Opportunities and jobs', 'Oportunidades e empregos'), to: '/emplois', description: l('50 offres réelles chaque jour et le groupe WhatsApp', '50 real job offers every day and the WhatsApp group', '50 ofertas reais por dia e o grupo WhatsApp') },
       { label: l('Messages privés', 'Private messages', 'Mensagens privadas'), to: '/espace/messages', description: l('Écrire à un autre membre', 'Write to another member', 'Escrever a outro membro') },
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('La liste officielle, par pays', 'The official list, by country', 'A lista oficial, por país') },
       { label: l('Sections', 'Sections', 'Secções'), to: '/sections', description: l('Les sections rattachées', 'Affiliated sections', 'As secções associadas') },

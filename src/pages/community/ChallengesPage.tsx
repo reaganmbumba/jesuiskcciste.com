@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, Music2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
@@ -30,6 +31,7 @@ export default function ChallengesPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600">{formatDate(c.date, locale)}</p>
                   <h2 className="mt-1 font-display text-2xl font-medium text-night">{pick(c.title)}</h2>
                   <p className="mt-2 flex items-center gap-2 text-sm text-ink/70"><Music2 className="h-4 w-4 text-gold-600" aria-hidden />{c.song}</p>
+                  <ViewCount path={`/challenges/${c.id}`} hideZero className="mt-2" />
                   <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-night group-hover:text-gold-700"><Heart className="h-4 w-4" aria-hidden />{tx('Participer et voter', 'Take part and vote', 'Participar e votar')} <ArrowRight className="h-4 w-4" aria-hidden /></span>
                 </div>
               </Link>

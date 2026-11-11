@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Headphones, Mic } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
@@ -30,6 +31,7 @@ export default function DebatesPage() {
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600">{formatDate(t.date, locale)}</p>
                   <h2 className="mt-1 font-display text-2xl font-medium text-night">{pick(t.title)}</h2>
                   <p className="mt-2 flex items-center gap-2 text-sm text-ink/70"><Headphones className="h-4 w-4 text-gold-600" aria-hidden />{tx('Animé par', 'Hosted by', 'Animado por')} {t.host}</p>
+                  <ViewCount path={`/debats/${t.id}`} hideZero className="mt-2" />
                   <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-night group-hover:text-gold-700"><Mic className="h-4 w-4" aria-hidden />{tx('Écouter et commenter', 'Listen and comment', 'Ouvir e comentar')} <ArrowRight className="h-4 w-4" aria-hidden /></span>
                 </div>
               </Link>

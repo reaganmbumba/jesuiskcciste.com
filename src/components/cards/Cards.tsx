@@ -1,3 +1,4 @@
+import { ViewCount } from '@/features/views/ViewCount';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarDays, Clock, GraduationCap, MapPin, Megaphone, Pin, Signal } from 'lucide-react';
 import type { Announcement, Course, KccEvent, Parish, SolidarityProject } from '@/types';
@@ -43,7 +44,7 @@ export function AnnouncementCard({ a }: { a: Announcement }) {
         <h3 className="font-display text-xl font-medium leading-snug text-night transition-colors group-hover:text-gold-700">{a.title}</h3>
         <p className="mt-2 line-clamp-2 text-sm text-ink/65">{a.summary}</p>
         <div className="mt-auto flex items-center justify-between border-t border-night/[0.06] pt-4 text-xs text-ink/55">
-          <time dateTime={a.publishedAt}>{formatDate(a.publishedAt, locale)}</time>
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><time dateTime={a.publishedAt}>{formatDate(a.publishedAt, locale)}</time><ViewCount path={`/actualites/${a.id}`} hideZero className="text-xs" /></span>
           <span className="flex items-center gap-1.5 font-semibold text-night">{tx('Lire', 'Read', 'Ler')} <span className="grid h-7 w-7 place-items-center rounded-full bg-night text-gold transition group-hover:bg-gold group-hover:text-night"><ArrowRight className="h-3.5 w-3.5 transition group-hover:-rotate-45" /></span></span>
         </div>
       </div>

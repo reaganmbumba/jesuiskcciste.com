@@ -8,14 +8,14 @@ import { cn } from '@/utils/format';
 /**
  * Le livre « Le KCCisme » (doctrine de l'EBNM/KCC), lisible avec un code d'accès.
  * Le texte n'est pas dans le code du site : il est publié chiffré
- * (public/livres/kccisme.enc.json, AES-GCM, clé dérivée du code par PBKDF2-SHA256)
+ * (public/livres/kccisme-v2.enc.json, AES-GCM, clé dérivée du code par PBKDF2-SHA256)
  * et n'est déchiffré que dans le navigateur de la personne qui saisit le bon code.
  * Le code n'est écrit nulle part dans le dépôt.
  */
 
 const COVER = '/images/livres/kccisme-couverture.jpg';
 const SHARE_IMAGE = '/images/livres/kccisme-annonce.jpg';
-const DATA_URL = '/livres/kccisme.enc.json';
+const DATA_URL = '/livres/kccisme-v2.enc.json'; // nouveau nom à chaque changement de code (évite l'ancien fichier en cache)
 const STORE_KEY = 'kcc.kccisme.code';
 const CONTACT_NAME = 'Reagan MBUMBA';
 const CONTACT_PHONE = '+243 840 238 592';

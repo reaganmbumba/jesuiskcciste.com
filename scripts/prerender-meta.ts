@@ -176,7 +176,7 @@ for (const t of DEBATE_TOPICS) {
 }
 // Challenges : image avec bouton ▶ et la vidéo mise en avant.
 for (const c of CHALLENGES) {
-  render(`/challenges/${c.id}`, { title: `🎤 ${c.title.fr}`, description: c.intro.fr, image: c.shareImage, video: c.featured[0]?.video });
+  render(`/challenges/${c.id}`, { title: `🎤 ${c.title.fr}`, description: c.intro.fr, image: c.shareImage, audio: c.songAudio, video: c.featured[0]?.video });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

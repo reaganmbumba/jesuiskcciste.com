@@ -43,6 +43,7 @@ export const CHALLENGES: Challenge[] = [
       en: 'Sing “Libondeli na ngai”, the song from the Je suis KCCiste label, your own way. Film yourself, send your video or your TikTok link, and vote for the version you like best.',
       pt: 'Cante «Libondeli na ngai», a canção da editora Je suis KCCiste, à sua maneira. Filme-se, envie o seu vídeo ou a sua ligação TikTok e vote na versão de que mais gosta.',
     },
+    songAudio: '/audio/challenges/libondeli-na-ngai.mp3',
     image: '/images/challenges/libondeli-na-ngai.jpg',
     shareImage: '/images/challenges/partage-libondeli-na-ngai.jpg',
     featured: [

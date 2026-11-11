@@ -14,7 +14,11 @@ export const audioSermonsRepo = repository<AudioSermon>('audio_sermons', demo.de
  */
 export async function listPublicSermons(): Promise<AudioSermon[]> {
   const rows = await audioSermonsRepo.all().catch(() => demo.demoAudioSermons);
-  return sortSermons(rows.filter((s) => s.published));
+  // Les prédications livrées avec le site s'affichent même si leur ligne
+  // n'a pas encore été ajoutée dans Supabase (seed_predications.sql).
+  const known = new Set(rows.flatMap((s) => [s.id, s.audioUrl]));
+  const shipped = demo.demoAudioSermons.filter((s) => !known.has(s.id) && !known.has(s.audioUrl));
+  return sortSermons([...rows, ...shipped].filter((s) => s.published));
 }
 
 const BUCKET = 'predications';

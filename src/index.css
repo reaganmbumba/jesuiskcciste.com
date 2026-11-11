@@ -43,3 +43,18 @@
   .mask-fade-b { mask-image: linear-gradient(to bottom, black 55%, transparent); }
   .mask-radial { mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%); }
 }
+
+/* Jeu des trois signes (/jeux/trois-signes) */
+@keyframes kcc-crush { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.18); filter: brightness(1.6); } 100% { transform: scale(0) rotate(-12deg); opacity: 0; } }
+@keyframes kcc-fall { from { transform: translateY(-70%); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes kcc-shake { 0%,100% { transform: none; } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@keyframes kcc-hint { 0%,100% { box-shadow: 0 0 0 0 rgba(229,198,128,0); } 50% { box-shadow: 0 0 0 4px rgba(229,198,128,.95); } }
+@keyframes kcc-popup { 0% { opacity: 0; transform: translate(-50%, 0) scale(.6); } 25% { opacity: 1; transform: translate(-50%, -30%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
+@keyframes kcc-letter { 0% { transform: scale(.4) rotate(-8deg); } 70% { transform: scale(1.15); } 100% { transform: none; } }
+.kcc-crush { animation: kcc-crush .34s ease-in forwards; }
+.kcc-fall { animation: kcc-fall .3s cubic-bezier(.3,1.4,.5,1); }
+.kcc-shake { animation: kcc-shake .32s ease-in-out 1; }
+.kcc-hint { animation: kcc-hint 1s ease-in-out infinite; }
+.kcc-popup { animation: kcc-popup .9s ease-out forwards; }
+.kcc-letter { animation: kcc-letter .4s ease-out; }
+@media (prefers-reduced-motion: reduce) { .kcc-crush, .kcc-fall, .kcc-shake, .kcc-popup, .kcc-letter { animation-duration: .01ms; } }

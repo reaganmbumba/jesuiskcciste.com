@@ -19,6 +19,7 @@ import { editorialAnnouncements, editorialCourses, editorialEvents } from '@/con
 import { demoAudioSermons } from '@/services/demo/data';
 import { galleryPhotos, photoKey } from '@/content/galerie';
 import { DEBATE_TOPICS } from '@/content/debats';
+import { CHALLENGES } from '@/content/challenges';
 import { APOSTLE_BIOGRAPHIES } from '@/content/apotres-biographies';
 
 const SITE = 'https://jesuiskcciste.com';
@@ -46,6 +47,7 @@ const PAGES: Record<string, [string, string]> = {
   '/paroisses': ['Paroisses', 'Les paroisses enregistrées sur JE SUIS KCCiste, en RD Congo et dans la diaspora.'],
   '/forum': ['Forum de discussion', 'Des sujets proposés par l’administration, commentés par les membres inscrits avec leur nom et leur paroisse.'],
   '/debats': ['Débats audio', 'Écoutez le sujet du jour animé par Maman Mam’s et donnez votre avis en vocal, en audio ou par écrit.'],
+  '/challenges': ['Challenges KCCistes', 'Les chansons du label Je suis KCCiste à chanter à votre tour : filmez-vous, envoyez votre vidéo et votez pour vos préférées.'],
   '/reunions': ['Réunions en vidéo', 'Se réunir en visioconférence, comme sur Zoom, pour partager des sujets entre membres de la communauté KCCiste.'],
   '/sections': ['Sections', 'Chaque paroisse peut organiser ses sections : jeunesse, chorales, mamans, diaspora…'],
   '/actualites': ['Actualités et annonces', 'Les dernières nouvelles et annonces de la communauté KCCiste.'],
@@ -170,6 +172,11 @@ for (const b of APOSTLE_BIOGRAPHIES) {
 // Débats audio : titre « 🎧 Écoutez… », image avec bouton ▶ et audio du sujet.
 for (const t of DEBATE_TOPICS) {
   render(`/debats/${t.id}`, { title: `🎧 Écoutez : ${t.title.fr} — animé par ${t.host}`, description: `${t.intro.fr} Groupe WhatsApp « ${t.whatsappGroup} ».`, image: t.shareImage, audio: t.audio, video: t.video });
+  count += 1;
+}
+// Challenges : image avec bouton ▶ et la vidéo mise en avant.
+for (const c of CHALLENGES) {
+  render(`/challenges/${c.id}`, { title: `🎤 ${c.title.fr}`, description: c.intro.fr, image: c.shareImage, video: c.featured[0]?.video });
   count += 1;
 }
 console.log(`prerender-meta : ${count} pages avec leur aperçu de partage.`);

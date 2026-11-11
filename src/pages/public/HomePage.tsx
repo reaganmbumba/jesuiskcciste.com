@@ -23,6 +23,7 @@ import { FullImage } from '@/components/ui/FullImage';
 import { usePageTexts } from '@/features/content/pageTexts';
 import { HomeLiveBlock } from '@/features/livestreams/LivestreamUi';
 import { HomeRadioBlock } from '@/features/radio/RadioUi';
+import { HomeChallengeBlock } from '@/features/challenges/HomeChallengeBlock';
 
 const T = (fr: string, en: string, pt: string): Tri => ({ fr, en, pt });
 
@@ -186,6 +187,7 @@ export default function HomePage() {
 
             {/* RADIO : chants et prédications en continu */}
             <HomeRadioBlock className="mt-12" />
+            <HomeChallengeBlock className="mt-6" />
 
             {/* ACTUALITÉS + PAROLE DU JOUR */}
             <section className="mt-12 grid gap-6 xl:grid-cols-12" aria-labelledby="news-title">

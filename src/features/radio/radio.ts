@@ -4,6 +4,7 @@ import { camelize } from '@/utils/case';
 import { listPublicSermons } from '@/features/sermons/sermons';
 import type { SiteSettings } from '@/config/site';
 import { JOURNAUX, type Journal } from '@/content/journaux';
+import { EMISSIONS, type Emission } from '@/content/emissions';
 import type { AudioSermon, Track } from '@/types';
 
 /**
@@ -35,6 +36,8 @@ export interface RadioItem {
   url: string;
   durationSeconds: number | null;
   imageUrl: string | null;
+  /** Ne passe plus à partir de cette date (bande-annonce d'une émission). */
+  until?: string;
 }
 
 export interface RadioLive {
@@ -107,6 +110,36 @@ export function isLiveOn(live: RadioLive, now = new Date()): boolean {
   return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
 }
 
+/** L'émission programmée à l'antenne en ce moment, s'il y en a une. */
+export function scheduledShow(list: Emission[] = EMISSIONS, now = new Date()): Emission | null {
+  const t = now.getTime();
+  return list.find((e) => {
+    const start = new Date(e.startsAt).getTime();
+    return t >= start && t < start + e.durationSeconds * 1000;
+  }) ?? null;
+}
+
+/** La prochaine émission programmée dans les `withinHours` heures (pour l'annoncer). */
+export function nextShow(list: Emission[] = EMISSIONS, now = new Date(), withinHours = 24): Emission | null {
+  const t = now.getTime();
+  return [...list]
+    .filter((e) => { const s = new Date(e.startsAt).getTime(); return s > t && s - t <= withinHours * 3600000; })
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] ?? null;
+}
+
+/**
+ * Ce qui passe « en direct » : l'émission en direct de l'administration en
+ * priorité, sinon l'émission programmée, prise au point où elle en est
+ * (tous les auditeurs entendent le même moment). Null si rien.
+ */
+export function antenna(live: RadioLive, list: Emission[] = EMISSIONS, now = new Date()): RadioLive | null {
+  if (isLiveOn(live, now)) return live;
+  const e = scheduledShow(list, now);
+  if (!e) return null;
+  const offset = Math.floor((now.getTime() - new Date(e.startsAt).getTime()) / 1000);
+  return { url: offset > 2 ? `${e.audioUrl}#t=${offset}` : e.audioUrl, title: e.title, onAir: true, startedAt: e.startsAt, callUrl: '' };
+}
+
 export function liveItem(live: RadioLive): RadioItem {
   return { key: LIVE_KEY, kind: 'live', title: live.title || 'Émission en direct', subtitle: 'Radio Je suis KCCiste', url: live.url, durationSeconds: null, imageUrl: null };
 }
@@ -155,6 +188,13 @@ export function currentNews(list: Journal[] = JOURNAUX, now = new Date()): Radio
   return { key: newsKey(j.id), kind: 'news', title: j.title, subtitle: 'Rédaction Je suis KCCiste', url: j.audioUrl, durationSeconds: j.durationSeconds || null, imageUrl: null };
 }
 
+/** Bande-annonce de la prochaine émission programmée (dans les 24 h), jusqu'à son début. */
+export function currentTeaser(list: Emission[] = EMISSIONS, now = new Date()): RadioItem | null {
+  const e = nextShow(list.filter((x) => x.teaserUrl), now);
+  if (!e?.teaserUrl) return null;
+  return { key: newsKey(`annonce-${e.id}`), kind: 'news', title: `Bande-annonce : ${e.title}`, subtitle: 'Radio Je suis KCCiste', url: e.teaserUrl, durationSeconds: e.teaserSeconds ?? null, imageUrl: null, until: e.startsAt };
+}
+
 export function songItem(t: Track, artistName?: string): RadioItem | null {
   if (!t.audioUrl || t.broadcastRights !== 'authorized') return null;
   return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null };
@@ -176,15 +216,16 @@ export async function loadRadioCatalog(): Promise<RadioItem[]> {
   const name = (id: string) => artists.find((a) => a.id === id)?.name;
   const songs = tracks.map((t) => songItem(t, name(t.artistId))).filter((x): x is RadioItem => !!x);
   const talks = sermons.map(sermonItem).filter((x): x is RadioItem => !!x);
-  const news = currentNews();
-  return [...(news ? [news] : []), ...songs, ...talks];
+  const news = [currentNews(), currentTeaser()].filter((x): x is RadioItem => !!x);
+  return [...news, ...songs, ...talks];
 }
 
 /** Ce qui est réellement diffusé, selon les réglages et le choix de l'auditeur. */
-export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: RadioMode): RadioItem[] {
+export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: RadioMode, now = new Date()): RadioItem[] {
   const off = new Set(settings.excluded);
   return catalog.filter((i) => {
     if (off.has(i.key)) return false;
+    if (i.until && now.getTime() >= new Date(i.until).getTime()) return false;
     if (i.kind === 'song') return settings.songs && mode !== 'sermons';
     if (i.kind === 'news') return settings.news && mode !== 'songs';
     return settings.sermons && mode !== 'songs';

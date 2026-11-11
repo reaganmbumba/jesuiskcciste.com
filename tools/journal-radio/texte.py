@@ -1,4 +1,4 @@
-"""Lecture d'un texte de journal : lignes « ELLE: … », « LUI: … », « ENSEMBLE: … » et repères « [TAPIS] »."""
+"""Lecture d'un texte de journal : lignes « ELLE: … », « LUI: … », « ENSEMBLE: … », repères « [TAPIS] » et « [EXTRAIT Titre] »."""
 import re
 
 # Corrections de prononciation pour la voix de synthèse (le texte reste lisible tel quel).
@@ -47,6 +47,9 @@ def lire(chemin: str) -> list[dict]:
         if not ligne or ligne.startswith("#"):
             continue
         if ligne.startswith("["):
+            if ligne[1:].upper().startswith("EXTRAIT "):  # [EXTRAIT Titre du chant] : passage d'un chant du site
+                elements.append({"type": "repere", "nom": "EXTRAIT", "chant": ligne.strip("[]")[8:].strip()})
+                continue
             nom = ligne.strip("[]").strip().upper()
             if nom not in REPERES:
                 raise ValueError(f"Repère inconnu : {ligne}")

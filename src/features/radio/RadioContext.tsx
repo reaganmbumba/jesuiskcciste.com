@@ -1,12 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { availableModes, buildRound, fetchRadioSettings, isLiveOn, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
+import type { Emission } from '@/content/emissions';
+import { antenna, availableModes, nextShow, buildRound, fetchRadioSettings, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
 
 const MODE_KEY = 'kcc-radio-mode';
 /** Titres illisibles d'affilée avant d'arrêter la radio (fichier supprimé, réseau coupé…). */
 const MAX_ERRORS = 5;
 /** Après une coupure du flux en direct, on ne le retente qu'après ce délai (un chant passe entre-temps). */
 const LIVE_RETRY_MS = 3 * 60_000;
+/** Fréquence à laquelle on regarde si une émission programmée commence. */
+const SCHEDULE_TICK_MS = 20_000;
 
 interface RadioValue {
   /** Le catalogue est chargé (avant : rien n'est connu). */
@@ -23,6 +26,8 @@ interface RadioValue {
   callUrl: string | null;
   /** L'auditeur écoute l'émission en direct. */
   onLive: boolean;
+  /** Prochaine émission programmée (dans les 24 h), pour l'annoncer. */
+  upcomingShow: Emission | null;
   mode: RadioMode;
   modes: RadioMode[];
   /** Ce que diffuse le mode choisi. */
@@ -77,7 +82,14 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const liveFailedAt = useRef(0);
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
-  const liveOn = isLiveOn(radio.live);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), SCHEDULE_TICK_MS);
+    return () => clearInterval(t);
+  }, []);
+  // Direct de l'administration, sinon émission programmée.
+  const air = antenna(radio.live, undefined, new Date(now));
+  const liveOn = !!air;
   const liveRef = useRef({ on: liveOn, live: radio.live });
   liveRef.current = { on: liveOn, live: radio.live };
   const canLive = () => liveRef.current.on && Date.now() - liveFailedAt.current > LIVE_RETRY_MS;
@@ -90,7 +102,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     markLive(true);
     setTime(0);
     setDuration(0);
-    a.src = liveRef.current.live.url;
+    // recalculé au moment de jouer : une émission programmée reprend là où elle en est
+    a.src = (antenna(liveRef.current.live) ?? liveRef.current.live).url;
     a.play().catch(() => setPlaying(false));
   }, []);
 
@@ -216,7 +229,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [active, liveOn, next, playLive]);
 
   // Écran verrouillé et casque Bluetooth : titre affiché, pause et « suivant ».
-  const current = !active ? null : onLive ? liveItem(radio.live) : queue.list[queue.index] ?? null;
+  const current = !active ? null : onLive ? liveItem(air ?? radio.live) : queue.list[queue.index] ?? null;
   const nextRef = useRef(next);
   nextRef.current = next;
   useEffect(() => {
@@ -232,7 +245,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, onLive, mode: effectiveMode, modes, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(air ?? radio.live).title, callUrl: air?.callUrl || null, onLive, upcomingShow: liveOn ? null : nextShow(undefined, new Date(now)), mode: effectiveMode, modes, items, current,
     upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
     time, duration,
     prepare, start, toggle, next, stop, setMode: changeMode,

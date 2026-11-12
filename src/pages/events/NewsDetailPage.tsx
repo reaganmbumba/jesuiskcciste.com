@@ -20,6 +20,16 @@ import { formatDate } from '@/utils/format';
 
 /** Une ligne courte entièrement en majuscules est un intertitre. */
 const isHeading = (p: string) => p.length > 3 && p.length < 90 && /\p{L}/u.test(p) && p === p.toUpperCase();
+/** Un paragraphe entièrement entre guillemets est une citation. */
+const isQuote = (p: string) => { const t = p.trim(); return t.length > 40 && /^[«“]/.test(t) && /[»”]\s*(\([^)]*\))?\.?$/.test(t); };
+/** Une ligne qui commence par « • » est un élément de liste. */
+const isBullet = (p: string) => p.trim().startsWith('• ');
+function renderParagraph(p: string, i: number) {
+  if (isHeading(p)) return <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3>;
+  if (isQuote(p)) return <blockquote key={i} className="my-5 rounded-r-2xl border-l-4 border-gold-400 bg-gold-50/60 px-5 py-4 font-display text-[1.05rem] italic leading-relaxed text-night">{p}</blockquote>;
+  if (isBullet(p)) return <p key={i} className="!mb-2 flex gap-3 pl-1"><span aria-hidden className="mt-[0.6em] h-1.5 w-1.5 shrink-0 rounded-full bg-gold-500" /><span>{p.trim().slice(2)}</span></p>;
+  return <p key={i}>{p}</p>;
+}
 export default function NewsDetailPage() {
   const { id } = useParams();
   const { profile } = useAuth();
@@ -60,7 +70,7 @@ export default function NewsDetailPage() {
             ? <div className="mb-6 grid gap-3 sm:grid-cols-3">{data.gallery.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="aspect-[3/4] w-full rounded-2xl object-cover" loading="lazy" /></a>)}</div>
             : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
         <Card className={locked ? 'relative overflow-hidden' : undefined}>
-          <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map((p, i) => (isHeading(p) ? <h3 key={i} className="!mt-7 text-sm font-bold tracking-wide text-night">{p}</h3> : <p key={i}>{p}</p>))}</CardBody>
+          <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map(renderParagraph)}</CardBody>
           {locked && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" aria-hidden />}
         </Card>
         {locked && reader.data && <MatriculeGate status={reader.data} onUnlocked={reader.reload} />}

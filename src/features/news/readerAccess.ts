@@ -17,9 +17,9 @@ export type ReaderStatus = 'ok' | 'autre_appareil' | 'matricule_requis' | 'non_v
 const DEVICE_KEY = 'kcc.reader.device';
 const DEMO_CLAIM_KEY = 'kcc.reader.demo';
 
-/** Un communiqué est donné à tout le monde, en entier. */
+/** Un communiqué (ou une « page rose » d’hommage) est donné à tout le monde, en entier. */
 export function isPublicArticle(a: Pick<Announcement, 'category' | 'title'>): boolean {
-  return /communiq|announcement:|comunicado/i.test(`${a.category} ${a.title}`);
+  return /communiq|announcement:|comunicado|page rose|pink page|página rosa/i.test(`${a.category} ${a.title}`);
 }
 
 /** Nombre de paragraphes lisibles sans matricule. */

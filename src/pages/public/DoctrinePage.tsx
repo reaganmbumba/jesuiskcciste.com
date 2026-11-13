@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, CalendarDays, Camera, Building2, Landmark, ScrollText, Star } from 'lucide-react';
+import { BookOpen, CalendarDays, Camera, Download, Building2, Landmark, ScrollText, Star } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -123,8 +123,11 @@ export default function DoctrinePage() {
               <div className="prose-kcc">{oracle.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div>
               <div className="mt-4 flex flex-wrap gap-1.5">{oracle.attributes.map((a) => <Badge key={a}>{a}</Badge>)}</div>
               <Link to="/actualites/edito-ann-oracle-lolaka-base-biblique" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-gold-700 hover:underline">
-                <BookOpen className="h-4 w-4" />{tx('Lire la base biblique de l’Oracle (Lolaka, en lingala)', 'Read the biblical basis of the Oracle (Lolaka, in Lingala)', 'Ler a base bíblica do Oráculo (Lolaka, em lingala)')}
+                <BookOpen className="h-4 w-4 shrink-0" />{tx('Lire la base biblique de l’Oracle (Lolaka, en lingala)', 'Read the biblical basis of the Oracle (Lolaka, in Lingala)', 'Ler a base bíblica do Oráculo (Lolaka, em lingala)')}
               </Link>
+              <a href="/livres/bases-bibliques-oracle-15-avril.pdf" download="Les-bases-bibliques-de-l-Oracle-du-15-avril-Reagan-MBUMBA.pdf" className="mt-3 flex items-center gap-2 text-sm font-semibold text-gold-700 hover:underline">
+                <Download className="h-4 w-4 shrink-0" />{tx('Télécharger le livre « Les bases bibliques de l’Oracle du 15 avril » (PDF)', 'Download the book “Les bases bibliques de l’Oracle du 15 avril” (PDF, in French)', 'Descarregar o livro «Les bases bibliques de l’Oracle du 15 avril» (PDF, em francês)')}
+              </a>
             </CardBody>
           </Card>
           <Card>

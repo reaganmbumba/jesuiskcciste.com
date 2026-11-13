@@ -32,9 +32,10 @@ export function currentLocale(): Locale {
 
 const at = (iso: string) => new Date(iso).toISOString();
 
-const ANNOUNCEMENTS: { id: string; date: string; category: L; title: L; summary: L; content: L; image: string; video?: string; gallery?: string[]; pinned?: boolean; always?: boolean }[] = [
+const ANNOUNCEMENTS: { id: string; date: string; category: L; title: L; summary: L; content: L; image: string; video?: string; gallery?: string[]; download?: { url: string; name: string; label: L }; pinned?: boolean; always?: boolean }[] = [
   {
     id: 'oracle-lolaka-base-biblique', date: '2026-11-13T15:30:00Z', pinned: true, always: true, image: '/images/actualites/oracle-lolaka-base-biblique.jpg',
+    download: { url: '/livres/bases-bibliques-oracle-15-avril.pdf', name: 'Les-bases-bibliques-de-l-Oracle-du-15-avril-Reagan-MBUMBA.pdf', label: L('Télécharger le livre illustré « Les bases bibliques de l’Oracle du 15 avril » (PDF, 20 pages, en français)', 'Download the illustrated book “Les bases bibliques de l’Oracle du 15 avril” (PDF, 20 pages, in French)', 'Descarregar o livro ilustrado «Les bases bibliques de l’Oracle du 15 avril» (PDF, 20 páginas, em francês)') },
     category: L('Enseignement', 'Teaching', 'Ensino'),
     title: L("Lolaka : base biblique de l’Oracle du 15 avril 2003", "Lolaka: the biblical basis of the Oracle of 15 April 2003", "Lolaka: a base bíblica do Oráculo de 15 de abril de 2003"),
     summary: L("Oracle ezali nini na Biblia ? Basakoli ya solo mpe ya lokuta, Yehezekele, Deteronome, Yilimia, mpe lolaka oyo Yawe apesaki Mosakoli DIZOLELE le 15 avril 2003. Texte en lingala.", "What is an oracle in the Bible? True and false prophets, Ezekiel, Deuteronomy, Jeremiah, and the oracle the Eternal gave the Prophet DIZOLELE on 15 April 2003. Text in Lingala.", "O que é um oráculo na Bíblia? Profetas verdadeiros e falsos, Ezequiel, Deuteronómio, Jeremias e o oráculo que o Eterno deu ao Profeta DIZOLELE a 15 de abril de 2003. Texto em lingala."),
@@ -339,7 +340,7 @@ export const editorialLiveAnnouncements = (locale = currentLocale()): Announceme
 function toAnnouncements(list: typeof ANNOUNCEMENTS, locale: Locale): Announcement[] {
   return list.map((a) => ({
     id: id(`ann-${a.id}`), title: a.title[locale], summary: a.summary[locale], content: a.content[locale], author: 'JE SUIS KCCiste',
-    category: a.category[locale], publishedAt: at(a.date), status: 'published', audience: 'public', pinned: !!a.pinned, imageUrl: a.image, videoUrl: a.video ?? null, gallery: a.gallery,
+    category: a.category[locale], publishedAt: at(a.date), status: 'published', audience: 'public', pinned: !!a.pinned, imageUrl: a.image, videoUrl: a.video ?? null, gallery: a.gallery, download: a.download && { url: a.download.url, name: a.download.name, label: a.download.label[locale] },
   }));
 }
 

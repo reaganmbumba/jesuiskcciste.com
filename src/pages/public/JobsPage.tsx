@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, Building2, CalendarClock, ExternalLink, Flame, MapPin, Search, ShieldAlert, Users } from 'lucide-react';
 import { PageHeader, SectionHeading } from '@/components/ui/Misc';
@@ -10,6 +10,8 @@ import { formatDate } from '@/utils/format';
 import { CONTRACT_LABELS, JOBS_WHATSAPP_URL, SOURCE_LINKS, applyHref, jobShareText, translateTerms, useCommunityOffers, useDailyJobs, type DailyJob } from '@/features/jobs/jobs';
 import type { JobOffer } from '@/types';
 import { TRADES, jobTrades } from '@/features/jobs/trades';
+import { openFeaturedOffers } from '@/features/jobs/featured';
+import { FeaturedOfferCard } from '@/features/jobs/FeaturedOfferCard';
 
 type Filter = 'all' | 'rdc' | 'angola';
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -58,6 +60,11 @@ export default function JobsPage() {
   const { profile } = useAuth();
   const daily = useDailyJobs();
   const community = useCommunityOffers();
+  const featured = useMemo(() => openFeaturedOffers(), []);
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 150);
+  }, []);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [trade, setTrade] = useState<string | null>(null);
@@ -118,6 +125,15 @@ export default function JobsPage() {
           </div>
         </div>
       </section>
+
+      {featured.length > 0 && (
+        <section className="container-page pb-10">
+          <SectionHeading eyebrow={tx('À la une', 'Featured', 'Em destaque')} title={tx('Avis de recrutement', 'Recruitment notices', 'Avisos de recrutamento')} />
+          <div className="space-y-8">
+            {featured.map((o) => <FeaturedOfferCard key={o.id} o={o} />)}
+          </div>
+        </section>
+      )}
 
       {(community.data?.length ?? 0) > 0 && (
         <section className="container-page pb-6">

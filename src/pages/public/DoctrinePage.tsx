@@ -122,6 +122,9 @@ export default function DoctrinePage() {
               <blockquote className="my-5 border-l-4 border-gold pl-4 font-display text-xl italic text-night/85">{oracle.quote}</blockquote>
               <div className="prose-kcc">{oracle.paragraphs.map((p, i) => <p key={i}>{p}</p>)}</div>
               <div className="mt-4 flex flex-wrap gap-1.5">{oracle.attributes.map((a) => <Badge key={a}>{a}</Badge>)}</div>
+              <Link to="/actualites/edito-ann-oracle-lolaka-base-biblique" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-gold-700 hover:underline">
+                <BookOpen className="h-4 w-4" />{tx('Lire la base biblique de l’Oracle (Lolaka, en lingala)', 'Read the biblical basis of the Oracle (Lolaka, in Lingala)', 'Ler a base bíblica do Oráculo (Lolaka, em lingala)')}
+              </Link>
             </CardBody>
           </Card>
           <Card>

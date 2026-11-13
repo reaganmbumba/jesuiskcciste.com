@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft, Download, Lock } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { ShareButtons } from '@/components/common/ShareButtons';
 import { Card, CardBody } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/States';
 import { PageLoader } from '@/components/ui/Spinner';
-import { ButtonLink } from '@/components/ui/Button';
+import { ButtonLink, buttonClass } from '@/components/ui/Button';
 import { useAsync } from '@/hooks/useAsync';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ArticleComments } from '@/features/news/ArticleComments';
@@ -69,6 +69,11 @@ export default function NewsDetailPage() {
           : data.gallery?.length
             ? <div className="mb-6 grid gap-3 sm:grid-cols-3">{data.gallery.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="aspect-[3/4] w-full rounded-2xl object-cover" loading="lazy" /></a>)}</div>
             : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
+        {data.download && (
+          <a href={data.download.url} download={data.download.name} className={buttonClass('primary', 'md', 'mb-6 w-full !justify-start text-left !whitespace-normal')}>
+            <Download className="h-5 w-5 shrink-0" aria-hidden />{data.download.label}
+          </a>
+        )}
         <Card className={locked ? 'relative overflow-hidden' : undefined}>
           <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map(renderParagraph)}</CardBody>
           {locked && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" aria-hidden />}

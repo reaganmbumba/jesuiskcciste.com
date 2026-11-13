@@ -99,6 +99,8 @@ export interface Announcement {
   videoUrl?: string | null;
   /** Photos supplémentaires affichées sous l'article. */
   gallery?: string[];
+  /** Fichier à télécharger (livre PDF…), contenu de base uniquement. */
+  download?: { url: string; name: string; label: string };
   author: string;
   category: string;
   publishedAt: ISODate;

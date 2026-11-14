@@ -518,6 +518,8 @@ export interface Livestream {
   endedAt?: string | null;
   /** Session du relais vidéo quand le direct vient du studio du site (sans YouTube). */
   rtcSession?: string | null;
+  /** Page du site liée au direct (communiqué, article), affichée en bouton sous le lecteur. */
+  articleUrl?: string | null;
   createdAt?: string;
 }
 

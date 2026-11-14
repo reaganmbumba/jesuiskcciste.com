@@ -121,6 +121,11 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
             : live.youtubeId ? <><BellRing className="h-4 w-4" aria-hidden />{tx('Me le rappeler sur YouTube', 'Remind me on YouTube', 'Lembrar-me no YouTube')}</>
             : <><ExternalLink className="h-4 w-4" aria-hidden />{tx('Ouvrir la chaîne', 'Open the channel', 'Abrir o canal')}</>}
         </a>}
+        {live.articleUrl && (
+          <Link to={live.articleUrl} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">
+            {tx('Lire le communiqué', 'Read the announcement', 'Ler o comunicado')} <ArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+        )}
         <YouTubeSubscribeButton size="sm" />
         {showPageLink && (
           <Link to="/direct" className="inline-flex items-center justify-center gap-1 text-sm font-semibold text-gold-300 hover:underline sm:ml-auto">

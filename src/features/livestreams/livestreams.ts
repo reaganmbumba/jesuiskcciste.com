@@ -154,6 +154,11 @@ export function liveEmbedUrl(l: Pick<Livestream, 'youtubeId'>): string {
     : `https://www.youtube.com/embed/live_stream?channel=${YOUTUBE_CHANNEL_ID}&playsinline=1`;
 }
 
+/** Miniature YouTube du direct (aperçu des partages) ; sans vidéo précise : null (image du site). */
+export function liveThumbUrl(l: Pick<Livestream, 'youtubeId'>): string | null {
+  return l.youtubeId ? `https://i.ytimg.com/vi/${l.youtubeId}/hqdefault.jpg` : null;
+}
+
 /** Lien « Regarder sur YouTube » (et « Me le rappeler » avant le début). */
 export function liveWatchUrl(l: Pick<Livestream, 'youtubeId'>): string {
   return l.youtubeId ? youtubeWatchUrl(l.youtubeId) : `${youtubeChannelUrl().replace(/\/$/, '')}/live`;

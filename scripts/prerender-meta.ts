@@ -21,6 +21,7 @@ import { galleryPhotos, photoKey } from '@/content/galerie';
 import { DEBATE_TOPICS } from '@/content/debats';
 import { CHALLENGES } from '@/content/challenges';
 import { APOSTLE_BIOGRAPHIES } from '@/content/apotres-biographies';
+import { featuredLivestream, liveThumbUrl, PINNED_LIVESTREAMS } from '@/features/livestreams/livestreams';
 
 const SITE = 'https://jesuiskcciste.com';
 const NAME = 'JE SUIS KCCiste';
@@ -140,7 +141,16 @@ render('/paroles-du-prophete', { title: 'Paroles du Prophète', description: '20
 render('/jeux/trois-signes', { title: '🎮 Le jeu des trois signes KCC', description: 'Échangez les signes Nkanda, Wambote et Wampa pour écrire K-C-C : chaque KCC s’écrase, rapporte des points et découvre un mot de la foi, un nom biblique ou un attribut de l’Éternel.', image: '/images/jeux/trois-signes-partage.jpg' });
 count += 1;
 
+// Page Direct : quand un direct du code est en cours, à venir ou tout récent, le lien
+// partagé montre son titre et l'image de la vidéo YouTube (et non l'image du site).
+const pinnedLive = featuredLivestream(PINNED_LIVESTREAMS);
+if (pinnedLive) {
+  render('/direct', { title: `🔴 ${pinnedLive.title}`, description: pinnedLive.description || PAGES['/direct'][1], image: liveThumbUrl(pinnedLive) ?? undefined });
+  count += 1;
+}
+
 for (const [path, [title, description]] of Object.entries(PAGES)) {
+  if (path === '/direct' && pinnedLive) continue;
   render(path, { title, description, image: PAGE_IMAGES[path] || undefined });
   count += 1;
 }

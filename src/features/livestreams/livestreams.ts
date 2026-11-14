@@ -46,8 +46,8 @@ const demoLivestreams: Livestream[] = [
 export const PINNED_LIVESTREAMS: Livestream[] = [
   {
     // Lien envoyé par Reagan le 14/11/2026 : https://www.youtube.com/live/aGpLLzNS9mQ
-    id: 'yt-aGpLLzNS9mQ', title: 'Culte en direct sur Je suis KCCiste',
-    description: 'Suivez le direct ici sur le site ou sur notre chaîne YouTube. Partagez le lien avec les frères et sœurs !',
+    id: 'yt-aGpLLzNS9mQ', title: 'Deuil : cérémonie en direct',
+    description: 'La communauté est en deuil. Suivez la cérémonie en direct ici sur le site ou sur notre chaîne YouTube, et unissons-nous dans la prière avec la famille éprouvée.',
     startsAt: '2026-11-14T09:00:00Z', durationMinutes: 360, youtubeId: 'aGpLLzNS9mQ', isCancelled: false, createdAt: '2026-11-14T09:54:00Z',
   },
 ];
@@ -152,6 +152,11 @@ export function liveEmbedUrl(l: Pick<Livestream, 'youtubeId'>): string {
   return l.youtubeId
     ? `https://www.youtube-nocookie.com/embed/${l.youtubeId}?rel=0&modestbranding=1&playsinline=1`
     : `https://www.youtube.com/embed/live_stream?channel=${YOUTUBE_CHANNEL_ID}&playsinline=1`;
+}
+
+/** Miniature YouTube du direct (aperçu des partages) ; sans vidéo précise : null (image du site). */
+export function liveThumbUrl(l: Pick<Livestream, 'youtubeId'>): string | null {
+  return l.youtubeId ? `https://i.ytimg.com/vi/${l.youtubeId}/hqdefault.jpg` : null;
 }
 
 /** Lien « Regarder sur YouTube » (et « Me le rappeler » avant le début). */

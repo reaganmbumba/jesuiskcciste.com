@@ -9,7 +9,7 @@ import { cn, formatDate, formatTime } from '@/utils/format';
 import type { Livestream } from '@/types';
 import { LiveChat } from './LiveChat';
 import { StudioPlayer } from './StudioPlayer';
-import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveWatchUrl, useLiveSignal, useNow } from './livestreams';
+import { countdownParts, featuredLivestream, liveEmbedUrl, liveEnd, listLivestreams, liveStatus, liveThumbUrl, liveWatchUrl, useLiveSignal, useNow } from './livestreams';
 
 const SITE_LIVE_URL = 'https://jesuiskcciste.com/direct';
 
@@ -128,7 +128,7 @@ export function LiveSpotlight({ live, headingId, showPageLink = false, chat = fa
           </Link>
         )}
       </div>
-      <ShareButtons tone="dark" size="sm" showLabel={false} url={SITE_LIVE_URL} title={isLive ? tx(`En direct : ${live.title}`, `Live now: ${live.title}`, `Em direto: ${live.title}`) : `${live.title} · ${when}`} className="mt-4" />
+      <ShareButtons tone="dark" size="sm" showLabel={false} url={SITE_LIVE_URL} image={liveThumbUrl(live)} title={isLive ? tx(`En direct : ${live.title}`, `Live now: ${live.title}`, `Em direto: ${live.title}`) : `${live.title} · ${when}`} className="mt-4" />
     </section>
   );
 }

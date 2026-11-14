@@ -46,8 +46,9 @@ const demoLivestreams: Livestream[] = [
 export const PINNED_LIVESTREAMS: Livestream[] = [
   {
     // Lien envoyé par Reagan le 14/11/2026 : https://www.youtube.com/live/aGpLLzNS9mQ
-    id: 'yt-aGpLLzNS9mQ', title: 'Deuil : cérémonie en direct',
-    description: 'La communauté est en deuil. Suivez la cérémonie en direct ici sur le site ou sur notre chaîne YouTube, et unissons-nous dans la prière avec la famille éprouvée.',
+    id: 'yt-aGpLLzNS9mQ', title: 'Deuil de Maman Diaconesse MALONDA MVUMBI Ruth : en direct',
+    description: 'Paroisse de Mbungu, Boma. Exposition et recueillement à la Salle Mont Sinaï, puis levée du corps et enterrement au cimetière Ciel Ouvert. Suivez la cérémonie en direct et unissons-nous dans la prière avec la Famille DINASIA.',
+    articleUrl: '/actualites/edito-ann-communique-deces-malonda-mvumbi-ruth',
     startsAt: '2026-11-14T09:00:00Z', durationMinutes: 360, youtubeId: 'aGpLLzNS9mQ', isCancelled: false, createdAt: '2026-11-14T09:54:00Z',
   },
 ];

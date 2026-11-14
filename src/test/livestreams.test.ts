@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countdownParts, featuredLivestream, liveEmbedUrl, liveStatus, liveWatchUrl, parseYouTubeId, splitLivestreams } from '@/features/livestreams/livestreams';
+import { countdownParts, featuredLivestream, liveEmbedUrl, PINNED_LIVESTREAMS, withPinnedLivestreams, liveStatus, liveWatchUrl, parseYouTubeId, splitLivestreams } from '@/features/livestreams/livestreams';
 import type { Livestream } from '@/types';
 
 const now = new Date('2026-10-25T10:00:00Z');
@@ -21,6 +21,21 @@ describe('Directs des cultes', () => {
     expect(featuredLivestream([live('demain', '2026-10-26T10:00:00Z'), live('hier', '2026-10-24T10:00:00Z')], now)?.id).toBe('demain');
     expect(featuredLivestream([live('trop-loin', '2027-03-01T10:00:00Z')], now)).toBeNull();
     expect(featuredLivestream([], now)).toBeNull();
+  });
+
+  it('garde la rediffusion récente en avant 3 jours', () => {
+    const replay = live('replay', '2026-10-24T10:00:00Z', { youtubeId: 'aGpLLzNS9mQ' });
+    expect(featuredLivestream([replay], now)?.id).toBe('replay');
+    expect(featuredLivestream([live('sans-video', '2026-10-24T10:00:00Z')], now)).toBeNull();
+    expect(featuredLivestream([replay], new Date('2026-10-28T10:00:00Z'))).toBeNull();
+  });
+
+  it('ajoute le direct du 14/11 sans doublon', () => {
+    expect(PINNED_LIVESTREAMS[0].youtubeId).toBe(parseYouTubeId('https://www.youtube.com/live/aGpLLzNS9mQ?is=L3eQXCXVUfKNBNRw'));
+    expect(withPinnedLivestreams([]).map((l) => l.youtubeId)).toContain('aGpLLzNS9mQ');
+    const admin = live('admin', '2026-11-14T10:00:00Z', { youtubeId: 'aGpLLzNS9mQ' });
+    expect(withPinnedLivestreams([admin]).map((l) => l.id)).toEqual(['admin']);
+    expect(featuredLivestream(PINNED_LIVESTREAMS, new Date('2026-11-14T10:00:00Z'))?.youtubeId).toBe('aGpLLzNS9mQ');
   });
 
   it('range les directs à venir et les rediffusions', () => {

@@ -37,6 +37,27 @@ const demoLivestreams: Livestream[] = [
   },
 ];
 
+/**
+ * Directs ajoutés directement dans le code (sans passer par /admin/directs),
+ * pour qu'ils apparaissent même si la table Supabase n'est pas prête.
+ * Ils s'ajoutent à ceux de la base ; si l'admin programme la même vidéo,
+ * c'est la version de l'admin qui l'emporte.
+ */
+export const PINNED_LIVESTREAMS: Livestream[] = [
+  {
+    // Lien envoyé par Reagan le 14/11/2026 : https://www.youtube.com/live/aGpLLzNS9mQ
+    id: 'yt-aGpLLzNS9mQ', title: 'Culte en direct sur Je suis KCCiste',
+    description: 'Suivez le direct ici sur le site ou sur notre chaîne YouTube. Partagez le lien avec les frères et sœurs !',
+    startsAt: '2026-11-14T09:00:00Z', durationMinutes: 360, youtubeId: 'aGpLLzNS9mQ', isCancelled: false, createdAt: '2026-11-14T09:54:00Z',
+  },
+];
+
+/** Ajoute les directs du code à ceux de la base, sans doublon (même vidéo YouTube). */
+export function withPinnedLivestreams(list: Livestream[], pinned: Livestream[] = PINNED_LIVESTREAMS): Livestream[] {
+  const known = new Set(list.map((l) => l.youtubeId).filter(Boolean));
+  return [...list, ...pinned.filter((p) => !known.has(p.youtubeId))];
+}
+
 export const livestreamsRepo: Repository<Livestream> = repository<Livestream>('livestreams', demoLivestreams, 'live');
 
 export type LiveStatus = 'cancelled' | 'upcoming' | 'live' | 'ended';
@@ -65,13 +86,19 @@ export function splitLivestreams(list: Livestream[], now = new Date()): { upcomi
   };
 }
 
-/** Le direct à mettre en avant : celui en cours, sinon le prochain (dans les 60 jours). */
+/** Une rediffusion reste mise en avant 3 jours après la fin, s'il n'y a ni direct en cours ni direct à venir. */
+export const REPLAY_FEATURE_DAYS = 3;
+
+/** Le direct à mettre en avant : celui en cours, sinon le prochain (dans les 60 jours), sinon la rediffusion récente. */
 export function featuredLivestream(list: Livestream[], now = new Date()): Livestream | null {
   const active = list.filter((l) => !l.isCancelled).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   const live = active.find((l) => liveStatus(l, now) === 'live');
   if (live) return live;
   const horizon = now.getTime() + HOME_HORIZON_DAYS * 86400000;
-  return active.find((l) => liveStatus(l, now) === 'upcoming' && new Date(l.startsAt).getTime() <= horizon) ?? null;
+  const next = active.find((l) => liveStatus(l, now) === 'upcoming' && new Date(l.startsAt).getTime() <= horizon);
+  if (next) return next;
+  const since = now.getTime() - REPLAY_FEATURE_DAYS * 86400000;
+  return [...active].reverse().find((l) => l.youtubeId && liveStatus(l, now) === 'ended' && liveEnd(l).getTime() >= since) ?? null;
 }
 
 /** Tant que le SQL n'est pas collé dans Supabase, la rubrique est simplement vide. */
@@ -83,9 +110,9 @@ function missingTable(e: unknown): boolean {
 
 export async function listLivestreams(): Promise<Livestream[]> {
   try {
-    return await livestreamsRepo.all();
+    return withPinnedLivestreams(await livestreamsRepo.all());
   } catch (e) {
-    if (missingTable(e)) return [];
+    if (missingTable(e)) return withPinnedLivestreams([]);
     throw e;
   }
 }

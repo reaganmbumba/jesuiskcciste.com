@@ -139,6 +139,8 @@ render('/livre-kccisme', { title: 'Le KCCisme : le livre de la doctrine', descri
 count += 1;
 render('/paroles-du-prophete', { title: 'Paroles du Prophète', description: '20 paroles tirées du livre « Mon Appel » du Prophète DIZOLELE-MPUNGU WAFIDUSWA Isaac, avec l’explication de chacune et l’image à partager sur WhatsApp.', image: '/images/paroles-prophete/yt-01.jpg' });
 render('/jeux/trois-signes', { title: '🎮 Le jeu des trois signes KCC', description: 'Échangez les signes Nkanda, Wambote et Wampa pour écrire K-C-C : chaque KCC s’écrase, rapporte des points et découvre un mot de la foi, un nom biblique ou un attribut de l’Éternel.', image: '/images/jeux/trois-signes-partage.jpg' });
+render('/jeux/trois-balles', { title: '🎮 Le jeu des trois balles KCC', description: 'Rangez les balles K, C et C dans les tubes : dès qu’un tube forme KCC (Nkanda, Wambote, Wampa), il s’écrase et rapporte des points. Combien de niveaux réussirez-vous ?', image: '/images/jeux/trois-balles-partage.jpg' });
+render('/jeux', { title: 'Jeux pour apprendre', description: 'Des jeux autour des trois signes prophétiques KCC : le jeu des trois balles et le jeu des trois signes.', image: '/images/jeux/trois-balles-partage.jpg' });
 count += 1;
 
 // Page Direct : quand un direct du code est en cours, à venir ou tout récent, le lien

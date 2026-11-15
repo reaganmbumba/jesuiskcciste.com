@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { bestPerPlayer, readPlayer, resetDemoScores, saveScore, savePlayer, topScores, validPlayer } from '@/features/games/scores';
+import { bestPerPlayer, furthest, getProgress, readLocalProgress, readPlayer, resetDemoScores, resumeProgress, saveLocalProgress, saveScore, savePlayer, topScores, validPlayer } from '@/features/games/scores';
 
 describe('scores en ligne des jeux', () => {
   beforeEach(() => { resetDemoScores(); localStorage.clear(); });
@@ -34,5 +34,20 @@ describe('scores en ligne des jeux', () => {
     const top = await topScores('trois-balles');
     expect(top).toHaveLength(1);
     expect(top[0]).toMatchObject({ playerName: 'Reagan', parish: 'Muanda', score: 450, level: 3 });
+  });
+
+  it('reprend la partie là où le joueur s’est arrêté', async () => {
+    const me = { name: 'Reagan', parish: 'Muanda' };
+    expect(await resumeProgress('trois-balles', me, false)).toEqual({ score: 0, level: 0 });
+    // Joué sur un autre téléphone : 3 niveaux réussis, 600 points.
+    await saveScore('trois-balles', me, 600, 3);
+    expect(await getProgress('trois-balles', { name: ' reagan ', parish: 'MUANDA' })).toEqual({ score: 600, level: 3 });
+    expect(await resumeProgress('trois-balles', me, true)).toEqual({ score: 600, level: 3 });
+    // Sur ce téléphone, la partie locale est plus avancée : on la garde.
+    saveLocalProgress('trois-balles', me, { score: 900, level: 5 });
+    expect(await resumeProgress('trois-balles', me, false)).toEqual({ score: 900, level: 5 });
+    // La progression locale appartient au joueur : un autre nom ne la reprend pas.
+    expect(readLocalProgress('trois-balles', { name: 'Autre', parish: 'Muanda' })).toBeNull();
+    expect(furthest({ score: 10, level: 2 }, { score: 5, level: 3 })).toEqual({ score: 5, level: 3 });
   });
 });

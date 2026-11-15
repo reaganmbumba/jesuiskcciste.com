@@ -3,7 +3,7 @@ import { ArrowRight, Lightbulb, Plus, RotateCcw, Sparkles, Star, Undo2 } from 'l
 import { Link } from 'react-router-dom';
 import { ViewCount } from '@/features/views/ViewCount';
 import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
-import { saveScore } from '@/features/games/scores';
+import { readLocalProgress, readPlayer, resumeProgress, saveLocalProgress, saveScore, type Progress } from '@/features/games/scores';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { Button } from '@/components/ui/Button';
 import { ShareButtons } from '@/components/common/ShareButtons';
@@ -15,8 +15,6 @@ import {
 } from '@/features/games/threeBalls';
 
 const BEST_KEY = 'kcc-trois-balles-record';
-const LEVEL_KEY = 'kcc-trois-balles-niveau';
-const SCORE_KEY = 'kcc-trois-balles-points';
 const SHARE_IMAGE = '/images/jeux/trois-balles-partage.jpg';
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -53,8 +51,10 @@ type Phase = 'play' | 'won';
 /** « Le jeu des trois balles » : ranger les balles K, C, C dans les tubes pour former KCC de bas en haut. */
 export default function ThreeBallsGamePage() {
   const { tx, pick } = useI18n();
-  const [level, setLevel] = useState(() => readNumber(LEVEL_KEY));
-  const [tubes, setTubes] = useState<Tubes>(() => createLevel(setsForLevel(readNumber(LEVEL_KEY))));
+  // Reprise : la progression gardée pour ce joueur (niveaux réussis et score à ce moment-là).
+  const [initial] = useState<Progress | null>(() => readLocalProgress('trois-balles', readPlayer()));
+  const [level, setLevel] = useState(() => initial?.level ?? 0);
+  const [tubes, setTubes] = useState<Tubes>(() => createLevel(setsForLevel(initial?.level ?? 0)));
   const [start, setStart] = useState<Tubes>(tubes);
   const [history, setHistory] = useState<Tubes[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -63,7 +63,8 @@ export default function ThreeBallsGamePage() {
   const [hint, setHint] = useState<[number, number] | null>(null);
   const [busy, setBusy] = useState(false);
   const [moves, setMoves] = useState(0);
-  const [score, setScore] = useState(() => readNumber(SCORE_KEY));
+  const [score, setScore] = useState(() => initial?.score ?? 0);
+  const [levelStartScore, setLevelStartScore] = useState(() => initial?.score ?? 0);
   const [player, setPlayer] = usePlayer();
   const [editPlayer, setEditPlayer] = useState(false);
   const [boardKey, setBoardKey] = useState(0);
@@ -79,7 +80,6 @@ export default function ThreeBallsGamePage() {
   const stars = moves <= par ? 3 : moves <= Math.ceil(par * 1.5) ? 2 : 1;
 
   useEffect(() => { if (score > best) { setBest(score); saveNumber(BEST_KEY, score); } }, [score, best]);
-  useEffect(() => { saveNumber(SCORE_KEY, score); }, [score]);
 
   // Niveau réussi : le score est enregistré en ligne pour le classement.
   useEffect(() => {
@@ -88,10 +88,11 @@ export default function ThreeBallsGamePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
-  const startLevel = useCallback((next: number) => {
+  const startLevel = useCallback((next: number, keepScore: number) => {
     const t = createLevel(setsForLevel(next));
     setLevel(next);
-    saveNumber(LEVEL_KEY, next);
+    setScore(keepScore);
+    setLevelStartScore(keepScore);
     setTubes(t);
     setStart(t);
     setHistory([]);
@@ -103,7 +104,18 @@ export default function ThreeBallsGamePage() {
     setExtraTube(false);
   }, []);
 
+  // La progression est gardée dans le téléphone à chaque début de niveau.
+  useEffect(() => { saveLocalProgress('trois-balles', player, { level, score: levelStartScore }); }, [player, level, levelStartScore]);
+
+  // Premier passage sur ce téléphone avec ce nom : on reprend la partie enregistrée en ligne.
+  useEffect(() => {
+    if (!player || initial) return;
+    void resumeProgress('trois-balles', player, true).then((r) => { if (r.level > 0 || r.score > 0) startLevel(r.level, r.score); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const restart = () => {
+    setScore(levelStartScore);
     setTubes(start);
     setExtraTube(false);
     setHistory([]);
@@ -231,7 +243,7 @@ export default function ThreeBallsGamePage() {
                 initial={player}
                 onSave={(p) => {
                   // Nouveau joueur : on repart du niveau 1 avec 0 point.
-                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) { setScore(0); startLevel(0); }
+                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) { startLevel(0, 0); void resumeProgress('trois-balles', p, false).then((r) => { if (r.level > 0 || r.score > 0) startLevel(r.level, r.score); }); }
                   setPlayer(p);
                   setEditPlayer(false);
                 }}
@@ -313,7 +325,7 @@ export default function ThreeBallsGamePage() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold-700">{pick(FAMILY_LABEL[lesson.family])} · {pick(lesson.word)}</p>
                       <p className="mt-1 text-sm leading-relaxed text-ink/80">{pick(lesson.lesson)}</p>
                     </div>
-                    <Button variant="gold" className="mt-4 w-full" icon={<ArrowRight className="h-4 w-4" aria-hidden />} onClick={() => startLevel(level + 1)}>
+                    <Button variant="gold" className="mt-4 w-full" icon={<ArrowRight className="h-4 w-4" aria-hidden />} onClick={() => startLevel(level + 1, score)}>
                       {tx('Niveau suivant', 'Next level', 'Nível seguinte')}
                     </Button>
                   </div>

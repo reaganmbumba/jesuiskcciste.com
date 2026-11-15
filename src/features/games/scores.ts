@@ -72,5 +72,60 @@ export async function topScores(game: GameId, limit = 5): Promise<LeaderboardRow
   return camelize<LeaderboardRow[]>(data ?? []);
 }
 
+/** Où reprendre : score cumulé et nombre de niveaux réussis lors du dernier enregistrement. */
+export interface Progress { score: number; level: number }
+
+/** Dernière progression enregistrée en ligne pour ce joueur (nom + paroisse), ou null. */
+export async function getProgress(game: GameId, player: Player): Promise<Progress | null> {
+  const p = cleanPlayer(player);
+  if (!validPlayer(p)) return null;
+  if (isDemoMode || !supabase) {
+    const mine = demoScores.filter((r) => r.game === game && r.playerName.toLowerCase() === p.name.toLowerCase() && r.parish.toLowerCase() === p.parish.toLowerCase());
+    const last = mine[mine.length - 1];
+    return last ? { score: last.score, level: last.level } : null;
+  }
+  const { data, error } = await supabase.rpc('game_progress', { p_game: game, p_name: p.name, p_parish: p.parish });
+  if (error) throw error;
+  const row = (data as { score: number; level: number }[] | null)?.[0];
+  return row ? { score: row.score, level: row.level } : null;
+}
+
+/** Progression gardée dans le téléphone, liée au joueur. */
+const progressKey = (game: GameId) => `kcc-${game}-progression`;
+const samePlayer = (a: Player, b: Player) => a.name.toLowerCase() === b.name.toLowerCase() && a.parish.toLowerCase() === b.parish.toLowerCase();
+
+export function readLocalProgress(game: GameId, player: Player | null): Progress | null {
+  if (!player) return null;
+  try {
+    const v = JSON.parse(localStorage.getItem(progressKey(game)) ?? 'null') as (Progress & Player) | null;
+    if (!v || !samePlayer(v, cleanPlayer(player))) return null;
+    return { score: Math.max(0, Number(v.score) || 0), level: Math.max(0, Number(v.level) || 0) };
+  } catch { return null; }
+}
+
+export function saveLocalProgress(game: GameId, player: Player | null, progress: Progress) {
+  if (!player) return;
+  try { localStorage.setItem(progressKey(game), JSON.stringify({ ...cleanPlayer(player), ...progress })); } catch { /* navigation privée */ }
+}
+
+/** La progression la plus avancée entre le téléphone et l'enregistrement en ligne. */
+export function furthest(a: Progress | null, b: Progress | null): Progress | null {
+  if (!a) return b;
+  if (!b) return a;
+  return b.level > a.level || (b.level === a.level && b.score > a.score) ? b : a;
+}
+
+/**
+ * Où reprendre la partie de ce joueur. `preferLocal` : au chargement de la page,
+ * la progression du téléphone suffit (elle respecte « Nouvelle partie ») ;
+ * quand le joueur donne son nom, on prend la plus avancée avec celle en ligne.
+ */
+export async function resumeProgress(game: GameId, player: Player, preferLocal: boolean): Promise<Progress> {
+  const local = readLocalProgress(game, player);
+  if (local && preferLocal) return local;
+  const online = await getProgress(game, player).catch(() => null);
+  return furthest(local, online) ?? { score: 0, level: 0 };
+}
+
 /** Pour les tests. */
 export function resetDemoScores() { demoScores = []; }

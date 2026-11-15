@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Medal, Trophy, UserRound } from 'lucide-react';
+import { Medal, Trophy, UserRound, Volume2, VolumeX } from 'lucide-react';
+import { useSound } from './sounds';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Form';
 import { OfficialParishList, OFFICIAL_PARISH_LIST_ID } from '@/components/common/OfficialParishList';
@@ -108,5 +109,16 @@ export function Leaderboard({ game, refreshKey, player }: { game: GameId; refres
         </ol>
       )}
     </div>
+  );
+}
+
+/** Bouton pour couper ou remettre le son des jeux. */
+export function SoundToggle() {
+  const { tx } = useI18n();
+  const { muted, toggle } = useSound();
+  return (
+    <Button variant="outline" size="sm" onClick={toggle} aria-pressed={!muted} icon={muted ? <VolumeX className="h-4 w-4" aria-hidden /> : <Volume2 className="h-4 w-4" aria-hidden />}>
+      {muted ? tx('Son coupé', 'Sound off', 'Som desligado') : tx('Son', 'Sound', 'Som')}
+    </Button>
   );
 }

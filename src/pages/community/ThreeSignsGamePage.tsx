@@ -157,7 +157,7 @@ export default function ThreeSignsGamePage() {
       gained += pts;
       kccs += step.kccCount;
       playSound(i === 0 ? 'crush' : 'combo', i);
-      setPopup({ id: Date.now() + i, text: i > 0 ? `+${pts} ×${i + 1}` : `Kasésé ! +${pts}` });
+      setPopup({ id: Date.now() + i, text: i > 0 ? `+${pts} ×${i + 1}` : `KCC ! +${pts}` });
       await wait(340);
       setCrushing(new Set());
       setFalling(new Set(step.moved.map(([r, c]) => key(r, c))));
@@ -416,7 +416,7 @@ export default function ThreeSignsGamePage() {
               <ul className="mt-4 space-y-1.5 text-sm text-white/75">
                 <li>{tx('• Lisez dans l’ordre : Nkanda, Wambote, Wampa, de gauche à droite ou de haut en bas.', '• Read in order: Nkanda, Wambote, Wampa, left to right or top to bottom.', '• Leia por ordem: Nkanda, Wambote, Wampa, da esquerda para a direita ou de cima para baixo.')}</li>
                 <li>{tx('• Glissez un signe ou touchez deux signes voisins pour les échanger.', '• Swipe a sign or tap two neighbouring signs to swap them.', '• Deslize um sinal ou toque em dois sinais vizinhos para os trocar.')}</li>
-                <li>{tx('• 30 points par KCC (« Kasésé ! »), doublés puis triplés quand ils s’enchaînent.', '• 30 points per KCC, doubled then tripled when they chain.', '• 30 pontos por KCC, duplicados e triplicados em cadeia.')}</li>
+                <li>{tx('• 30 points par KCC, doublés puis triplés quand ils s’enchaînent.', '• 30 points per KCC, doubled then tripled when they chain.', '• 30 pontos por KCC, duplicados e triplicados em cadeia.')}</li>
                 <li>{tx('• Mot découvert : 100 points + 10 par coup restant.', '• Word found: 100 points + 10 per move left.', '• Palavra descoberta: 100 pontos + 10 por jogada restante.')}</li>
               </ul>
               <p className="mt-4 text-xs text-white/50">{tx(`KCC construits : ${kccTotal}`, `KCC built: ${kccTotal}`, `KCC construídos: ${kccTotal}`)}</p>

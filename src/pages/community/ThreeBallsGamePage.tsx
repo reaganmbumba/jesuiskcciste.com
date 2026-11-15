@@ -163,7 +163,7 @@ export default function ThreeBallsGamePage() {
       playSound('crush');
       const pts = crushed.length * POINTS_PER_TUBE;
       setScore((s) => s + pts);
-      setPopup({ id: Date.now(), text: `Kasésé ! +${pts}` });
+      setPopup({ id: Date.now(), text: `KCC ! +${pts}` });
       await wait(480);
       setCrushing([]);
       setTubes(after);
@@ -373,7 +373,7 @@ export default function ThreeBallsGamePage() {
               <ul className="mt-5 space-y-1.5 text-sm text-white/75">
                 <li>{tx('• Touchez un tube pour prendre la balle du haut, puis un autre tube pour la poser.', '• Tap a tube to pick up its top ball, then another tube to drop it.', '• Toque num tubo para pegar na bola de cima e depois noutro tubo para a pousar.')}</li>
                 <li>{tx('• Chaque tube contient 3 balles. Construisez KCC de bas en haut : Nkanda au fond, Wambote au milieu, Wampa en haut.', '• Each tube holds 3 balls. Build KCC from bottom to top: Nkanda at the bottom, Wambote in the middle, Wampa on top.', '• Cada tubo leva 3 bolas. Construa KCC de baixo para cima: Nkanda no fundo, Wambote no meio, Wampa em cima.')}</li>
-                <li>{tx(`• Dès qu’un tube forme KCC (« Kasésé ! »), il s’écrase : +${POINTS_PER_TUBE} points.`, `• As soon as a tube spells KCC (“Kasésé!”), it is crushed: +${POINTS_PER_TUBE} points.`, `• Assim que um tubo forma KCC («Kasésé!»), é esmagado: +${POINTS_PER_TUBE} pontos.`)}</li>
+                <li>{tx(`• Dès qu’un tube forme KCC, il s’écrase : +${POINTS_PER_TUBE} points.`, `• As soon as a tube spells KCC, it is crushed: +${POINTS_PER_TUBE} points.`, `• Assim que um tubo forma KCC, é esmagado: +${POINTS_PER_TUBE} pontos.`)}</li>
                 <li>{tx('• Écrasez tout pour passer au niveau suivant. Pas de chrono, des niveaux sans fin. Moins de coups = plus d’étoiles.', '• Crush everything to reach the next level. No timer, endless levels. Fewer moves = more stars.', '• Esmague tudo para passar ao nível seguinte. Sem cronómetro, níveis sem fim. Menos jogadas = mais estrelas.')}</li>
               </ul>
             </div>

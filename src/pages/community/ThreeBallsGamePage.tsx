@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Lightbulb, Plus, RotateCcw, Sparkles, Star, Undo2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ViewCount } from '@/features/views/ViewCount';
+import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
+import { saveScore } from '@/features/games/scores';
 import { usePageMeta } from '@/hooks/usePageMeta';
 import { Button } from '@/components/ui/Button';
 import { ShareButtons } from '@/components/common/ShareButtons';
@@ -14,6 +16,7 @@ import {
 
 const BEST_KEY = 'kcc-trois-balles-record';
 const LEVEL_KEY = 'kcc-trois-balles-niveau';
+const SCORE_KEY = 'kcc-trois-balles-points';
 const SHARE_IMAGE = '/images/jeux/trois-balles-partage.jpg';
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -60,7 +63,10 @@ export default function ThreeBallsGamePage() {
   const [hint, setHint] = useState<[number, number] | null>(null);
   const [busy, setBusy] = useState(false);
   const [moves, setMoves] = useState(0);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(() => readNumber(SCORE_KEY));
+  const [player, setPlayer] = usePlayer();
+  const [editPlayer, setEditPlayer] = useState(false);
+  const [boardKey, setBoardKey] = useState(0);
   const [best, setBest] = useState(() => readNumber(BEST_KEY));
   const [phase, setPhase] = useState<Phase>('play');
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null);
@@ -73,6 +79,14 @@ export default function ThreeBallsGamePage() {
   const stars = moves <= par ? 3 : moves <= Math.ceil(par * 1.5) ? 2 : 1;
 
   useEffect(() => { if (score > best) { setBest(score); saveNumber(BEST_KEY, score); } }, [score, best]);
+  useEffect(() => { saveNumber(SCORE_KEY, score); }, [score]);
+
+  // Niveau réussi : le score est enregistré en ligne pour le classement.
+  useEffect(() => {
+    if (phase !== 'won' || !player) return;
+    saveScore('trois-balles', player, score, level + 1).then(() => setBoardKey((k) => k + 1)).catch(() => { /* hors ligne : le jeu continue */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const startLevel = useCallback((next: number) => {
     const t = createLevel(setsForLevel(next));
@@ -211,6 +225,19 @@ export default function ThreeBallsGamePage() {
       <section className="container-page py-4 sm:py-10">
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,480px)_1fr] lg:items-start">
           <div className="mx-auto w-full max-w-[480px]">
+            {player && <PlayerBadge player={player} onChange={() => setEditPlayer(true)} />}
+            {(!player || editPlayer) && (
+              <PlayerForm
+                initial={player}
+                onSave={(p) => {
+                  // Nouveau joueur : on repart du niveau 1 avec 0 point.
+                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) { setScore(0); startLevel(0); }
+                  setPlayer(p);
+                  setEditPlayer(false);
+                }}
+                onCancel={player ? () => setEditPlayer(false) : undefined}
+              />
+            )}
             <div className="mb-3 grid grid-cols-4 gap-2 text-center">
               <Stat label={tx('Niveau', 'Level', 'Nível')} value={level + 1} />
               <Stat label={tx('Points', 'Points', 'Pontos')} value={score} />
@@ -311,6 +338,7 @@ export default function ThreeBallsGamePage() {
           </div>
 
           <div className="space-y-5">
+            <Leaderboard game="trois-balles" refreshKey={boardKey} player={player} />
             <div className="rounded-3xl bg-night-900 p-5 text-white shadow-soft">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gold-300"><Sparkles className="h-4 w-4" aria-hidden />{tx('Comment jouer', 'How to play', 'Como jogar')}</p>
               <div className="mt-4 flex items-end justify-center gap-5">

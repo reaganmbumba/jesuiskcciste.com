@@ -1,4 +1,6 @@
 import { ViewCount } from '@/features/views/ViewCount';
+import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
+import { saveScore } from '@/features/games/scores';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Lightbulb, RotateCcw, Sparkles, Trophy, ArrowRight, Shuffle } from 'lucide-react';
 import { usePageMeta } from '@/hooks/usePageMeta';
@@ -68,6 +70,16 @@ export default function ThreeSignsGamePage() {
   useEffect(() => { setRevealed(new Set()); }, [word]);
 
   useEffect(() => { if (score > best) { setBest(score); saveBest(score); } }, [score, best]);
+
+  const [player, setPlayer] = usePlayer();
+  const [editPlayer, setEditPlayer] = useState(false);
+  const [boardKey, setBoardKey] = useState(0);
+  // Fin d'un mot (trouvé ou non) : le score est enregistré en ligne pour le classement.
+  useEffect(() => {
+    if (phase === 'play' || !player) return;
+    saveScore('trois-signes', player, score, level + 1).then(() => setBoardKey((k) => k + 1)).catch(() => { /* hors ligne : le jeu continue */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Indice automatique après 10 secondes sans jouer.
   useEffect(() => {
@@ -227,6 +239,18 @@ export default function ThreeSignsGamePage() {
         <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,440px)_1fr] lg:items-start">
           {/* Plateau */}
           <div className="mx-auto w-full max-w-[440px]">
+            {player && <PlayerBadge player={player} onChange={() => setEditPlayer(true)} />}
+            {(!player || editPlayer) && (
+              <PlayerForm
+                initial={player}
+                onSave={(p) => {
+                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) startLevel(0, 0);
+                  setPlayer(p);
+                  setEditPlayer(false);
+                }}
+                onCancel={player ? () => setEditPlayer(false) : undefined}
+              />
+            )}
             <div className="mb-3 grid grid-cols-3 gap-2 text-center">
               <Stat label={tx('Points', 'Points', 'Pontos')} value={score} />
               <Stat label={tx('Coups', 'Moves', 'Jogadas')} value={moves} warn={moves <= 3 && phase === 'play'} />
@@ -355,8 +379,9 @@ export default function ThreeSignsGamePage() {
             </div>
           </div>
 
-          {/* Règles et partage */}
+          {/* Classement, règles et partage */}
           <div className="space-y-5">
+            <Leaderboard game="trois-signes" refreshKey={boardKey} player={player} />
 
             <div className="rounded-3xl bg-night-900 p-5 text-white shadow-soft">
               <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-gold-300"><Sparkles className="h-4 w-4" aria-hidden />{tx('Les trois signes', 'The three signs', 'Os três sinais')}</p>

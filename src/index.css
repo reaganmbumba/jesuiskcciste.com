@@ -58,3 +58,6 @@
 .kcc-popup { animation: kcc-popup .9s ease-out forwards; }
 .kcc-letter { animation: kcc-letter .4s ease-out; }
 @media (prefers-reduced-motion: reduce) { .kcc-crush, .kcc-fall, .kcc-shake, .kcc-popup, .kcc-letter { animation-duration: .01ms; } }
+/* Jeu des trois balles (/jeux/trois-balles) */
+@keyframes kcc-tube-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(229,198,128,0); } 50% { box-shadow: 0 0 28px 6px rgba(229,198,128,.85); border-color: #E5C680; } }
+.kcc-tube-glow { animation: kcc-tube-glow .5s ease-in-out; }

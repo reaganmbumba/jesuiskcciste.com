@@ -54,6 +54,8 @@ const DebatesPage = lazy(() => import('@/pages/community/DebatesPage'));
 const DebatePage = lazy(() => import('@/pages/community/DebatePage'));
 const ChallengesPage = lazy(() => import('@/pages/community/ChallengesPage'));
 const ThreeSignsGamePage = lazy(() => import('@/pages/community/ThreeSignsGamePage'));
+const ThreeBallsGamePage = lazy(() => import('@/pages/community/ThreeBallsGamePage'));
+const GamesPage = lazy(() => import('@/pages/community/GamesPage'));
 const ChallengePage = lazy(() => import('@/pages/community/ChallengePage'));
 const NewsPage = lazy(() => import('@/pages/events/NewsPage'));
 const NewsDetailPage = lazy(() => import('@/pages/events/NewsDetailPage'));
@@ -204,7 +206,8 @@ export function AppRoutes() {
         <Route path="challenges" element={<ChallengesPage />} />
         <Route path="challenges/:id" element={<ChallengePage />} />
         <Route path="jeux/trois-signes" element={<ThreeSignsGamePage />} />
-        <Route path="jeux" element={<ThreeSignsGamePage />} />
+        <Route path="jeux/trois-balles" element={<ThreeBallsGamePage />} />
+        <Route path="jeux" element={<GamesPage />} />
         <Route path="actualites" element={<NewsPage />} />
         <Route path="actualites/:id" element={<NewsDetailPage />} />
         <Route path="agenda" element={<AgendaPage />} />

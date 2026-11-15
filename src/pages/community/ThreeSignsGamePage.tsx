@@ -1,6 +1,6 @@
 import { ViewCount } from '@/features/views/ViewCount';
 import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
-import { saveScore } from '@/features/games/scores';
+import { readLocalProgress, readPlayer, resumeProgress, saveLocalProgress, saveScore, type Progress } from '@/features/games/scores';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Lightbulb, RotateCcw, Sparkles, Trophy, ArrowRight, Shuffle } from 'lucide-react';
 import { usePageMeta } from '@/hooks/usePageMeta';
@@ -37,7 +37,9 @@ type Phase = 'play' | 'won' | 'lost';
 /** « Le jeu des trois signes » : construire KCC avec les signes Nkanda, Wambote, Wampa pour découvrir les mots de la foi. */
 export default function ThreeSignsGamePage() {
   const { tx, pick } = useI18n();
-  const [level, setLevel] = useState(0);
+  // Reprise : la progression gardée pour ce joueur (mots réussis et score à ce moment-là).
+  const [initial] = useState<Progress | null>(() => readLocalProgress('trois-signes', readPlayer()));
+  const [level, setLevel] = useState(() => initial?.level ?? 0);
   const entry = GAME_WORDS[level % GAME_WORDS.length];
   const word = pick(entry.word);
   const totalLetters = useMemo(() => letterIndexes(word).length, [word]);
@@ -49,8 +51,8 @@ export default function ThreeSignsGamePage() {
   const [shaking, setShaking] = useState<Set<string>>(new Set());
   const [hint, setHint] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
-  const [score, setScore] = useState(0);
-  const [levelStartScore, setLevelStartScore] = useState(0);
+  const [score, setScore] = useState(() => initial?.score ?? 0);
+  const [levelStartScore, setLevelStartScore] = useState(() => initial?.score ?? 0);
   const [best, setBest] = useState(readBest);
   const [moves, setMoves] = useState(() => movesForWord(word));
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
@@ -74,12 +76,15 @@ export default function ThreeSignsGamePage() {
   const [player, setPlayer] = usePlayer();
   const [editPlayer, setEditPlayer] = useState(false);
   const [boardKey, setBoardKey] = useState(0);
-  // Fin d'un mot (trouvé ou non) : le score est enregistré en ligne pour le classement.
+  // Mot trouvé : le score est enregistré en ligne (classement et reprise de la partie).
   useEffect(() => {
-    if (phase === 'play' || !player) return;
+    if (phase !== 'won' || !player) return;
     saveScore('trois-signes', player, score, level + 1).then(() => setBoardKey((k) => k + 1)).catch(() => { /* hors ligne : le jeu continue */ });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // La progression est gardée dans le téléphone à chaque nouveau mot.
+  useEffect(() => { saveLocalProgress('trois-signes', player, { level, score: levelStartScore }); }, [player, level, levelStartScore]);
 
   // Indice automatique après 10 secondes sans jouer.
   useEffect(() => {
@@ -107,6 +112,13 @@ export default function ThreeSignsGamePage() {
     setScore(keepScore);
     setLevelStartScore(keepScore);
   }, [pick]);
+
+  // Premier passage sur ce téléphone avec ce nom : on reprend la partie enregistrée en ligne.
+  useEffect(() => {
+    if (!player || initial) return;
+    void resumeProgress('trois-signes', player, true).then((r) => { if (r.level > 0 || r.score > 0) startLevel(r.level, r.score); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const finishWord = useCallback((movesLeft: number, extraLetters = 0) => {
     const bonus = 100 + movesLeft * 10 + extraLetters * 20;
@@ -244,7 +256,7 @@ export default function ThreeSignsGamePage() {
               <PlayerForm
                 initial={player}
                 onSave={(p) => {
-                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) startLevel(0, 0);
+                  if (!player || p.name.toLowerCase() !== player.name.toLowerCase() || p.parish.toLowerCase() !== player.parish.toLowerCase()) { startLevel(0, 0); void resumeProgress('trois-signes', p, false).then((r) => { if (r.level > 0 || r.score > 0) startLevel(r.level, r.score); }); }
                   setPlayer(p);
                   setEditPlayer(false);
                 }}

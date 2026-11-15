@@ -70,7 +70,7 @@ function burst(ac: AudioContext, out: AudioNode, start: number, dur: number, vol
   src.start(t0);
 }
 
-/** La voix du téléphone dit « Kasésé » (la prononciation de KCC), quand elle existe. */
+/** À l’écran on écrit « KCC » ; la voix du téléphone le prononce « Kasésé », comme il se dit. */
 let lastSpoken = 0;
 function sayKasese() {
   try {

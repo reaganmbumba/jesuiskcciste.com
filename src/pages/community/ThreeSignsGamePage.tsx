@@ -1,5 +1,6 @@
 import { ViewCount } from '@/features/views/ViewCount';
-import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
+import { playSound } from '@/features/games/sounds';
+import { Leaderboard, PlayerBadge, PlayerForm, SoundToggle, usePlayer } from '@/features/games/GamePlayer';
 import { readLocalProgress, readPlayer, resumeProgress, saveLocalProgress, saveScore, type Progress } from '@/features/games/scores';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { Lightbulb, RotateCcw, Sparkles, Trophy, ArrowRight, Shuffle } from 'lucide-react';
@@ -124,6 +125,7 @@ export default function ThreeSignsGamePage() {
     const bonus = 100 + movesLeft * 10 + extraLetters * 20;
     setScore((s) => s + bonus);
     setPopup({ id: Date.now(), text: `+${bonus}` });
+    setTimeout(() => playSound('win'), 300);
     setPhase('won');
   }, []);
 
@@ -135,6 +137,7 @@ export default function ThreeSignsGamePage() {
     const steps = resolve(swapped);
     if (steps.length === 0) {
       // Aucun KCC : les signes reviennent à leur place.
+      playSound('error');
       const s = new Set([key(...a), key(...b)]);
       setShaking(s);
       setTimeout(() => setShaking(new Set()), 380);
@@ -142,6 +145,7 @@ export default function ThreeSignsGamePage() {
     }
     setBusy(true);
     setBoard(swapped);
+    playSound('drop');
     await wait(140);
     let gained = 0;
     let kccs = 0;
@@ -152,7 +156,8 @@ export default function ThreeSignsGamePage() {
       const pts = stepPoints(step, i);
       gained += pts;
       kccs += step.kccCount;
-      setPopup({ id: Date.now() + i, text: i > 0 ? `+${pts} ×${i + 1}` : `+${pts}` });
+      playSound(i === 0 ? 'crush' : 'combo', i);
+      setPopup({ id: Date.now() + i, text: i > 0 ? `+${pts} ×${i + 1}` : `Kasésé ! +${pts}` });
       await wait(340);
       setCrushing(new Set());
       setFalling(new Set(step.moved.map(([r, c]) => key(r, c))));
@@ -168,15 +173,16 @@ export default function ThreeSignsGamePage() {
     setScore((s) => s + gained);
     setKccTotal((t) => t + kccs);
     setRevealed(nextRevealed);
+    setTimeout(() => playSound('letter'), 120);
     setMoves(movesLeft);
     setBusy(false);
     if (nextRevealed.size >= totalLetters) finishWord(movesLeft);
-    else if (movesLeft <= 0) setPhase('lost');
+    else if (movesLeft <= 0) { setPhase('lost'); playSound('lose'); }
   }, [board, busy, phase, word, moves, totalLetters, finishWord]);
 
   const onTap = (cell: Cell) => {
     if (busy || phase !== 'play') return;
-    if (!selected) return setSelected(cell);
+    if (!selected) { playSound('tap'); return setSelected(cell); }
     if (selected[0] === cell[0] && selected[1] === cell[1]) return setSelected(null);
     if (areNeighbours(selected, cell)) void trySwap(selected, cell);
     else setSelected(cell);
@@ -388,6 +394,7 @@ export default function ThreeSignsGamePage() {
               <Button variant="outline" size="sm" icon={<Shuffle className="h-4 w-4" aria-hidden />} onClick={() => startLevel(0, 0)} disabled={busy}>
                 {tx('Nouvelle partie', 'New game', 'Novo jogo')}
               </Button>
+              <SoundToggle />
             </div>
           </div>
 
@@ -409,7 +416,7 @@ export default function ThreeSignsGamePage() {
               <ul className="mt-4 space-y-1.5 text-sm text-white/75">
                 <li>{tx('• Lisez dans l’ordre : Nkanda, Wambote, Wampa, de gauche à droite ou de haut en bas.', '• Read in order: Nkanda, Wambote, Wampa, left to right or top to bottom.', '• Leia por ordem: Nkanda, Wambote, Wampa, da esquerda para a direita ou de cima para baixo.')}</li>
                 <li>{tx('• Glissez un signe ou touchez deux signes voisins pour les échanger.', '• Swipe a sign or tap two neighbouring signs to swap them.', '• Deslize um sinal ou toque em dois sinais vizinhos para os trocar.')}</li>
-                <li>{tx('• 30 points par KCC, doublés puis triplés quand ils s’enchaînent.', '• 30 points per KCC, doubled then tripled when they chain.', '• 30 pontos por KCC, duplicados e triplicados em cadeia.')}</li>
+                <li>{tx('• 30 points par KCC (« Kasésé ! »), doublés puis triplés quand ils s’enchaînent.', '• 30 points per KCC, doubled then tripled when they chain.', '• 30 pontos por KCC, duplicados e triplicados em cadeia.')}</li>
                 <li>{tx('• Mot découvert : 100 points + 10 par coup restant.', '• Word found: 100 points + 10 per move left.', '• Palavra descoberta: 100 pontos + 10 por jogada restante.')}</li>
               </ul>
               <p className="mt-4 text-xs text-white/50">{tx(`KCC construits : ${kccTotal}`, `KCC built: ${kccTotal}`, `KCC construídos: ${kccTotal}`)}</p>

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Lightbulb, Plus, RotateCcw, Sparkles, Star, Undo2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ViewCount } from '@/features/views/ViewCount';
+import { playSound } from '@/features/games/sounds';
+import { SoundToggle } from '@/features/games/GamePlayer';
 import { Leaderboard, PlayerBadge, PlayerForm, usePlayer } from '@/features/games/GamePlayer';
 import { readLocalProgress, readPlayer, resumeProgress, saveLocalProgress, saveScore, type Progress } from '@/features/games/scores';
 import { usePageMeta } from '@/hooks/usePageMeta';
@@ -136,6 +138,7 @@ export default function ThreeBallsGamePage() {
 
   const doMove = async (from: number, to: number) => {
     if (!canMove(tubes, from, to)) {
+      playSound('error');
       setShake(to);
       setTimeout(() => setShake(null), 380);
       setSelected(null);
@@ -149,6 +152,7 @@ export default function ThreeBallsGamePage() {
     const placed = before.map((t) => [...t]);
     placed[to].push(placed[from].pop() as Sign);
     setTubes(placed);
+    playSound('drop');
     setHistory((h) => [...h, before]);
     const used = moves + 1;
     setMoves(used);
@@ -156,9 +160,10 @@ export default function ThreeBallsGamePage() {
     if (crushed.length > 0) {
       await wait(220);
       setCrushing(crushed);
+      playSound('crush');
       const pts = crushed.length * POINTS_PER_TUBE;
       setScore((s) => s + pts);
-      setPopup({ id: Date.now(), text: `KCC ! +${pts}` });
+      setPopup({ id: Date.now(), text: `Kasésé ! +${pts}` });
       await wait(480);
       setCrushing([]);
       setTubes(after);
@@ -170,6 +175,7 @@ export default function ThreeBallsGamePage() {
       const s = used <= par ? 3 : used <= Math.ceil(par * 1.5) ? 2 : 1;
       const bonus = 100 + s * 50;
       setScore((v) => v + bonus);
+      setTimeout(() => playSound('win'), 350);
       setPhase('won');
       return;
     }
@@ -179,7 +185,7 @@ export default function ThreeBallsGamePage() {
   const onTube = (i: number) => {
     if (busy || phase !== 'play') return;
     if (selected === null) {
-      if (tubes[i].length > 0) setSelected(i);
+      if (tubes[i].length > 0) { setSelected(i); playSound('tap'); }
       return;
     }
     if (selected === i) return setSelected(null);
@@ -346,6 +352,7 @@ export default function ThreeBallsGamePage() {
               <Button variant="outline" size="sm" icon={<RotateCcw className="h-4 w-4" aria-hidden />} onClick={restart} disabled={busy || phase !== 'play'}>
                 {tx('Recommencer', 'Restart', 'Recomeçar')}
               </Button>
+              <SoundToggle />
             </div>
           </div>
 
@@ -366,7 +373,7 @@ export default function ThreeBallsGamePage() {
               <ul className="mt-5 space-y-1.5 text-sm text-white/75">
                 <li>{tx('• Touchez un tube pour prendre la balle du haut, puis un autre tube pour la poser.', '• Tap a tube to pick up its top ball, then another tube to drop it.', '• Toque num tubo para pegar na bola de cima e depois noutro tubo para a pousar.')}</li>
                 <li>{tx('• Chaque tube contient 3 balles. Construisez KCC de bas en haut : Nkanda au fond, Wambote au milieu, Wampa en haut.', '• Each tube holds 3 balls. Build KCC from bottom to top: Nkanda at the bottom, Wambote in the middle, Wampa on top.', '• Cada tubo leva 3 bolas. Construa KCC de baixo para cima: Nkanda no fundo, Wambote no meio, Wampa em cima.')}</li>
-                <li>{tx(`• Dès qu’un tube forme KCC, il s’écrase : +${POINTS_PER_TUBE} points.`, `• As soon as a tube spells KCC, it is crushed: +${POINTS_PER_TUBE} points.`, `• Assim que um tubo forma KCC, é esmagado: +${POINTS_PER_TUBE} pontos.`)}</li>
+                <li>{tx(`• Dès qu’un tube forme KCC (« Kasésé ! »), il s’écrase : +${POINTS_PER_TUBE} points.`, `• As soon as a tube spells KCC (“Kasésé!”), it is crushed: +${POINTS_PER_TUBE} points.`, `• Assim que um tubo forma KCC («Kasésé!»), é esmagado: +${POINTS_PER_TUBE} pontos.`)}</li>
                 <li>{tx('• Écrasez tout pour passer au niveau suivant. Pas de chrono, des niveaux sans fin. Moins de coups = plus d’étoiles.', '• Crush everything to reach the next level. No timer, endless levels. Fewer moves = more stars.', '• Esmague tudo para passar ao nível seguinte. Sem cronómetro, níveis sem fim. Menos jogadas = mais estrelas.')}</li>
               </ul>
             </div>

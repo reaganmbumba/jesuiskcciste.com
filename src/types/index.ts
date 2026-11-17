@@ -101,6 +101,8 @@ export interface Announcement {
   gallery?: string[];
   /** Fichier à télécharger (livre PDF…), contenu de base uniquement. */
   download?: { url: string; name: string; label: string };
+  /** Autres fichiers à télécharger, affichés sous le premier. */
+  downloads?: { url: string; name: string; label: string }[];
   author: string;
   category: string;
   publishedAt: ISODate;

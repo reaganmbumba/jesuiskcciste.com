@@ -74,6 +74,11 @@ export default function NewsDetailPage() {
             <Download className="h-5 w-5 shrink-0" aria-hidden />{data.download.label}
           </a>
         )}
+        {data.downloads?.map((d) => (
+          <a key={d.url} href={d.url} download={d.name} className={buttonClass('primary', 'md', 'mb-6 w-full !justify-start text-left !whitespace-normal')}>
+            <Download className="h-5 w-5 shrink-0" aria-hidden />{d.label}
+          </a>
+        ))}
         <Card className={locked ? 'relative overflow-hidden' : undefined}>
           <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map(renderParagraph)}</CardBody>
           {locked && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" aria-hidden />}

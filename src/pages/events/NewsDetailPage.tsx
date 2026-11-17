@@ -69,16 +69,20 @@ export default function NewsDetailPage() {
           : data.gallery?.length
             ? <div className="mb-6 grid gap-3 sm:grid-cols-3">{data.gallery.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="" className="aspect-[3/4] w-full rounded-2xl object-cover" loading="lazy" /></a>)}</div>
             : data.imageUrl && <img src={data.imageUrl} alt="" className="mb-6 w-full rounded-2xl object-cover" loading="lazy" />}
-        {data.download && (
+        {data.download && !data.downloads?.length && (
           <a href={data.download.url} download={data.download.name} className={buttonClass('primary', 'md', 'mb-6 w-full !justify-start text-left !whitespace-normal')}>
             <Download className="h-5 w-5 shrink-0" aria-hidden />{data.download.label}
           </a>
         )}
-        {data.downloads?.map((d) => (
-          <a key={d.url} href={d.url} download={d.name} className={buttonClass('primary', 'md', 'mb-6 w-full !justify-start text-left !whitespace-normal')}>
-            <Download className="h-5 w-5 shrink-0" aria-hidden />{d.label}
-          </a>
-        ))}
+        {!!data.downloads?.length && (
+          <div className="mb-6 grid gap-2 sm:grid-cols-2">
+            {[...(data.download ? [data.download] : []), ...data.downloads].map((d) => (
+              <a key={d.url} href={d.url} download={d.name} className={buttonClass('primary', 'sm', '!h-auto min-h-9 w-full !justify-start py-2 text-left !text-[13px] !font-medium !whitespace-normal leading-snug')}>
+                <Download className="h-4 w-4 shrink-0" aria-hidden />{d.label}
+              </a>
+            ))}
+          </div>
+        )}
         <Card className={locked ? 'relative overflow-hidden' : undefined}>
           <CardBody className="prose-kcc [overflow-wrap:anywhere]">{shown.map(renderParagraph)}</CardBody>
           {locked && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white to-transparent" aria-hidden />}

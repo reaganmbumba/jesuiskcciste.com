@@ -39,15 +39,21 @@ def main(texte):
     print("locuteurs :", noms)
     chars = getattr(synth.tts_config, "characters", None)
     print("caractères :", chars)
-    voix = os.environ.get("VOIX") or noms[0]
-    print("VOIX :", voix)
     sr = synth.output_sample_rate
-    for i, p in enumerate(phrases(texte), 1):
-        torch.manual_seed(1955 + i)
-        onde = np.array(synth.tts(unicodedata.normalize("NFC", p), speaker_name=voix), dtype=np.float64)
-        onde = onde / max(1e-6, np.abs(onde).max()) * .9
-        wav.write(os.path.join(sortie, f"{i:02d}.wav"), sr, (onde * 32767).astype(np.int16))
-        print(f"{i:02d} {len(onde) / sr:.1f}s {p}")
+    for voix in noms:
+        d = os.path.join(sortie, voix)
+        os.makedirs(d, exist_ok=True)
+        for i, p in enumerate(phrases(texte), 1):
+            torch.manual_seed(1955 + i)
+            t = unicodedata.normalize("NFC", p).lower()
+            try:
+                onde = synth.tts(t, speaker=voix)
+            except TypeError:
+                onde = synth.tts(t, speaker_name=voix)
+            onde = np.array(onde, dtype=np.float64)
+            onde = onde / max(1e-6, np.abs(onde).max()) * .9
+            wav.write(os.path.join(d, f"{i:02d}.wav"), sr, (onde * 32767).astype(np.int16))
+            print(f"{voix} {i:02d} {len(onde) / sr:.1f}s {p}")
 
 
 if __name__ == "__main__":

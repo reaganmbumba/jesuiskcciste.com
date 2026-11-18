@@ -68,6 +68,8 @@ jobs:
           path: out/
 
       - name: Publier la version GitHub
+        # Seulement depuis main ou un tag : un essai sur une autre branche ne crée pas de version.
+        if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('android-{0}', github.run_number) }}

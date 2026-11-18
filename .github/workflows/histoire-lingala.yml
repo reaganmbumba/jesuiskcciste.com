@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 torchaudio==2.8.0 && pip install coqui-tts 'torch==2.8.0' 'torchaudio==2.8.0' scipy numpy huggingface_hub
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 torchaudio==2.8.0 && pip install coqui-tts 'torch==2.8.0' 'torchaudio==2.8.0' scipy numpy huggingface_hub six
       - name: Fabriquer la voix
         working-directory: tools/histoire-lingala
         run: for f in *.txt; do python voix.py "$f"; done

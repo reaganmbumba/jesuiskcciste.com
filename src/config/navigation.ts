@@ -18,6 +18,7 @@ export const MAIN_NAV: NavGroup[] = [
       { label: l('Annuaire des membres', 'Member directory', 'Diretório de membros'), to: '/communaute/annuaire', description: l('Retrouver les membres', 'Find members', 'Encontrar membros') },
       { label: l('Opportunités et emplois', 'Opportunities and jobs', 'Oportunidades e empregos'), to: '/emplois', description: l('50 offres réelles chaque jour et le groupe WhatsApp', '50 real job offers every day and the WhatsApp group', '50 ofertas reais por dia e o grupo WhatsApp') },
       { label: l('Messages privés', 'Private messages', 'Mensagens privadas'), to: '/espace/messages', description: l('Écrire à un autre membre', 'Write to another member', 'Escrever a outro membro') },
+      { label: l('Recensement des fidèles', 'Census of the faithful', 'Recenseamento dos fiéis'), to: '/recensement', description: l('Faites-vous compter, avec votre famille', 'Be counted, with your family', 'Faça-se contar, com a sua família') },
       { label: l('Paroisses', 'Parishes', 'Paróquias'), to: '/paroisses', description: l('La liste officielle, par pays', 'The official list, by country', 'A lista oficial, por país') },
       { label: l('Sections', 'Sections', 'Secções'), to: '/sections', description: l('Les sections rattachées', 'Affiliated sections', 'As secções associadas') },
       { label: l('À propos de l’Église', 'About the Church', 'Sobre a Igreja'), to: '/a-propos', description: l('Présentation officielle', 'Official presentation', 'Apresentação oficial') },

@@ -1,0 +1,13 @@
+name: tc-tmp
+on:
+  push:
+    branches: [claude/tc-radio2]
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - run: npx tsc -b && npx vitest run src/test/radio.test.ts

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mic, Music2, Newspaper, Phone, Radio } from 'lucide-react';
+import { MessageCircle, Mic, Music2, Newspaper, Phone, Radio } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Field, Input } from '@/components/ui/Form';
@@ -14,7 +14,8 @@ import { supabase } from '@/lib/supabase';
 import { snakify } from '@/utils/case';
 import { writeAudit } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
-import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUrl, radioSettingsOf, type RadioItem, type RadioSettings } from '@/features/radio/radio';
+import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUrl, radioSettingsOf, vocalWhatsappUrl, type RadioItem, type RadioSettings } from '@/features/radio/radio';
+import { AdminVocals } from '@/features/radio/AdminVocals';
 import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { JITSI_DOMAIN } from '@/features/meetings/meetings';
 
@@ -43,12 +44,13 @@ export default function AdminRadio() {
         : 'Adresse du flux non reconnue : elle doit commencer par https:// (copiez le lien d’écoute donné par Caster.fm ou Zeno.fm).', 'error');
       return;
     }
+    if (r.vocalWhatsapp.trim() && !vocalWhatsappUrl(r.vocalWhatsapp)) { notify('Numéro WhatsApp des vocaux non reconnu : écrivez-le avec l’indicatif, par exemple +243 840 238 592.', 'error'); return; }
     if (live.onAir && !live.url) { notify('Indiquez d’abord l’adresse du flux audio (Caster.fm, Zeno.fm…), puis passez en direct.', 'error'); return; }
     setSaving(true);
     try {
       // On ne garde que les retraits de titres qui existent encore.
       const keys = new Set((catalog ?? []).map((i) => i.key));
-      const radio = { ...r, live, excluded: catalog ? r.excluded.filter((k) => keys.has(k)) : r.excluded };
+      const radio = { ...r, vocalWhatsapp: r.vocalWhatsapp.trim(), live, excluded: catalog ? r.excluded.filter((k) => keys.has(k)) : r.excluded };
       const next = { ...settings, radio };
       if (!isDemoMode) {
         const { error } = await supabase!.from('site_settings').upsert({ key: 'public', value: snakify(next) });
@@ -103,6 +105,12 @@ export default function AdminRadio() {
             ? <Button variant="danger" onClick={() => save({ onAir: false })} loading={saving}>Terminer le direct</Button>
             : <Button onClick={() => save({ onAir: true, startedAt: new Date().toISOString() })} loading={saving} icon={<Radio className="h-4 w-4" />}>Passer en direct</Button>}
         </div>
+      </CardBody></Card>
+      <AdminVocals />
+      <Card><CardBody className="space-y-4">
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><MessageCircle className="h-5 w-5 text-gold-600" />Réglages des vocaux</h2>
+        <Checkbox label="Diffuser les vocaux validés entre les chants" description="Un vocal d’auditeur après chaque série de 3 chants, pendant 7 jours après sa validation. Décocher pour ne les passer qu’en direct." checked={r.vocals} onChange={(e) => setR({ ...r, vocals: e.currentTarget.checked })} />
+        <Field label="Numéro WhatsApp qui reçoit les vocaux (facultatif)" hint="Avec l’indicatif, par exemple +243 840 238 592. Un bouton « Envoyez votre vocal sur WhatsApp » s’affiche alors sur la page Radio. Ajoutez ensuite ces vocaux ci-dessus avec « Ajouter un vocal reçu sur WhatsApp ». Vide = pas de bouton.">{(p) => <Input {...p} inputMode="tel" placeholder="+243…" value={r.vocalWhatsapp} onChange={(e) => setR({ ...r, vocalWhatsapp: e.target.value })} />}</Field>
       </CardBody></Card>
       <Card><CardBody className="space-y-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><Music2 className="h-5 w-5 text-gold-600" />Chants</h2>

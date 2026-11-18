@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Pause, Play, Radio, Settings2, SkipForward, StopCircle } from 'lucide-react';
+import { Mic, Pause, Play, Radio, Settings2, SkipForward, StopCircle } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Skeleton } from '@/components/ui/Spinner';
 import { useI18n } from '@/i18n';
@@ -8,6 +8,7 @@ import { formatDuration } from '@/utils/format';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
+import { SendVocalCard } from '@/features/radio/SendVocalCard';
 import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
@@ -71,7 +72,9 @@ export default function RadioPage() {
             )}
             {!r.onLive && <RadioModeChooser light className="mt-6" />}
             {r.failed && <p className="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-100" role="alert">{tx('Les titres ne se chargent pas. Vérifiez votre connexion Internet puis appuyez de nouveau sur « Écouter ».', 'Tracks are not loading. Check your Internet connection and press “Listen” again.', 'As faixas não carregam. Verifique a ligação à Internet e carregue de novo em «Ouvir».')}</p>}
+            <a href="#vocal" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold"><Mic className="h-4 w-4" aria-hidden />{tx('Envoyer un vocal à l’antenne', 'Send a voice message on air', 'Enviar uma mensagem de voz para o ar')}</a>
           </div>
+          <SendVocalCard className="mt-8" />
         </div>
 
         <aside className="space-y-6 lg:col-span-2">

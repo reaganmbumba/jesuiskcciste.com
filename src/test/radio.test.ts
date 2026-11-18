@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { availableModes, buildRound, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, type RadioItem } from '@/features/radio/radio';
+import { availableModes, buildRound, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, vocalItem, vocalWhatsappUrl, type RadioItem } from '@/features/radio/radio';
+import { isVocalFresh, type RadioVocal } from '@/features/radio/vocals';
 import type { AudioSermon, Track } from '@/types';
 
 const song = (id: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/${id}.mp3`, durationSeconds: null, imageUrl: null });
@@ -19,7 +20,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '' } });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '' } });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });
@@ -90,5 +91,29 @@ describe('Radio : émissions en direct et appels', () => {
     expect(kinds).toEqual(['news', 'song', 'song', 'song', 'news', 'song', 'song', 'song', 'news', 'song']);
     const mixed = buildRound([news, ...'abcdef'.split('').map(song), talk('p')], seeded(3)).map((i) => i.kind);
     expect(mixed).toEqual(['news', 'song', 'song', 'song', 'news', 'sermon', 'song', 'song', 'song']);
+  });
+
+  it('passe les vocaux validés des auditeurs entre les chants', () => {
+    const v: RadioVocal = { id: 'v1', authorName: 'Marie', place: 'Boma', note: null, audioPath: '/v1.webm', audioSeconds: 30, source: 'site', status: 'approved', approvedAt: new Date().toISOString(), airedAt: null, createdAt: new Date().toISOString() };
+    expect(vocalItem(v)).toMatchObject({ key: 'vocal:v1', kind: 'vocal', title: 'Message de Marie', subtitle: 'Boma · auditeur', url: '/v1.webm' });
+    expect(vocalItem({ ...v, status: 'pending' })).toBeNull();
+    expect(isVocalFresh(v)).toBe(true);
+    expect(isVocalFresh({ ...v, approvedAt: '2020-01-01T00:00:00Z' })).toBe(false);
+    expect(isVocalFresh({ ...v, status: 'pending' })).toBe(false);
+
+    const voc = (id: string): RadioItem => ({ ...song(id), key: `vocal:${id}`, kind: 'vocal' });
+    const all = [song('a'), song('b'), song('c'), song('d'), song('e'), song('f'), voc('x'), voc('y'), voc('z')];
+    const round = buildRound(onAir(all, radioSettingsOf({}), 'all'), seeded(3));
+    // Un vocal après chaque série de chants, jamais deux de suite ; le troisième attend le tour suivant.
+    expect(round.map((i) => i.kind)).toEqual(['song', 'song', 'song', 'vocal', 'song', 'song', 'song', 'vocal']);
+    expect(onAir(all, radioSettingsOf({}), 'songs').some((i) => i.kind === 'vocal')).toBe(false);
+    expect(onAir(all, radioSettingsOf({ radio: { songs: true, sermons: true, vocals: false, excluded: [] } }), 'all').some((i) => i.kind === 'vocal')).toBe(false);
+    expect(buildRound([voc('x'), voc('y')]).length).toBe(2);
+  });
+
+  it('transforme le numéro WhatsApp des vocaux en lien', () => {
+    expect(vocalWhatsappUrl('+243 840 238 592')).toMatch(/^https:\/\/wa\.me\/243840238592\?text=/);
+    expect(vocalWhatsappUrl('')).toBeNull();
+    expect(vocalWhatsappUrl('abc')).toBeNull();
   });
 });

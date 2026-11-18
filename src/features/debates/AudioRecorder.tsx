@@ -14,7 +14,7 @@ function pickMimeType(): string | undefined {
 export const canRecord = () => typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
 /** Bouton d'enregistrement vocal : appuyer pour commencer, appuyer pour arrêter, réécouter, recommencer. */
-export function AudioRecorder({ value, onChange }: { value: Recording | null; onChange: (r: Recording | null) => void }) {
+export function AudioRecorder({ value, onChange, onStart }: { value: Recording | null; onChange: (r: Recording | null) => void; onStart?: () => void }) {
   const { tx } = useI18n();
   const [state, setState] = useState<'idle' | 'recording'>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -34,6 +34,7 @@ export function AudioRecorder({ value, onChange }: { value: Recording | null; on
 
   async function start() {
     setError('');
+    onStart?.();
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
       stream.current = s;

@@ -1,10 +1,10 @@
 # Lisolo ya Ndai ya Mosakoli (1966), na lingala. Molongo moko = eteni moko ya mongongo.
-# Makambo nyonso euti na src/content/doctrine.ts (prophetOath, prophetTimeline).
-Kimia ezala na bino, bandeko na ngai ba KCCiste.
-Boyei malamu na lisolo ya lelo, na lisanga Je suis KCCiste.
+# Prononciation : KCCiste écrit « kasesiste », Je suis = « je swi ». Makambo nyonso euti na src/content/doctrine.ts (prophetOath, prophetTimeline).
+Kimia ezala na bino, bandeko na ngai ba kasesiste.
+Boyei malamu na lisolo ya lelo, na lisanga je swi kasesiste.
 Lelo tokosolola lisolo moko ya ntina mingi na bomoi ya Eklezia na biso: Ndai ya Mosakoli.
 [PAUSE]
-Na mobu nkoto moko na nkama libwa na ntuku motoba na motoba, elingi koloba mobu ya nkoto moko nkama libwa ntuku motoba na motoba, bakonzi mosusu ya mangomba ya bamisionere basengaki Mosakoli Dizolele Mpungu Wafiduswa Isaac alapa ndai.
+Na mobu nkoto moko na nkama libwa na ntuku motoba na motoba, bakonzi mosusu ya mangomba ya bamisionere basengaki Mosakoli Dizolele Mpungu Wafiduswa Isaac alapa ndai.
 Basengaki ye alapa ndai liboso ya bato koleka nkama mitano, ete akobongola lolenge na ye ya kosakola.
 Kanisa naino, ndeko na ngai. Liboso ya bato nkama mitano, bakonzi ya mangomba bazali kotala yo, mpe bazali kozela ete otonda maloba na bango.
 [PAUSE]
@@ -20,7 +20,7 @@ Ndai yango ezali toli ya Nzambe, oyo mosaleli nyonso asengeli kokanisa liboso ya
 Sikoyo, ezali ngonga na bino. Tozali kozela makanisi na bino na lisanga.
 Motuna ya liboso: soki bato nkama mitano basengi yo obongola kondima na yo, okosala nini?
 Motuna ya mibale: mpo na nini Mosakoli aponaki koyemba loyembo, na esika ya kowelana na bakonzi wana?
-Motuna ya misato: lelo oyo, nini ekoki kotinda mosakoli moko abongola mateya na ye, mpe ndenge nini tokoki kobatela ndai yango?
+Motuna ya misato: lelo oyo, nini ekoki kotinda moteyi moko abongola mateya na ye, mpe ndenge nini tokoki kobatela ndai yango?
 Tinda eyano na yo na lisanga, na maloba to na mongongo.
-Lisolo mobimba ya Mosakoli ezali na site Je suis KCCiste.
+Lisolo mobimba ya Mosakoli ezali na site je swi kasesiste.
 Kimia ya Yawe ezala na bino.

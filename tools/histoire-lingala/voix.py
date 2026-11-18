@@ -38,11 +38,11 @@ def main(texte):
     noms = list(synth.tts_model.speaker_manager.name_to_id)
     print("locuteurs :", noms)
     print("emb :", getattr(synth.tts_model, "emb_g", None), synth.tts_config.model_args.use_speaker_embedding if hasattr(synth.tts_config, "model_args") else "?")
-    synth.tts_model.length_scale = float(os.environ.get("LENTEUR", "1.08"))
+    synth.tts_model.length_scale = float(os.environ.get("LENTEUR", "1.0"))
     chars = getattr(synth.tts_config, "characters", None)
     print("caractères :", chars)
     sr = synth.output_sample_rate
-    for voix in noms:
+    for voix in noms[:1]:  # les deux noms donnent la même voix
         d = os.path.join(sortie, voix)
         os.makedirs(d, exist_ok=True)
         for i, p in enumerate(phrases(texte), 1):

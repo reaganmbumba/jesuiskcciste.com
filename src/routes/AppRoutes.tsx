@@ -111,6 +111,7 @@ const AdminApostles = lazy(() => import('@/pages/admin/AdminApostles'));
 const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminLivestreams = lazy(() => import('@/pages/admin/AdminLivestreams'));
 const AdminRadio = lazy(() => import('@/pages/admin/AdminRadio'));
+const AdminRadioAntenne = lazy(() => import('@/pages/admin/AdminRadioAntenne'));
 const AdminJobs = lazy(() => import('@/pages/admin/AdminJobs'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminMemorial = lazy(() => import('@/pages/admin/AdminMemorial'));
@@ -154,6 +155,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/predications', label: 'Prédications audio', icon: Mic, permission: 'settings.manage' },
   { to: '/admin/directs', label: 'Directs des cultes', icon: Radio, permission: 'settings.manage' },
   { to: '/admin/radio', label: 'Radio Je suis KCCiste', icon: Headphones, permission: 'settings.manage' },
+  { to: '/admin/radio/antenne', label: 'Radio : antenne en direct', icon: Radio, permission: 'settings.manage' },
   { to: '/admin/emplois', label: 'Opportunités et emplois', icon: Briefcase, permission: 'settings.manage' },
   { to: '/admin/notifications', label: 'Notifications', icon: Bell, permission: 'settings.manage' },
   { to: '/admin/memorial', label: 'Mémorial', icon: Flame, permission: 'settings.manage' },
@@ -294,6 +296,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="predications" element={<AdminSermons />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="directs" element={<AdminLivestreams />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="radio" element={<AdminRadio />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="radio/antenne" element={<AdminRadioAntenne />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="emplois" element={<AdminJobs />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="notifications" element={<AdminNotifications />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="memorial" element={<AdminMemorial />} /></Route>

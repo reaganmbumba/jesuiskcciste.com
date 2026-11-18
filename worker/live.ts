@@ -8,6 +8,10 @@
  *   POST /api/live/publish  { sdp, tracks:[{mid, trackName}] }  (jeton Supabase d'un administrateur)
  *   POST /api/live/watch    { sessionId, tracks:[trackName] }   → offre à accepter
  *   POST /api/live/answer   { sessionId, sdp }                  → réponse du spectateur
+ *   POST /api/live/call     { sdp, mid }                        → voix d'un auditeur qui appelle la radio
+ *
+ * Pistes : « video » et « audio » (l'antenne), « retour » (ce que l'auditeur au
+ * téléphone entend : l'animateur sans sa propre voix), « voix » (l'auditeur).
  *
  * Réglage : variables secrètes CALLS_APP_ID et CALLS_APP_SECRET du Worker.
  */
@@ -15,7 +19,8 @@
 export interface LiveEnv { SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string }
 
 const RTC = 'https://rtc.live.cloudflare.com/v1/apps/';
-const TRACKS = new Set(['video', 'audio']);
+const TRACKS = new Set(['video', 'audio', 'retour']);
+const WATCHABLE = new Set(['video', 'audio', 'retour', 'voix']);
 const SID = /^[A-Za-z0-9_-]{8,128}$/;
 
 const json = (body: unknown, status = 200) =>
@@ -64,9 +69,23 @@ export async function handleLive(request: Request, env: LiveEnv, path: string): 
       const desc = res.sessionDescription as { sdp: string };
       return json({ sessionId, sdp: desc.sdp });
     }
+    if (path === 'call') {
+      // Un auditeur appelle l'émission : une seule piste audio, sans compte.
+      const sdp = typeof body.sdp === 'string' ? body.sdp : '';
+      const mid = typeof body.mid === 'string' ? body.mid : '';
+      if (!sdp || sdp.length > 20000 || !mid || mid.length > 16 || /m=video/.test(sdp)) return json({ error: 'input' }, 400);
+      const s = await rtc(env, '/sessions/new', 'POST');
+      const sessionId = String(s.sessionId);
+      const res = await rtc(env, `/sessions/${sessionId}/tracks/new`, 'POST', {
+        sessionDescription: { type: 'offer', sdp },
+        tracks: [{ location: 'local', mid, trackName: 'voix' }],
+      });
+      const desc = res.sessionDescription as { sdp: string };
+      return json({ sessionId, sdp: desc.sdp });
+    }
     if (path === 'watch') {
       const source = String(body.sessionId ?? '');
-      const names = (Array.isArray(body.tracks) ? body.tracks : ['video', 'audio']).map(String).filter((n) => TRACKS.has(n));
+      const names = (Array.isArray(body.tracks) ? body.tracks : ['video', 'audio']).map(String).filter((n) => WATCHABLE.has(n));
       if (!SID.test(source) || !names.length) return json({ error: 'input' }, 400);
       const s = await rtc(env, '/sessions/new', 'POST');
       const sessionId = String(s.sessionId);

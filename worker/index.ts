@@ -116,7 +116,7 @@ export default {
     if (url.pathname === '/api/emplois') return handleJobs(request, env, ctx);
     const push = /^\/api\/notifications\/([a-z]+)$/.exec(url.pathname);
     if (push) return handleNotifications(request, env, push[1]);
-    const live = /^\/api\/live\/(publish|watch|answer)$/.exec(url.pathname);
+    const live = /^\/api\/live\/(publish|watch|answer|call)$/.exec(url.pathname);
     if (live) return handleLive(request, env, live[1]);
     if (request.method === 'GET') {
       try {

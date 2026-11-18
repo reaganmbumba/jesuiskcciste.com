@@ -1,0 +1,47 @@
+name: Radio Je suis KCCiste (Windows)
+
+# Fabrique l'application Windows de l'antenne radio (.exe) et la publie dans une version GitHub « radio-N ».
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'radio/**'
+      - '.github/workflows/radio-desktop.yml'
+
+permissions:
+  contents: write
+
+env:
+  KCC_VERSION_NAME: 1.0.${{ github.run_number }}
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: radio/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npm version ${{ env.KCC_VERSION_NAME }} --no-git-tag-version --allow-same-version
+      - name: Construire l'installateur
+        run: npx electron-builder --win nsis --x64 --publish never
+      - name: Rassembler
+        shell: bash
+        run: |
+          mkdir -p ../out
+          cp dist/*.exe "../out/KCC-Radio-Setup.exe"
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: radio-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Radio Je suis KCCiste ${{ env.KCC_VERSION_NAME }}
+          make_latest: true
+          body: |
+            Application Windows de l'antenne radio Je suis KCCiste.
+            Installez KCC-Radio-Setup.exe, ouvrez « Radio Je suis KCCiste » sur le Bureau, connectez-vous une fois avec votre compte administrateur du site.
+          files: radio/out/KCC-Radio-Setup.exe

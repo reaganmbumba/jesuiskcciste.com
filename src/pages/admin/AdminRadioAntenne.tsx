@@ -13,6 +13,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { radioSettingsOf, type RadioSettings } from '@/features/radio/radio';
 import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
+import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
+import { useRadioListeners } from '@/features/radio/listeners';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string };
 type Line = { pc: RTCPeerConnection; node: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement };
@@ -53,8 +55,14 @@ export default function AdminRadioAntenne() {
   const [topicSaved, setTopicSaved] = useState(saved.live.topic || '');
   const [micMuted, setMicMuted] = useState(false);
   const [level, setLevel] = useState(0);
+  // Effets : sur la voix (écho, réverbération, voix radio) et bruitages d'un clic
+  const [voiceFx, setVoiceFx] = useState<Record<VoiceFx, boolean>>({ echo: false, reverb: false, radio: false });
+  const [fxVol, setFxVol] = useState(0.8);
+  const [myPads, setMyPads] = useState<{ name: string; buf: AudioBuffer | null; file: File }[]>([]);
+  const fx = useRef<{ chain?: ReturnType<typeof voiceChain>; bus?: GainNode }>({});
 
   const ctx = useRef<AudioContext | null>(null);
+  const auditeurs = useRadioListeners(false, onAir);
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode }>({});
   const pub = useRef<Publish | null>(null);
   const lines = useRef<Map<string, Line>>(new Map());
@@ -115,11 +123,17 @@ export default function AdminRadioAntenne() {
       const program = ac.createMediaStreamDestination();
       const retour = ac.createMediaStreamDestination();
       const analyser = ac.createAnalyser();
-      micGain.connect(program); micGain.connect(retour);
+      const sum = ac.createGain(); sum.connect(analyser);
+      // voix → effets (écho, réverbération, voix radio) → antenne
+      const chain = voiceChain(ac, micGain, [program, retour, sum]);
+      (Object.keys(voiceFx) as VoiceFx[]).forEach((k) => chain.set(k, voiceFx[k]));
       const musicGain = ac.createGain();
       musicGain.gain.value = musicVol;
-      musicGain.connect(program); musicGain.connect(retour); musicGain.connect(ac.destination);
-      const sum = ac.createGain(); micGain.connect(sum); musicGain.connect(sum); sum.connect(analyser);
+      musicGain.connect(program); musicGain.connect(retour); musicGain.connect(ac.destination); musicGain.connect(sum);
+      // bruitages : à l'antenne, au téléphone des appelants et dans le casque
+      const bus = ac.createGain(); bus.gain.value = fxVol;
+      bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
+      fx.current = { chain, bus };
       const musicEl = new Audio();
       musicEl.onended = () => playTrack(idxRef.current + 1);
       musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
@@ -154,6 +168,7 @@ export default function AdminRadioAntenne() {
     void ctx.current?.close();
     ctx.current = null;
     if (nodes.current.musicEl) nodes.current.musicEl.onended = null;
+    fx.current = {};
     nodes.current = {};
     setOnAir(false);
     setState('');
@@ -253,6 +268,26 @@ export default function AdminRadioAntenne() {
     else playTrack(0);
   }
 
+  function toggleVoiceFx(k: VoiceFx) {
+    setVoiceFx((v) => { const n = { ...v, [k]: !v[k] }; fx.current.chain?.set(k, n[k]); return n; });
+  }
+  function firePad(p: Pad) {
+    if (ctx.current && fx.current.bus) playPad(ctx.current, fx.current.bus, p);
+  }
+  async function fireMyPad(i: number) {
+    const ac = ctx.current;
+    const bus = fx.current.bus;
+    if (!ac || !bus) return;
+    const p = myPads[i];
+    let buf = p.buf;
+    if (!buf) {
+      try { buf = await ac.decodeAudioData(await p.file.arrayBuffer()); } catch { notify(`« ${p.name} » ne peut pas être lu.`, 'error'); return; }
+      setMyPads((l) => l.map((x, k) => (k === i ? { ...x, buf } : x)));
+    }
+    playBuffer(ac, bus, buf);
+  }
+  useEffect(() => { if (fx.current.bus) fx.current.bus.gain.value = fxVol; }, [fxVol]);
+
   async function publishTopic() {
     try {
       await saveLive({ topic: topic.trim() });
@@ -340,6 +375,50 @@ export default function AdminRadioAntenne() {
             </div>
           )}
       </CardBody></Card>
+
+      {onAir && (
+        <div className="flex items-center gap-4 rounded-2xl bg-night p-5 text-white">
+          <span className="text-4xl font-semibold tabular-nums">{auditeurs ?? '…'}</span>
+          <span className="text-sm text-white/75">{auditeurs === 1 ? 'auditeur vous écoute' : 'auditeurs vous écoutent'} en ce moment sur jesuiskcciste.com/radio{taken.length ? ` · ${taken.length} au téléphone` : ''}</span>
+        </div>
+      )}
+
+      {onAir && (
+        <Card><CardBody className="space-y-4">
+          <h2 className="font-display text-lg font-semibold text-night">Effets</h2>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink/55">Sur ma voix</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {([['echo', 'Écho'], ['reverb', 'Réverbération'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+                <button key={k} type="button" onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]}
+                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${voiceFx[k] ? 'border-gold-500 bg-gold text-night shadow' : 'border-night/15 bg-white text-night hover:border-gold-400'}`}>{voiceFx[k] ? '● ' : ''}{l}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink/55">Bruitages (un clic, même pendant la musique)</p>
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {PADS.map((p) => (
+                <button key={p.id} type="button" onClick={() => firePad(p.id)} className="rounded-2xl bg-night px-3 py-4 text-center text-sm font-semibold text-white shadow active:scale-95 hover:bg-night-600">
+                  <span className="block text-2xl" aria-hidden>{p.emoji}</span>{p.label}
+                </button>
+              ))}
+              {myPads.map((p, i) => (
+                <button key={i} type="button" onClick={() => void fireMyPad(i)} className="truncate rounded-2xl bg-gold px-3 py-4 text-center text-sm font-semibold text-night shadow active:scale-95 hover:bg-gold-300" title={p.name}>
+                  <span className="block text-2xl" aria-hidden>🔊</span>{p.name}
+                </button>
+              ))}
+            </div>
+            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-night/15 bg-white px-3 py-2 text-sm font-semibold text-night hover:border-gold-400">
+              🔊 Ajouter mes propres bruitages
+              <input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} />
+            </label>
+            <label className="mt-3 block text-xs font-semibold text-ink/70">Volume des bruitages
+              <input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="mt-1 w-full" />
+            </label>
+          </div>
+        </CardBody></Card>
+      )}
 
       {onAir && (
         <Card><CardBody className="space-y-4">

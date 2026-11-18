@@ -38,6 +38,7 @@ export default function RadioPage() {
               <div className="min-w-0" aria-live="polite">
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-300">
                   {r.onLive && <LiveBadge />}
+                  {r.liveOn && r.liveListeners !== null && r.liveListeners > 0 && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white/80">🎧 {r.liveListeners} {tx(r.liveListeners > 1 ? 'auditeurs' : 'auditeur', r.liveListeners > 1 ? 'listeners' : 'listener', r.liveListeners > 1 ? 'ouvintes' : 'ouvinte')}</span>}
                   {r.playing && !r.onLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
                   {r.active ? (r.playing ? tx('À l’antenne', 'On air', 'No ar') : tx('En pause', 'Paused', 'Em pausa')) : tx('Prête à démarrer', 'Ready to start', 'Pronta a começar')}
                 </p>

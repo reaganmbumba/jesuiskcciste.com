@@ -20,7 +20,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '' } });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' } });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });

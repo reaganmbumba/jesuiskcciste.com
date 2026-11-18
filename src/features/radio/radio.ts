@@ -48,6 +48,10 @@ export interface RadioLive {
   startedAt: string | null;
   /** Lien « Appeler l'émission » (salle Jitsi, WhatsApp…). Vide = pas d'appels. */
   callUrl: string;
+  /** Émission faite depuis l'antenne du site (/admin/radio/antenne) : session du relais. Vide = flux externe (url). */
+  rtc: string;
+  /** Appels des auditeurs par le site (bouton « Appeler l'émission »), avec l'antenne du site. */
+  calls: boolean;
 }
 
 export interface RadioSettings {
@@ -64,7 +68,7 @@ export interface RadioSettings {
   live: RadioLive;
 }
 
-export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '' };
+export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false };
 export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
@@ -106,7 +110,7 @@ export function newCallRoomUrl(domain = 'meet.jit.si', random: () => number = Ma
 
 /** Le direct est-il à l'antenne en ce moment ? */
 export function isLiveOn(live: RadioLive, now = new Date()): boolean {
-  if (!live.onAir || !live.url) return false;
+  if (!live.onAir || !(live.url || live.rtc)) return false;
   if (!live.startedAt) return true;
   const started = new Date(live.startedAt).getTime();
   return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
@@ -133,6 +137,8 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       onAir: l.onAir === true,
       startedAt: typeof l.startedAt === 'string' ? l.startedAt : null,
       callUrl: typeof l.callUrl === 'string' ? l.callUrl : '',
+      rtc: typeof l.rtc === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(l.rtc) ? l.rtc : '',
+      calls: l.calls === true,
     },
   };
 }

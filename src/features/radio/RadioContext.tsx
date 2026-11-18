@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { watchTrack } from './rtc';
 import { availableModes, buildRound, fetchRadioSettings, isLiveOn, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
 
 const MODE_KEY = 'kcc-radio-mode';
@@ -21,6 +22,10 @@ interface RadioValue {
   liveTitle: string;
   /** Lien « Appeler l'émission », seulement pendant un direct qui reçoit des appels. */
   callUrl: string | null;
+  /** L'émission en direct (antenne du site) accepte les appels par le site. */
+  siteCalls: boolean;
+  /** Session du relais de l'émission faite depuis l'antenne du site (sinon vide). */
+  liveRtc: string;
   /** L'auditeur écoute l'émission en direct. */
   onLive: boolean;
   mode: RadioMode;
@@ -83,6 +88,17 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const canLive = () => liveRef.current.on && Date.now() - liveFailedAt.current > LIVE_RETRY_MS;
   const markLive = (v: boolean) => { onLiveRef.current = v; setOnLive(v); };
 
+  /** Connexion au relais quand l'émission vient de l'antenne du site (WebRTC). */
+  const rtcPc = useRef<RTCPeerConnection | null>(null);
+  const rtcSession = useRef('');
+  const dropRtc = () => {
+    rtcPc.current?.close();
+    rtcPc.current = null;
+    rtcSession.current = '';
+    const a = audio.current;
+    if (a && a.srcObject) a.srcObject = null;
+  };
+
   /** Branche le flux de l'émission en direct. */
   const playLive = useCallback(() => {
     const a = audio.current;
@@ -90,8 +106,32 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     markLive(true);
     setTime(0);
     setDuration(0);
-    a.src = liveRef.current.live.url;
+    const { rtc, url } = liveRef.current.live;
+    if (rtc) {
+      dropRtc();
+      a.removeAttribute('src');
+      // Le flux est branché tout de suite (dans le clic, exigé par les téléphones) ; la voix arrive ensuite.
+      const ms = new MediaStream();
+      a.srcObject = ms;
+      a.play().catch(() => setPlaying(false));
+      rtcSession.current = rtc;
+      watchTrack(rtc, 'audio', (st) => { if ((st === 'failed' || st === 'closed') && rtcSession.current === rtc && onLiveRef.current) leaveLiveRef.current(); })
+        .then(({ pc, stream }) => {
+          if (rtcSession.current !== rtc) { pc.close(); return; }
+          rtcPc.current = pc;
+          const add = () => stream.getTracks().forEach((t) => { if (!ms.getTracks().includes(t)) ms.addTrack(t); });
+          add();
+          stream.onaddtrack = add;
+          pc.addEventListener('track', () => setTimeout(add, 0));
+          a.play().catch(() => setPlaying(false));
+        })
+        .catch(() => { if (rtcSession.current === rtc) leaveLiveRef.current(); });
+      return;
+    }
+    dropRtc();
+    a.src = url;
     a.play().catch(() => setPlaying(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshSettings = useCallback(() => {
@@ -116,6 +156,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const playQueue = useCallback((list: RadioItem[], index: number) => {
     const a = audio.current;
     markLive(false);
+    dropRtc();
     queueRef.current = { list, index };
     setQueue(queueRef.current);
     const item = list[index];
@@ -171,8 +212,12 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   /** Le flux du direct s'est coupé ou est terminé : retour aux chants. */
   const leaveLive = useCallback(() => {
     liveFailedAt.current = Date.now();
+    dropRtc();
     next();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [next]);
+  const leaveLiveRef = useRef(leaveLive);
+  leaveLiveRef.current = leaveLive;
 
   const stop = useCallback(() => {
     audio.current?.pause();
@@ -181,7 +226,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
 
   const toggle = useCallback(() => {
     const a = audio.current;
-    if (!active || !a?.src) return start();
+    if (!active || (!a?.src && !a?.srcObject)) return start();
     if (a.paused && onLiveRef.current) playLive(); // reprendre au direct, pas là où on s'était arrêté
     else if (a.paused) a.play().catch(() => setPlaying(false));
     else a.pause();
@@ -215,6 +260,11 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     else if (!liveOn && onLiveRef.current) next();
   }, [active, liveOn, next, playLive]);
 
+  // L'antenne du site a redémarré (nouvelle session du relais) : on se rebranche.
+  useEffect(() => {
+    if (active && onLiveRef.current && radio.live.rtc && rtcSession.current && rtcSession.current !== radio.live.rtc) playLive();
+  }, [active, radio.live.rtc, playLive]);
+
   // Écran verrouillé et casque Bluetooth : titre affiché, pause et « suivant ».
   const current = !active ? null : onLive ? liveItem(radio.live) : queue.list[queue.index] ?? null;
   const nextRef = useRef(next);
@@ -232,7 +282,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, onLive, mode: effectiveMode, modes, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, siteCalls: liveOn && !!radio.live.rtc && radio.live.calls, liveRtc: liveOn ? radio.live.rtc : '', onLive, mode: effectiveMode, modes, items, current,
     upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
     time, duration,
     prepare, start, toggle, next, stop, setMode: changeMode,

@@ -45,7 +45,7 @@ export default function AdminRadio() {
       return;
     }
     if (r.vocalWhatsapp.trim() && !vocalWhatsappUrl(r.vocalWhatsapp)) { notify('Numéro WhatsApp des vocaux non reconnu : écrivez-le avec l’indicatif, par exemple +243 840 238 592.', 'error'); return; }
-    if (live.onAir && !live.url) { notify('Indiquez d’abord l’adresse du flux audio (Caster.fm, Zeno.fm…), puis passez en direct.', 'error'); return; }
+    if (live.onAir && !live.url && !live.rtc) { notify('Indiquez d’abord l’adresse du flux audio (Caster.fm, Zeno.fm…), puis passez en direct.', 'error'); return; }
     setSaving(true);
     try {
       // On ne garde que les retraits de titres qui existent encore.
@@ -90,6 +90,7 @@ export default function AdminRadio() {
       <DemoInline />
       <Card className={on ? 'ring-2 ring-red-500' : ''}><CardBody className="space-y-4">
         <h2 className="flex flex-wrap items-center gap-2 font-display text-lg font-semibold text-night"><Radio className="h-5 w-5 text-gold-600" />Émission en direct {on && <LiveBadge />}</h2>
+        <p className="rounded-2xl bg-gold-50 px-4 py-3 text-sm text-ink/80"><b>Nouveau :</b> faites l’émission directement depuis le site, avec les appels des auditeurs, sans Caster.fm ni Jitsi : <Link to="/admin/radio/antenne" className="font-semibold text-gold-700 hover:underline">ouvrir l’antenne en direct</Link>.</p>
         <p className="text-sm text-ink/65">Diffusez avec votre ordinateur vers un flux audio gratuit (Caster.fm ou Zeno.fm), puis appuyez sur « Passer en direct » : la radio de chaque auditeur bascule sur votre émission dans la minute, et revient aux chants quand vous terminez (ou seule au bout de 6 h).</p>
         <Field label="Adresse du flux audio" hint="Donnée par votre hébergeur de radio : sur Caster.fm, l’adresse « Stream URL » ou « Direct link » ; sur Zeno.fm, la « Stream URL ». Elle doit commencer par https://. À remplir une seule fois.">{(p) => <Input {...p} inputMode="url" placeholder="https://…" value={r.live.url} onChange={(e) => setR({ ...r, live: { ...r.live, url: e.target.value } })} />}</Field>
         <Field label="Nom de l’émission" hint="Affiché aux auditeurs, par exemple « La voix du KCC avec Reagan ».">{(p) => <Input {...p} maxLength={120} value={r.live.title} onChange={(e) => setR({ ...r, live: { ...r.live, title: e.target.value } })} />}</Field>

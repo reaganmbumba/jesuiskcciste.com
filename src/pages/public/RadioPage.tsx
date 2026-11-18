@@ -64,7 +64,7 @@ export default function RadioPage() {
             </div>
 
             {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
-            {r.callUrl && (
+            {(r.callUrl || r.siteCalls) && (
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm text-white/80">{tx('Intervenez en direct : appelez l’émission. La radio se coupe pendant l’appel, vous entendez l’animateur dans l’appel, et tous les auditeurs vous entendent à l’antenne.', 'Join the show live: call in. The radio stops during the call, you hear the host in the call, and every listener hears you on air.', 'Participe em direto: ligue para a emissão. A rádio para durante a chamada, ouve o animador na chamada e todos os ouvintes o ouvem no ar.')}</p>
                 <CallShowButton className="mt-3" />

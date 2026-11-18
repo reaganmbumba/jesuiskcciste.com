@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, SkipForward, X } from 'lucide-react';
 import { useI18n, type Tri } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
+import { RadioCallDialog } from './RadioCall';
 import type { RadioItem, RadioMode } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
@@ -35,7 +36,19 @@ export function LiveBadge({ className }: { className?: string }) {
  */
 export function CallShowButton({ className }: { className?: string }) {
   const { tx } = useI18n();
-  const { callUrl, stop } = useRadio();
+  const { callUrl, siteCalls, stop } = useRadio();
+  const [open, setOpen] = useState(false);
+  if (siteCalls) {
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}
+          className={cn('inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500', className)}>
+          <Phone className="h-4 w-4" aria-hidden />{tx('Appeler l’émission', 'Call the show', 'Ligar para a emissão')}
+        </button>
+        {open && <RadioCallDialog open={open} onClose={() => setOpen(false)} />}
+      </>
+    );
+  }
   if (!callUrl) return null;
   return (
     <a href={callUrl} target="_blank" rel="noopener noreferrer" onClick={stop}

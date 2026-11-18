@@ -47,6 +47,7 @@ const PAGES: Record<string, [string, string]> = {
   '/notifications': ['Notifications sur le téléphone', 'Soyez prévenu dès qu’un culte commence en direct, qu’un communiqué paraît ou qu’une nouvelle prédication est ajoutée.'],
   '/direct': ['Cultes en direct', 'Suivez en direct les cultes et les grandes fêtes de l’Église Bon Nouveau Message sur la chaîne YouTube « Je suis KCCiste », avec le compte à rebours avant le début.'],
   '/radio': ['Radio Je suis KCCiste', 'Écoutez en continu les chants et les prédications de la communauté KCCiste, dans un ordre aléatoire, comme à la radio.'],
+  '/recensement': ['Recensement des fidèles : faites-vous compter', 'Une fiche par foyer, en 2 minutes : aidez l’Église Bon Nouveau Message (KCC) à savoir combien nous sommes par paroisse, par pays et par âge.'],
   '/memorial': ['Mémorial', 'En mémoire des fidèles de l’Église Bon Nouveau Message (KCC) rappelés à Dieu : photo, biographie et messages de condoléances à leur famille.'],
   '/emplois': ['Opportunités et emplois', 'Chaque jour, jusqu’à 50 offres d’emploi réelles en RD Congo et en Angola, avec le lien de l’annonce d’origine. Rejoignez aussi le groupe WhatsApp Je suis KCCiste 4 Opportunité et emploi.'],
   '/communaute': ['Un seul peuple, partout dans le monde', 'Découvrez l’organisation de la communauté et retrouvez les vôtres.'],

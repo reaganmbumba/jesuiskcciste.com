@@ -4,6 +4,7 @@ import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
   LayoutDashboard, Megaphone, Medal, MessageCircle, Mic, Video, Music2, Settings, ShieldCheck, ShoppingBag, User, Users,
   LayoutGrid, FileText, Radio, Headphones, Briefcase, UserRoundPlus, CalendarCheck, Flame,
+  ClipboardList,
 } from 'lucide-react';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { DashboardLayout, type SideItem } from '@/layouts/DashboardLayout';
@@ -43,6 +44,7 @@ const OfflinePage = lazy(() => import('@/pages/public/OfflinePage'));
 const MatriculePage = lazy(() => import('@/pages/public/MatriculePage'));
 const PagnePage = lazy(() => import('@/pages/public/PagnePage'));
 const MemorialPage = lazy(() => import('@/pages/public/MemorialPage'));
+const CensusPage = lazy(() => import('@/pages/public/CensusPage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
 const ForbiddenPage = lazy(() => import('@/pages/public/ForbiddenPage'));
 const CommunityPage = lazy(() => import('@/pages/community/CommunityPage'));
@@ -112,6 +114,7 @@ const AdminRadio = lazy(() => import('@/pages/admin/AdminRadio'));
 const AdminJobs = lazy(() => import('@/pages/admin/AdminJobs'));
 const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminMemorial = lazy(() => import('@/pages/admin/AdminMemorial'));
+const AdminCensus = lazy(() => import('@/pages/admin/AdminCensus'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
@@ -139,6 +142,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/inscriptions', label: 'Inscriptions', icon: UserRoundPlus, permission: 'members.read_private' },
   { to: '/admin/cotisations', label: 'Cotisations mensuelles', icon: CalendarCheck, permission: 'contributions.manage' },
   { to: '/admin/membres', label: 'Membres', icon: Users, permission: 'members.read_private' },
+  { to: '/admin/recensement', label: 'Recensement des fidèles', icon: ClipboardList, permission: 'members.read_private' },
   { to: '/admin/paroisses', label: 'Paroisses et sections', icon: Building2, permission: 'sections.manage' },
   { to: '/admin/annonces', label: 'Annonces', icon: Megaphone, permission: 'announcements.create' },
   { to: '/admin/evenements', label: 'Événements', icon: CalendarDays, permission: 'events.manage' },
@@ -246,6 +250,7 @@ export function AppRoutes() {
         <Route path="pagne-kcc" element={<PagnePage />} />
         <Route path="memorial" element={<MemorialPage />} />
         <Route path="memorial/:slug" element={<MemorialPage />} />
+        <Route path="recensement" element={<CensusPage />} />
         <Route path="acces-refuse" element={<ForbiddenPage />} />
         <Route element={<RedirectIfAuthenticated />}>
           <Route path="connexion" element={<LoginPage />} />
@@ -276,7 +281,7 @@ export function AppRoutes() {
       <Route element={<RequirePermission permission="admin.access" />}>
         <Route path="admin" element={<AdminShell />}>
           <Route index element={<AdminOverview />} />
-          <Route element={<RequirePermission permission="members.read_private" />}><Route path="membres" element={<AdminMembers />} /><Route path="inscriptions" element={<AdminRegistrations />} /></Route>
+          <Route element={<RequirePermission permission="members.read_private" />}><Route path="membres" element={<AdminMembers />} /><Route path="inscriptions" element={<AdminRegistrations />} /><Route path="recensement" element={<AdminCensus />} /></Route>
           <Route element={<RequirePermission permission="contributions.manage" />}><Route path="cotisations" element={<AdminCotisations />} /></Route>
           <Route element={<RequirePermission permission="sections.manage" />}><Route path="paroisses" element={<AdminParishes />} /></Route>
           <Route path="annonces" element={<AdminAnnouncements />} />

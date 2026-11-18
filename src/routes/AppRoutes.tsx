@@ -35,6 +35,7 @@ const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const LivePage = lazy(() => import('@/pages/public/LivePage'));
 const RadioPage = lazy(() => import('@/pages/public/RadioPage'));
 const JobsPage = lazy(() => import('@/pages/public/JobsPage'));
+const PushNotificationsPage = lazy(() => import('@/pages/public/PushNotificationsPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const AppInstallPage = lazy(() => import('@/pages/public/AppInstallPage'));
 const MatriculePage = lazy(() => import('@/pages/public/MatriculePage'));
@@ -106,6 +107,7 @@ const AdminSermons = lazy(() => import('@/pages/admin/AdminSermons'));
 const AdminLivestreams = lazy(() => import('@/pages/admin/AdminLivestreams'));
 const AdminRadio = lazy(() => import('@/pages/admin/AdminRadio'));
 const AdminJobs = lazy(() => import('@/pages/admin/AdminJobs'));
+const AdminNotifications = lazy(() => import('@/pages/admin/AdminNotifications'));
 const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings'));
 const AdminAudit = lazy(() => import('@/pages/admin/AdminAudit'));
 const AdminSiteContent = lazy(() => import('@/pages/admin/AdminSiteContent'));
@@ -145,6 +147,7 @@ const ADMIN_MENU: (SideItem & { permission: Permission })[] = [
   { to: '/admin/directs', label: 'Directs des cultes', icon: Radio, permission: 'settings.manage' },
   { to: '/admin/radio', label: 'Radio Je suis KCCiste', icon: Headphones, permission: 'settings.manage' },
   { to: '/admin/emplois', label: 'Opportunités et emplois', icon: Briefcase, permission: 'settings.manage' },
+  { to: '/admin/notifications', label: 'Notifications', icon: Bell, permission: 'settings.manage' },
   { to: '/reunions', label: 'Réunions en vidéo', icon: Video, permission: 'moderation' },
   { to: '/admin/journaux', label: 'Journaux d’audit', icon: FileClock, permission: 'audit.read' },
   { to: '/admin/parametres', label: 'Paramètres', icon: ShieldCheck, permission: 'settings.manage' },
@@ -229,6 +232,7 @@ export function AppRoutes() {
         <Route path="solidarite" element={<SolidarityPage />} />
         <Route path="solidarite/projets" element={<ProjectsPage />} />
         <Route path="solidarite/projets/:slug" element={<ProjectDetailPage />} />
+        <Route path="notifications" element={<PushNotificationsPage />} />
         <Route path="confidentialite" element={<PrivacyPage />} />
         <Route path="application" element={<AppInstallPage />} />
         <Route path="matricule" element={<MatriculePage />} />
@@ -277,6 +281,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="directs" element={<AdminLivestreams />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="radio" element={<AdminRadio />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="emplois" element={<AdminJobs />} /></Route>
+          <Route element={<RequirePermission permission="settings.manage" />}><Route path="notifications" element={<AdminNotifications />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="contenu" element={<AdminSiteContent />} /></Route>
           <Route element={<RequirePermission permission="settings.manage" />}><Route path="textes" element={<AdminPageTexts />} /></Route>
           <Route element={<RequirePermission permission="audit.read" />}><Route path="journaux" element={<AdminAudit />} /></Route>

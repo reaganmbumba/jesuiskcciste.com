@@ -17,6 +17,7 @@ import { useI18n } from '@/i18n';
 const HomePage = lazy(() => import('@/pages/public/HomePage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const TeachingsPage = lazy(() => import('@/pages/public/TeachingsPage'));
+const AssistantPage = lazy(() => import('@/pages/public/AssistantPage'));
 const DoctrinePage = lazy(() => import('@/pages/public/DoctrinePage'));
 const HymnalPage = lazy(() => import('@/pages/public/HymnalPage'));
 const CatechismPage = lazy(() => import('@/pages/public/CatechismPage'));
@@ -176,6 +177,7 @@ export function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="a-propos" element={<AboutPage />} />
         <Route path="enseignements" element={<TeachingsPage />} />
+        <Route path="assistant" element={<AssistantPage />} />
         <Route path="doctrine" element={<DoctrinePage />} />
         <Route path="cantiques" element={<HymnalPage />} />
         <Route path="catechisme" element={<CatechismPage />} />

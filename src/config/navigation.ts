@@ -25,6 +25,7 @@ export const MAIN_NAV: NavGroup[] = [
   },
   {
     key: 'nav.faith', to: '/doctrine', children: [
+      { label: l('Assistant KCC', 'KCC Assistant', 'Assistente KCC'), to: '/assistant', description: l('Posez une question, réponse tirée des textes officiels', 'Ask a question, answered from the official texts', 'Faça uma pergunta, resposta tirada dos textos oficiais') },
       { label: l('Doctrine et histoire', 'Doctrine and history', 'Doutrina e história'), to: '/doctrine', description: l('Le KCC, la profession de foi, l’Alliance et le Prophète', 'The KCC, the profession of faith, the Covenant and the Prophet', 'O KCC, a profissão de fé, a Aliança e o Profeta') },
       { label: l('Livre « Le KCCisme »', 'The book “Le KCCisme”', 'Livro «Le KCCisme»'), to: '/livre-kccisme', description: l('La doctrine de l’Église, à lire avec un code d’accès', 'The Church’s doctrine, to read with an access code', 'A doutrina da Igreja, para ler com um código de acesso') },
       { label: l('Catéchisme', 'Catechism', 'Catecismo'), to: '/catechisme', description: l('Questions et réponses de la foi KCCiste', 'Questions and answers of the KCCist faith', 'Perguntas e respostas da fé KCCista') },

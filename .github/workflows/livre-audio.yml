@@ -1,0 +1,28 @@
+name: Livre audio (voix)
+
+# Fabrique les voix du livre « Le KCCisme » sans jamais mettre son texte en clair dans le
+# dépôt : voir tools/livre-audio/echange.py (clé à usage unique, texte et voix chiffrés).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['tools/livre-audio/demande.txt']
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install 'edge-tts>=6.1,<8' cryptography
+      - name: Échange chiffré et fabrication des voix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python tools/livre-audio/echange.py serveur "$GITHUB_REF_NAME"

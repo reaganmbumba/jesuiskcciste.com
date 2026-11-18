@@ -5,6 +5,7 @@ import { listPublicSermons } from '@/features/sermons/sermons';
 import type { SiteSettings } from '@/config/site';
 import { JOURNAUX, type Journal } from '@/content/journaux';
 import type { AudioSermon, Track } from '@/types';
+import { listAiredVocals, vocalUrl, type RadioVocal } from './vocals';
 
 /**
  * Radio Je suis KCCiste : écoute continue, en aléatoire, des chants et des
@@ -23,10 +24,10 @@ import type { AudioSermon, Track } from '@/types';
  */
 
 export type RadioMode = 'all' | 'songs' | 'sermons';
-export type RadioKind = 'song' | 'sermon' | 'news' | 'live';
+export type RadioKind = 'song' | 'sermon' | 'news' | 'vocal' | 'live';
 
 export interface RadioItem {
-  /** « song:<id> », « sermon:<id> », « news:<id> » ou « live ». */
+  /** « song:<id> », « sermon:<id> », « news:<id> », « vocal:<id> » ou « live ». */
   key: string;
   kind: RadioKind;
   title: string;
@@ -54,13 +55,17 @@ export interface RadioSettings {
   sermons: boolean;
   /** Journal parlé au début de chaque tour. */
   news: boolean;
+  /** Vocaux des auditeurs validés, entre les chants. */
+  vocals: boolean;
+  /** Numéro WhatsApp qui reçoit les notes vocales des auditeurs (lien wa.me). Vide = pas de bouton. */
+  vocalWhatsapp: string;
   /** Clés des titres retirés de l'antenne. */
   excluded: string[];
   live: RadioLive;
 }
 
 export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '' };
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, excluded: [], live: defaultRadioLive };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
@@ -119,6 +124,8 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
     songs: r?.songs !== false,
     sermons: r?.sermons !== false,
     news: r?.news !== false,
+    vocals: r?.vocals !== false,
+    vocalWhatsapp: typeof r?.vocalWhatsapp === 'string' ? r.vocalWhatsapp : '',
     excluded: Array.isArray(r?.excluded) ? r!.excluded.filter((k) => typeof k === 'string') : [],
     live: {
       url: typeof l.url === 'string' ? l.url : '',
@@ -144,6 +151,7 @@ export const SONGS_BETWEEN_SERMONS = 3;
 export const songKey = (id: string) => `song:${id}`;
 export const sermonKey = (id: string) => `sermon:${id}`;
 export const newsKey = (id: string) => `news:${id}`;
+export const vocalKey = (id: string) => `vocal:${id}`;
 
 /** Un journal reste à l'antenne une semaine, puis laisse la place au suivant. */
 export const JOURNAL_DAYS = 7;
@@ -166,18 +174,32 @@ export function sermonItem(s: AudioSermon): RadioItem | null {
   return { key: sermonKey(s.id), kind: 'sermon', title: s.title, subtitle: [who, s.parish].filter(Boolean).join(' · '), url: s.audioUrl, durationSeconds: s.durationSeconds ?? null, imageUrl: s.preacherPhotoUrl ?? null };
 }
 
+export function vocalItem(v: RadioVocal): RadioItem | null {
+  if (v.status !== 'approved' || !v.audioPath) return null;
+  return { key: vocalKey(v.id), kind: 'vocal', title: `Message de ${v.authorName}`, subtitle: v.place ? `${v.place} · auditeur` : 'Auditeur de la radio', url: vocalUrl(v.audioPath), durationSeconds: v.audioSeconds ?? null, imageUrl: null };
+}
+
+/** Numéro WhatsApp des vocaux → lien wa.me avec un message prêt. Vide ou invalide = null. */
+export function vocalWhatsappUrl(raw: string | null | undefined): string | null {
+  const digits = (raw ?? '').replace(/[\s().+-]/g, '');
+  if (!/^\d{8,15}$/.test(digits)) return null;
+  return `https://wa.me/${digits}?text=${encodeURIComponent('Bonjour Radio Je suis KCCiste, voici mon vocal pour l’antenne :')}`;
+}
+
 /** Tout ce qui peut passer à l'antenne, avant les réglages de l'administration. */
 export async function loadRadioCatalog(): Promise<RadioItem[]> {
-  const [tracks, artists, sermons] = await Promise.all([
+  const [tracks, artists, sermons, vocals] = await Promise.all([
     tracksRepo.all().catch(() => [] as Track[]),
     artistsRepo.all().catch(() => []),
     listPublicSermons().catch(() => [] as AudioSermon[]),
+    listAiredVocals().catch(() => [] as RadioVocal[]),
   ]);
   const name = (id: string) => artists.find((a) => a.id === id)?.name;
   const songs = tracks.map((t) => songItem(t, name(t.artistId))).filter((x): x is RadioItem => !!x);
   const talks = sermons.map(sermonItem).filter((x): x is RadioItem => !!x);
   const news = currentNews();
-  return [...(news ? [news] : []), ...songs, ...talks];
+  const voices = vocals.map(vocalItem).filter((x): x is RadioItem => !!x);
+  return [...(news ? [news] : []), ...songs, ...talks, ...voices];
 }
 
 /** Ce qui est réellement diffusé, selon les réglages et le choix de l'auditeur. */
@@ -187,6 +209,7 @@ export function onAir(catalog: RadioItem[], settings: RadioSettings, mode: Radio
     if (off.has(i.key)) return false;
     if (i.kind === 'song') return settings.songs && mode !== 'sermons';
     if (i.kind === 'news') return settings.news && mode !== 'songs';
+    if (i.kind === 'vocal') return settings.vocals && mode !== 'songs';
     return settings.sermons && mode !== 'songs';
   });
 }
@@ -215,19 +238,24 @@ export function shuffle<T>(list: T[], random: () => number = Math.random): T[] {
  * En mode « Tout », une prédication après chaque série de chants, comme à la
  * radio, pour que les quelques prédications ne se perdent pas parmi les chants.
  * Le journal parlé ouvre chaque tour et repasse après chaque série de chants.
+ * Les vocaux des auditeurs passent un par un, après chaque série.
  * `avoidFirst` : le dernier titre joué, pour ne pas l'entendre deux fois de suite.
  */
 export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null): RadioItem[] {
   const songs = shuffle(items.filter((i) => i.kind === 'song'), random);
   const talks = shuffle(items.filter((i) => i.kind === 'sermon'), random);
   const news = items.filter((i) => i.kind === 'news');
+  const voices = shuffle(items.filter((i) => i.kind === 'vocal'), random);
   const out: RadioItem[] = [...news];
   while (songs.length || talks.length) {
     const serie = songs.splice(0, SONGS_BETWEEN_SERMONS);
     out.push(...serie);
+    if (voices.length) out.push(voices.shift()!);
     if (serie.length === SONGS_BETWEEN_SERMONS && (songs.length || talks.length)) out.push(...news);
     if (talks.length) out.push(talks.shift()!);
   }
+  // Sans chants ni prédications, les vocaux passent seuls ; sinon le reste attend le tour suivant.
+  if (!out.some((i) => i.kind !== 'news')) out.push(...voices);
   const f = out.findIndex((i) => i.kind !== 'news');
   if (avoidFirst && f >= 0 && out.length > f + 1 && out[f].key === avoidFirst) {
     const k = out.findIndex((i, n) => n > f && i.kind === out[f].kind && i.key !== avoidFirst);

@@ -1,0 +1,26 @@
+const {chromium}=require('playwright');(async()=>{const b=await chromium.launch({args:['--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream']});const p=await b.newPage();
+await p.goto('https://jesuiskcciste.com/radio');
+const r=await p.evaluate(async()=>{
+ const ICE={iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'};
+ const mic=await navigator.mediaDevices.getUserMedia({audio:true});
+ const pc=new RTCPeerConnection(ICE);const t=pc.addTransceiver(mic.getAudioTracks()[0],{direction:'sendonly'});
+ await pc.setLocalDescription(await pc.createOffer());
+ const c=await (await fetch('/api/live/call',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sdp:pc.localDescription.sdp,mid:t.mid})})).json();
+ if(!c.sdp) return {err:c};
+ await pc.setRemoteDescription({type:'answer',sdp:c.sdp});
+ await new Promise(r=>setTimeout(r,2500));
+ const w=await (await fetch('/api/live/watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:c.sessionId,tracks:['voix']})})).json();
+ const pc2=new RTCPeerConnection(ICE);await pc2.setRemoteDescription({type:'offer',sdp:w.sdp});await pc2.setLocalDescription(await pc2.createAnswer());
+ await fetch('/api/live/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:w.sessionId,sdp:pc2.localDescription.sdp})});
+ await new Promise(r=>setTimeout(r,5000));
+ let bytes=0;(await pc2.getStats()).forEach(x=>{if(x.type==='inbound-rtp'&&x.kind==='audio')bytes=x.bytesReceived});
+ const SB='https://anawpwprqvzxgzcpqqwu.supabase.co/rest/v1/rpc/',H={apikey:'sb_publishable_hnpwDEfVVCC0BhYkxOgdwQ_E745c7rK','Content-Type':'application/json'};
+ const id=await (await fetch(SB+'radio_appeler',{method:'POST',headers:H,body:JSON.stringify({p_nom:'Test Claude',p_ville:'Essai',p_session:c.sessionId})})).json();
+ const st=await (await fetch(SB+'radio_appel_statut',{method:'POST',headers:H,body:JSON.stringify({p_id:id})})).json();
+ await fetch(SB+'radio_raccrocher',{method:'POST',headers:H,body:JSON.stringify({p_id:id})});
+ const st2=await (await fetch(SB+'radio_appel_statut',{method:'POST',headers:H,body:JSON.stringify({p_id:id})})).json();
+ const direct=await fetch('https://anawpwprqvzxgzcpqqwu.supabase.co/rest/v1/radio_appels?select=id',{headers:H});
+ pc.close();pc2.close();
+ return {pub:pc.connectionState, bytesFromCaller:bytes, statut:st, apres:st2, anonLecture:direct.status+' '+(await direct.text()).slice(0,40)};
+});console.log(JSON.stringify(r));
+const btn=await p.locator('text=Appeler l’émission').count();console.log('bouton appel visible (hors direct):',btn);await b.close();})();

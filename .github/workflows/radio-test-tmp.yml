@@ -1,0 +1,12 @@
+name: radio-test-tmp
+on:
+  push:
+    branches: [claude/radio-test]
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: mkdir t && cd t && npm init -y >/dev/null && npm i playwright@1.48.2 >/dev/null && npx playwright install --with-deps chromium >/dev/null && cp ../.github/calltest.cjs . && node calltest.cjs

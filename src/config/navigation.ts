@@ -44,6 +44,7 @@ export const MAIN_NAV: NavGroup[] = [
   {
     key: 'nav.trainings', to: '/academie', children: [
       { label: l('Académie KCC', 'KCC Academy', 'Academia KCC'), to: '/academie', description: l('Apprendre et progresser', 'Learn and grow', 'Aprender e progredir') },
+      { label: l('Parcours néophyte en ligne', 'Online neophyte course', 'Percurso do neófito em linha'), to: '/parcours-neophyte', description: l('Les 12 leçons du carnet, un quiz et une attestation', 'The 12 lessons of the notebook, a quiz and a certificate', 'As 12 lições do caderno, um teste e um certificado') },
       { label: l('Catalogue des formations', 'Course catalogue', 'Catálogo de formações'), to: '/academie/formations', description: l('Toutes les formations', 'All courses', 'Todas as formações') },
       { label: l('Vérifier un certificat', 'Verify a certificate', 'Verificar um certificado'), to: '/academie/verifier', description: l('Authenticité par identifiant', 'Check authenticity by ID', 'Autenticidade por identificador') },
     ],

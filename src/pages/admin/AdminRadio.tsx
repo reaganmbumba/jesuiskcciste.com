@@ -16,6 +16,7 @@ import { writeAudit } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
 import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUrl, radioSettingsOf, vocalWhatsappUrl, type RadioItem, type RadioSettings } from '@/features/radio/radio';
 import { AdminVocals } from '@/features/radio/AdminVocals';
+import { AdminProgrammes } from '@/features/radio/AdminProgrammes';
 import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { JITSI_DOMAIN } from '@/features/meetings/meetings';
 
@@ -50,7 +51,7 @@ export default function AdminRadio() {
     try {
       // On ne garde que les retraits de titres qui existent encore.
       const keys = new Set((catalog ?? []).map((i) => i.key));
-      const radio = { ...r, vocalWhatsapp: r.vocalWhatsapp.trim(), live, excluded: catalog ? r.excluded.filter((k) => keys.has(k)) : r.excluded };
+      const radio = { ...r, programmes: radioSettingsOf(settings).programmes, vocalWhatsapp: r.vocalWhatsapp.trim(), live, excluded: catalog ? r.excluded.filter((k) => keys.has(k)) : r.excluded };
       const next = { ...settings, radio };
       if (!isDemoMode) {
         const { error } = await supabase!.from('site_settings').upsert({ key: 'public', value: snakify(next) });
@@ -107,6 +108,7 @@ export default function AdminRadio() {
             : <Button onClick={() => save({ onAir: true, startedAt: new Date().toISOString() })} loading={saving} icon={<Radio className="h-4 w-4" />}>Passer en direct</Button>}
         </div>
       </CardBody></Card>
+      <AdminProgrammes />
       <AdminVocals />
       <Card><CardBody className="space-y-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><MessageCircle className="h-5 w-5 text-gold-600" />Réglages des vocaux</h2>

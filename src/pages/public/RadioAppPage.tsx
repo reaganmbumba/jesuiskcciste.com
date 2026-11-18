@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ListMusic, Mic, Pause, Phone, Play, Radio, SkipForward, StopCircle } from 'lucide-react';
+import { CalendarClock, ListMusic, Mic, Pause, Phone, Play, Radio, SkipForward, StopCircle } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { cn, formatDuration } from '@/utils/format';
 import { useRadio } from '@/features/radio/RadioContext';
@@ -17,7 +17,12 @@ export default function RadioAppPage() {
   const r = useRadio();
   const { prepare } = r;
   const [tab, setTab] = useState<Tab>('ecoute');
-  useEffect(() => { prepare(); }, [prepare]);
+  useEffect(() => {
+    prepare();
+    // la page reste ouverte dans l'application : on regarde chaque minute si une émission commence
+    const t = setInterval(prepare, 60_000);
+    return () => clearInterval(t);
+  }, [prepare]);
   useEffect(() => { document.title = RADIO_NAME; }, []);
   const pct = r.duration > 0 ? Math.min(100, (r.time / r.duration) * 100) : 0;
   const canCall = Boolean(r.callUrl || r.siteCalls);
@@ -113,6 +118,19 @@ export default function RadioAppPage() {
 
         {tab === 'suite' && (
           <section className="mt-4">
+            {r.programmes.length > 0 && (
+              <div className="mb-8">
+                <h2 className="flex items-center gap-2 font-display text-xl font-semibold"><CalendarClock className="h-5 w-5 text-gold-300" aria-hidden />{tx('Émissions au programme', 'Scheduled shows', 'Emissões programadas')}</h2>
+                <ul className="mt-4 space-y-3">
+                  {r.programmes.map((p) => (
+                    <li key={p.id} className="rounded-2xl border border-gold/20 bg-gold/[0.06] p-3">
+                      <p className="font-medium">{p.title || tx('Émission programmée', 'Scheduled show', 'Emissão programada')}</p>
+                      <p className="text-xs capitalize text-gold-300">{new Date(p.startsAt).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <h2 className="font-display text-xl font-semibold">{tx('À suivre', 'Up next', 'A seguir')}</h2>
             {r.upcoming.length ? (
               <ol className="mt-4 space-y-3">

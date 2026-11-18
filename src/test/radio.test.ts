@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { availableModes, buildRound, currentNews, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, vocalItem, vocalWhatsappUrl, type RadioItem } from '@/features/radio/radio';
+import { availableModes, buildRound, currentNews, currentProgramme, effectiveLive, isLiveOn, newCallRoomUrl, onAir, parseCallUrl, parseStreamUrl, radioSettingsOf, sermonItem, songItem, SONGS_BETWEEN_SERMONS, vocalItem, vocalWhatsappUrl, type RadioItem } from '@/features/radio/radio';
 import { isVocalFresh, type RadioVocal } from '@/features/radio/vocals';
 import type { AudioSermon, Track } from '@/types';
 
@@ -20,7 +20,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' } });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' }, programmes: [] });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });
@@ -116,5 +116,27 @@ describe('Radio : émissions en direct et appels', () => {
     expect(vocalWhatsappUrl('+243 840 238 592')).toMatch(/^https:\/\/wa\.me\/243840238592\?text=/);
     expect(vocalWhatsappUrl('')).toBeNull();
     expect(vocalWhatsappUrl('abc')).toBeNull();
+  });
+});
+
+describe('émissions programmées', () => {
+  const p = { id: 'a', title: 'Tosungana', topic: 'Sujet', url: 'https://x.supabase.co/a.mp3', startsAt: '2026-11-20T18:00:00.000Z', durationSeconds: 1800 };
+  it('lit, nettoie et trie la liste', () => {
+    const r = radioSettingsOf({ radio: { programmes: [{ ...p, id: 'b', startsAt: '2026-11-21T18:00:00.000Z' }, p, { ...p, url: 'http://non' }, { ...p, durationSeconds: 0 }] } } as never);
+    expect(r.programmes.map((x) => x.id)).toEqual(['a', 'b']);
+  });
+  it('passe à l’antenne pendant sa durée seulement', () => {
+    const r = radioSettingsOf({ radio: { programmes: [p] } } as never);
+    expect(currentProgramme(r.programmes, new Date('2026-11-20T17:59:00Z'))).toBeNull();
+    expect(currentProgramme(r.programmes, new Date('2026-11-20T18:10:00Z'))?.id).toBe('a');
+    expect(currentProgramme(r.programmes, new Date('2026-11-20T18:30:00Z'))).toBeNull();
+    const e = effectiveLive(r, new Date('2026-11-20T18:10:00Z'));
+    expect(e.programme?.id).toBe('a');
+    expect(isLiveOn(e.live, new Date('2026-11-20T18:10:00Z'))).toBe(true);
+    expect(e.live.url).toBe(p.url);
+  });
+  it('le direct de l’animateur passe avant l’émission programmée', () => {
+    const r = radioSettingsOf({ radio: { programmes: [p], live: { onAir: true, rtc: 'abcdefgh12345678', startedAt: '2026-11-20T18:05:00.000Z' } } } as never);
+    expect(effectiveLive(r, new Date('2026-11-20T18:10:00Z')).programme).toBeNull();
   });
 });

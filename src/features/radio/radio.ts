@@ -68,10 +68,24 @@ export interface RadioSettings {
   /** Clés des titres retirés de l'antenne. */
   excluded: string[];
   live: RadioLive;
+  /** Émissions enregistrées à l'avance, diffusées seules à l'heure prévue (même ordinateur éteint). */
+  programmes: RadioProgramme[];
+}
+
+/** Émission programmée : un fichier audio qui passe à l'antenne à une date et une heure fixées. */
+export interface RadioProgramme {
+  id: string;
+  title: string;
+  topic: string;
+  /** Adresse https du fichier audio. */
+  url: string;
+  /** Début de la diffusion (ISO). */
+  startsAt: string;
+  durationSeconds: number;
 }
 
 export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' };
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive, programmes: [] };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
@@ -143,7 +157,53 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       calls: l.calls === true,
       topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
     },
+    programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
   };
+}
+
+/** Liste des émissions programmées lue en base, nettoyée et triée par heure de début. */
+export function parseProgrammes(raw: unknown): RadioProgramme[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RadioProgramme[] = [];
+  for (const v of raw) {
+    if (!v || typeof v !== 'object') continue;
+    const o = v as Record<string, unknown>;
+    const startsAt = typeof o.startsAt === 'string' ? o.startsAt : typeof o.starts_at === 'string' ? o.starts_at : '';
+    const dur = Number(o.durationSeconds ?? o.duration_seconds);
+    const url = typeof o.url === 'string' ? o.url : '';
+    if (!startsAt || Number.isNaN(new Date(startsAt).getTime()) || !(dur > 0) || !/^https:\/\//.test(url)) continue;
+    out.push({
+      id: typeof o.id === 'string' && o.id ? o.id : `${startsAt}-${url}`,
+      title: typeof o.title === 'string' ? o.title.slice(0, 120) : '',
+      topic: typeof o.topic === 'string' ? o.topic.slice(0, 3000) : '',
+      url, startsAt, durationSeconds: Math.round(dur),
+    });
+  }
+  return out.sort((a, b) => a.startsAt.localeCompare(b.startsAt)).slice(0, 100);
+}
+
+const programmeEnd = (p: RadioProgramme) => new Date(p.startsAt).getTime() + p.durationSeconds * 1000;
+
+/** Émission programmée qui passe en ce moment, ou null. */
+export function currentProgramme(list: RadioProgramme[], now = new Date()): RadioProgramme | null {
+  const t = now.getTime();
+  return list.find((p) => new Date(p.startsAt).getTime() <= t && t < programmeEnd(p)) ?? null;
+}
+
+/** Émissions programmées pas encore terminées (à venir ou en cours). */
+export function upcomingProgrammes(list: RadioProgramme[], now = new Date()): RadioProgramme[] {
+  return list.filter((p) => programmeEnd(p) > now.getTime());
+}
+
+/**
+ * Ce qui est à l'antenne : le direct de l'animateur s'il y en a un, sinon l'émission
+ * programmée de l'heure (présentée comme un direct, lue depuis son fichier).
+ */
+export function effectiveLive(radio: RadioSettings, now = new Date()): { live: RadioLive; programme: RadioProgramme | null } {
+  if (isLiveOn(radio.live, now)) return { live: radio.live, programme: null };
+  const p = currentProgramme(radio.programmes, now);
+  if (!p) return { live: radio.live, programme: null };
+  return { live: { ...defaultRadioLive, onAir: true, url: p.url, title: p.title || 'Émission programmée', topic: p.topic, startedAt: p.startsAt }, programme: p };
 }
 
 /** Relit le réglage en base (les auditeurs déjà à l'écoute voient le direct commencer). */

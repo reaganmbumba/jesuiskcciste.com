@@ -2,6 +2,8 @@ name: tmp-check
 on:
   push:
     branches: [claude/radio-app-page]
+permissions:
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -29,5 +31,7 @@ jobs:
           J
           node shot.mjs
       - if: always()
-        uses: actions/upload-artifact@v4
-        with: { name: shots, path: 'shot*.png' }
+        run: |
+          mkdir -p /tmp/s && cp shot*.png /tmp/s/ || true
+          git config user.name ci && git config user.email ci@example.com
+          git checkout --orphan claude/radio-shots && git rm -rfq . && cp /tmp/s/*.png . && git add *.png && git commit -qm shots && git push -f origin claude/radio-shots

@@ -1,0 +1,14 @@
+name: typecheck-tmp
+on:
+  push:
+    branches: [claude/typecheck]
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - run: npx tsc -b 2>&1 | tee tsc.log; exit ${PIPESTATUS[0]}
+        shell: bash

@@ -1,0 +1,35 @@
+{
+  "name": "kcc-radio-antenne",
+  "productName": "Radio Je suis KCCiste",
+  "version": "1.0.0",
+  "description": "Antenne de la radio Je suis KCCiste : émission en direct, appels des auditeurs, musique et effets",
+  "author": "Je suis KCCiste",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.jesuiskcciste.radio",
+    "productName": "Radio Je suis KCCiste",
+    "artifactName": "KCC-Radio-Setup-${version}.${ext}",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "build/icon.png", "package.json"],
+    "win": { "target": "nsis", "icon": "build/icon.png" },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Radio Je suis KCCiste",
+      "language": "1036"
+    }
+  }
+}

@@ -52,6 +52,8 @@ export interface RadioLive {
   rtc: string;
   /** Appels des auditeurs par le site (bouton « Appeler l'émission »), avec l'antenne du site. */
   calls: boolean;
+  /** Sujet de l'émission écrit par l'animateur, affiché aux auditeurs pendant le direct. */
+  topic: string;
 }
 
 export interface RadioSettings {
@@ -68,7 +70,7 @@ export interface RadioSettings {
   live: RadioLive;
 }
 
-export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false };
+export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' };
 export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
@@ -139,6 +141,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       callUrl: typeof l.callUrl === 'string' ? l.callUrl : '',
       rtc: typeof l.rtc === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(l.rtc) ? l.rtc : '',
       calls: l.calls === true,
+      topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
     },
   };
 }

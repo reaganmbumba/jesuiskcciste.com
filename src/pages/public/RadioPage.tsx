@@ -38,6 +38,7 @@ export default function RadioPage() {
               <div className="min-w-0" aria-live="polite">
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-300">
                   {r.onLive && <LiveBadge />}
+                  {r.liveOn && r.liveListeners !== null && r.liveListeners > 0 && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white/80">🎧 {r.liveListeners} {tx(r.liveListeners > 1 ? 'auditeurs' : 'auditeur', r.liveListeners > 1 ? 'listeners' : 'listener', r.liveListeners > 1 ? 'ouvintes' : 'ouvinte')}</span>}
                   {r.playing && !r.onLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
                   {r.active ? (r.playing ? tx('À l’antenne', 'On air', 'No ar') : tx('En pause', 'Paused', 'Em pausa')) : tx('Prête à démarrer', 'Ready to start', 'Pronta a começar')}
                 </p>
@@ -63,6 +64,12 @@ export default function RadioPage() {
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
 
+            {r.liveTopic && (
+              <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-300">{tx('Sujet de l’émission', 'Today’s topic', 'Tema da emissão')}</p>
+                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-white/90">{r.liveTopic}</p>
+              </div>
+            )}
             {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
             {(r.callUrl || r.siteCalls) && (
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">

@@ -110,9 +110,7 @@ export default function RadioAppPage() {
 
         {tab === 'vocal' && (
           <section className="mt-4">
-            <h2 className="font-display text-xl font-semibold">{tx('Votre voix à l’antenne', 'Your voice on air', 'A sua voz no ar')}</h2>
-            <p className="mt-1 text-sm text-white/65">{tx('Enregistrez un vocal : l’animateur l’écoute puis le passe à la radio.', 'Record a voice message: the host listens to it and plays it on the radio.', 'Grave uma mensagem de voz: o animador ouve-a e passa-a na rádio.')}</p>
-            <SendVocalCard className="mt-4 text-ink" />
+            <SendVocalCard className="text-ink" />
           </section>
         )}
 

@@ -66,6 +66,7 @@ const CatalogPage = lazy(() => import('@/pages/academy/CatalogPage'));
 const CourseDetailPage = lazy(() => import('@/pages/academy/CourseDetailPage'));
 const ExamPage = lazy(() => import('@/pages/academy/ExamPage'));
 const VerifyCertificatePage = lazy(() => import('@/pages/academy/VerifyCertificatePage'));
+const NeophyteCoursePage = lazy(() => import('@/pages/academy/NeophyteCoursePage'));
 const MusicPage = lazy(() => import('@/pages/music/MusicPage'));
 const ArtistsPage = lazy(() => import('@/pages/music/ArtistsPage'));
 const LibraryPage = lazy(() => import('@/pages/music/LibraryPage'));
@@ -216,6 +217,8 @@ export function AppRoutes() {
         <Route path="academie/formations" element={<CatalogPage />} />
         <Route path="academie/formations/:slug" element={<CourseDetailPage />} />
         <Route path="academie/verifier" element={<VerifyCertificatePage />} />
+        <Route path="parcours-neophyte" element={<NeophyteCoursePage />} />
+        <Route path="parcours-neophyte/lecon/:n" element={<NeophyteCoursePage />} />
         <Route element={<RequireAuth />}>
           <Route path="academie/examens/:quizId" element={<ExamPage />} />
         </Route>

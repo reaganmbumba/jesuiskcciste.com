@@ -68,15 +68,20 @@ function Debate({ topic }: { topic: DebateTopic }) {
           </div>
           <ShareAudio topic={topic} />
           <p className="text-[15px] leading-relaxed text-white/70">{pick(topic.intro)}</p>
+          {topic.questions && (
+            <ol className="list-decimal space-y-2 rounded-3xl bg-white/10 p-5 pl-10 text-[15px] leading-relaxed text-white ring-1 ring-white/15">
+              {topic.questions.map((q, i) => <li key={i}>{pick(q)}</li>)}
+            </ol>
+          )}
         </div>
       </PageHeader>
       <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_1.1fr] lg:py-14">
         <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
           <div className="overflow-hidden rounded-3xl bg-night text-white shadow-lift">
-            <img src={topic.image} alt={tx('Je suis KCCiste 3 Mariage — Sujet du jour', 'Je suis KCCiste 3 Mariage — Topic of the day', 'Je suis KCCiste 3 Mariage — Tema do dia')} className="w-full" />
+            <img src={topic.image} alt={`${topic.whatsappGroup} — ${pick(topic.title)}`} className="w-full" />
             <div className="space-y-4 p-6">
               <div className="flex items-center gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-lg font-bold text-night" aria-hidden>M</div>
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-lg font-bold text-night" aria-hidden>{topic.host[0]}</div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-200">{tx('Animé par', 'Hosted by', 'Animado por')}</p>
                   <p className="font-display text-xl">{topic.host}</p>

@@ -1,0 +1,33 @@
+name: Histoire en lingala (voix)
+
+# Fabrique la voix lingala (Meta MMS-TTS) des textes tools/histoire-lingala/*.txt
+# poussés sur une branche de travail, puis l'enregistre sur cette branche.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths: ['tools/histoire-lingala/*.txt', 'tools/histoire-lingala/voix.py', '.github/workflows/histoire-lingala.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu torch==2.8.0 torchaudio==2.8.0 && pip install coqui-tts 'torch==2.8.0' 'torchaudio==2.8.0' scipy numpy huggingface_hub six
+      - name: Fabriquer la voix
+        working-directory: tools/histoire-lingala
+        run: for f in *.txt; do python voix.py "$f"; done
+      - name: Enregistrer la voix sur la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/histoire-lingala/voix
+          git diff --cached --quiet || git commit -m "Voix de l'histoire en lingala"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

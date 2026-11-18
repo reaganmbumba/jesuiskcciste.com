@@ -7,6 +7,7 @@ import * as hymnBook from '@/content/cantiques';
 import type { Hymn } from '@/content/cantiques';
 import { usePageTexts } from '@/features/content/pageTexts';
 import { useI18n } from '@/i18n';
+import { KeepHymnalOffline } from '@/features/offline/KeepHymnalOffline';
 
 const LANGS = ['Tous', 'Lingala', 'Kikongo'] as const;
 const PAGE = 30;
@@ -84,6 +85,7 @@ export default function HymnalPage() {
             ))}
           </div>
         </div>
+        <KeepHymnalOffline bytes={JSON.stringify(hymns).length} />
         <p className="mt-4 text-sm text-ink/60" aria-live="polite">{results.length} {results.length > 1 ? tx('cantiques', 'hymns', 'hinos') : tx('cantique', 'hymn', 'hino')}</p>
         <div className="mt-4 grid items-start gap-3 md:grid-cols-2">
           {results.slice(0, shown).map((h) => <HymnCard key={h.lang + h.n} h={h} open={hymnId(h) === target || undefined} />)}

@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'radio/**'
+      - 'radio/desktop/**'
       - '.github/workflows/radio-desktop.yml'
 
 permissions:

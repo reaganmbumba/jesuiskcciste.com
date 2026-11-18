@@ -4,10 +4,15 @@ import { Button } from './Button';
 
 export function Modal({ open, onClose, title, children, footer, size = 'md', closable = true }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; size?: 'md' | 'lg'; closable?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  // onClose change à chaque rendu chez certains appelants : on le garde dans une référence pour que
+  // la mise au point (focus) ne se refasse qu'à l'ouverture. Sinon, à chaque lettre tapée, le curseur
+  // repartait dans le premier champ.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     setTimeout(() => ref.current?.querySelector<HTMLElement>('input,select,textarea,button')?.focus(), 30);
@@ -16,7 +21,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md', clo
       document.body.style.overflow = '';
       prev?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>

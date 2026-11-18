@@ -24,6 +24,8 @@ interface RadioValue {
   callUrl: string | null;
   /** L'émission en direct (antenne du site) accepte les appels par le site. */
   siteCalls: boolean;
+  /** Sujet de l'émission en direct, écrit par l'animateur (vide sinon). */
+  liveTopic: string;
   /** Session du relais de l'émission faite depuis l'antenne du site (sinon vide). */
   liveRtc: string;
   /** L'auditeur écoute l'émission en direct. */
@@ -282,7 +284,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, siteCalls: liveOn && !!radio.live.rtc && radio.live.calls, liveRtc: liveOn ? radio.live.rtc : '', onLive, mode: effectiveMode, modes, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, siteCalls: liveOn && !!radio.live.rtc && radio.live.calls, liveRtc: liveOn ? radio.live.rtc : '', liveTopic: liveOn ? radio.live.topic : '', onLive, mode: effectiveMode, modes, items, current,
     upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
     time, duration,
     prepare, start, toggle, next, stop, setMode: changeMode,

@@ -63,6 +63,12 @@ export default function RadioPage() {
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
 
+            {r.liveTopic && (
+              <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-300">{tx('Sujet de l’émission', 'Today’s topic', 'Tema da emissão')}</p>
+                <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-white/90">{r.liveTopic}</p>
+              </div>
+            )}
             {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
             {(r.callUrl || r.siteCalls) && (
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">

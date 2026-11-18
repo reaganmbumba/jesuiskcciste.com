@@ -47,7 +47,7 @@ describe('Radio Je suis KCCiste', () => {
 });
 
 describe('Radio : émissions en direct et appels', () => {
-  const live = (extra = {}) => ({ url: 'https://stream.zeno.fm/abc', title: 'La voix du KCC', onAir: true, startedAt: '2026-10-22T20:00:00Z', callUrl: '', rtc: '', calls: false, ...extra });
+  const live = (extra = {}) => ({ url: 'https://stream.zeno.fm/abc', title: 'La voix du KCC', onAir: true, startedAt: '2026-10-22T20:00:00Z', callUrl: '', rtc: '', calls: false, topic: '', ...extra });
 
   it('n’accepte que des flux https', () => {
     expect(parseStreamUrl(' https://stream.zeno.fm/abc ')).toBe('https://stream.zeno.fm/abc');

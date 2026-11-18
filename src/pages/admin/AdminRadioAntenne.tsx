@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Headphones, Mic, Music2, Phone, PhoneOff, Radio, Square, UserX } from 'lucide-react';
+import { Headphones, Mic, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Checkbox, Field, Input } from '@/components/ui/Form';
+import { Checkbox, Field, Input, Textarea } from '@/components/ui/Form';
 import { useToast } from '@/components/ui/Toast';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/lib/supabase';
@@ -40,8 +40,17 @@ export default function AdminRadioAntenne() {
   const [busy, setBusy] = useState(false);
   const [state, setState] = useState('');
   const [queue, setQueue] = useState<Appel[]>([]);
-  const [music, setMusic] = useState<string>('');
+  // Musique de fond : plusieurs morceaux qui passent à tour de rôle
+  const [tracks, setTracks] = useState<{ name: string; url: string }[]>([]);
+  const [trackIdx, setTrackIdx] = useState(0);
+  const [musicOn, setMusicOn] = useState(true);
+  const tracksRef = useRef(tracks);
+  tracksRef.current = tracks;
+  const idxRef = useRef(0);
   const [musicVol, setMusicVol] = useState(0.25);
+  // Sujet de l'émission, lu par les auditeurs sur /radio
+  const [topic, setTopic] = useState(saved.live.topic || '');
+  const [topicSaved, setTopicSaved] = useState(saved.live.topic || '');
   const [micMuted, setMicMuted] = useState(false);
   const [level, setLevel] = useState(0);
 
@@ -111,19 +120,20 @@ export default function AdminRadioAntenne() {
       musicGain.gain.value = musicVol;
       musicGain.connect(program); musicGain.connect(retour); musicGain.connect(ac.destination);
       const sum = ac.createGain(); micGain.connect(sum); musicGain.connect(sum); sum.connect(analyser);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl: nodes.current.musicEl };
-      if (nodes.current.musicEl) {
-        const s = ac.createMediaElementSource(nodes.current.musicEl);
-        s.connect(musicGain);
-        void nodes.current.musicEl.play().catch(() => {});
-      }
+      const musicEl = new Audio();
+      musicEl.onended = () => playTrack(idxRef.current + 1);
+      musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
+      ac.createMediaElementSource(musicEl).connect(musicGain);
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl };
+      if (tracksRef.current.length && musicOn) playTrack(0);
       setState('Connexion au relais…');
       pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0]);
       pub.current.pc.onconnectionstatechange = () => {
         const s = pub.current?.pc.connectionState;
         setState(s === 'connected' ? 'À l’antenne' : s === 'failed' ? 'Connexion perdue : arrêtez puis relancez l’antenne.' : s ?? '');
       };
-      await saveLive({ onAir: true, rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', startedAt: new Date().toISOString() });
+      await saveLive({ onAir: true, rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', topic: topic.trim(), startedAt: new Date().toISOString() });
+      setTopicSaved(topic.trim());
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
       notify('Vous êtes à l’antenne. Les auditeurs de /radio basculent sur l’émission dans la minute.');
@@ -143,8 +153,8 @@ export default function AdminRadioAntenne() {
     nodes.current.musicEl?.pause();
     void ctx.current?.close();
     ctx.current = null;
-    const el = nodes.current.musicEl;
-    nodes.current = { musicEl: el ? (() => { const n = new Audio(el.src); n.loop = true; return n; })() : undefined };
+    if (nodes.current.musicEl) nodes.current.musicEl.onended = null;
+    nodes.current = {};
     setOnAir(false);
     setState('');
   }
@@ -154,7 +164,7 @@ export default function AdminRadioAntenne() {
     try {
       for (const a of queue) await supabase!.from('radio_appels').update({ statut: 'termine', modifie_le: new Date().toISOString() }).eq('id', a.id);
       stopAll();
-      await saveLive({ onAir: false, rtc: '', calls: false });
+      await saveLive({ onAir: false, rtc: '', calls: false, topic: '' });
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : fin');
       notify('Émission terminée : la radio reprend les chants et prédications.');
     } catch (e) { notify(e instanceof Error ? e.message : 'Erreur', 'error'); } finally { setBusy(false); }
@@ -198,18 +208,57 @@ export default function AdminRadioAntenne() {
     setQueue((q) => q.filter((x) => x.id !== a.id));
   }
 
-  function pickMusic(file: File | undefined) {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    const el = new Audio(url);
-    el.loop = true;
-    nodes.current.musicEl?.pause();
-    nodes.current.musicEl = el;
-    setMusic(file.name);
-    if (ctx.current && nodes.current.musicGain) {
-      ctx.current.createMediaElementSource(el).connect(nodes.current.musicGain);
-      void el.play();
-    }
+  /** Joue le morceau n° i de la liste (on revient au premier après le dernier). */
+  function playTrack(i: number) {
+    const list = tracksRef.current;
+    const el = nodes.current.musicEl;
+    if (!el || !list.length) return;
+    const n = ((i % list.length) + list.length) % list.length;
+    idxRef.current = n;
+    setTrackIdx(n);
+    el.src = list[n].url;
+    void el.play().catch(() => {});
+  }
+
+  function addMusic(files: FileList | null) {
+    if (!files?.length) return;
+    const added = Array.from(files).filter((f) => f.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|opus)$/i.test(f.name))
+      .map((f) => ({ name: f.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(f) }));
+    const wasEmpty = !tracksRef.current.length;
+    const next = [...tracksRef.current, ...added];
+    tracksRef.current = next;
+    setTracks(next);
+    if (wasEmpty && onAir && musicOn) playTrack(0);
+  }
+
+  function removeTrack(i: number) {
+    const list = tracksRef.current;
+    URL.revokeObjectURL(list[i].url);
+    const next = list.filter((_, k) => k !== i);
+    tracksRef.current = next;
+    setTracks(next);
+    if (!onAir) return;
+    if (!next.length) { nodes.current.musicEl?.pause(); return; }
+    if (i === idxRef.current) playTrack(i);
+    else if (i < idxRef.current) { idxRef.current -= 1; setTrackIdx(idxRef.current); }
+  }
+
+  function toggleMusic() {
+    const el = nodes.current.musicEl;
+    const on = !musicOn;
+    setMusicOn(on);
+    if (!el) return;
+    if (!on) el.pause();
+    else if (el.src) void el.play().catch(() => {});
+    else playTrack(0);
+  }
+
+  async function publishTopic() {
+    try {
+      await saveLive({ topic: topic.trim() });
+      setTopicSaved(topic.trim());
+      notify(topic.trim() ? 'Sujet affiché aux auditeurs (sur leur page dans la minute).' : 'Sujet retiré.');
+    } catch (e) { notify(e instanceof Error ? e.message : 'Erreur', 'error'); }
   }
 
   useEffect(() => { if (nodes.current.musicGain) nodes.current.musicGain.gain.value = musicVol; }, [musicVol]);
@@ -237,11 +286,46 @@ export default function AdminRadioAntenne() {
         <Checkbox label="Accepter les appels des auditeurs" description="Affiche le bouton « Appeler l’émission » sur la page de la radio." checked={calls} disabled={onAir} onChange={(e) => setCalls(e.currentTarget.checked)} />
         <div className="rounded-2xl bg-night/[0.04] p-4">
           <p className="flex items-center gap-2 text-sm font-semibold text-night"><Music2 className="h-4 w-4 text-gold-600" />Musique de fond (facultatif)</p>
-          <input type="file" accept="audio/*" className="mt-2 block text-sm" onChange={(e) => pickMusic(e.target.files?.[0])} />
-          {music && <p className="mt-1 text-xs text-ink/60">{music}</p>}
+          <p className="mt-1 text-xs text-ink/60">Choisissez autant de morceaux que vous voulez (sélection multiple, par exemple Ctrl + clic) : ils passent l’un après l’autre, puis la liste recommence.</p>
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-night/15 bg-white px-3 py-2 text-sm font-semibold text-night hover:border-gold-400">
+            <Music2 className="h-4 w-4" />Ajouter des morceaux
+            <input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} />
+          </label>
+          {!!tracks.length && (
+            <>
+              <ol className="mt-3 max-h-64 space-y-1 overflow-y-auto">
+                {tracks.map((t, i) => (
+                  <li key={t.url} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm ${onAir && i === trackIdx && musicOn ? 'bg-gold/20 font-semibold text-night' : 'text-ink/80'}`}>
+                    <span className="w-6 shrink-0 text-right text-xs tabular-nums text-ink/50">{onAir && i === trackIdx && musicOn ? '▶' : `${i + 1}.`}</span>
+                    <button type="button" className="min-w-0 flex-1 truncate text-left hover:underline" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }} title={onAir ? 'Jouer ce morceau' : t.name}>{t.name}</button>
+                    <button type="button" onClick={() => removeTrack(i)} className="rounded p-1 text-ink/40 hover:bg-night/5 hover:text-red-600" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-1 text-xs text-ink/55">{tracks.length} morceau{tracks.length > 1 ? 'x' : ''}</p>
+              {onAir && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" icon={musicOn ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} onClick={toggleMusic}>{musicOn ? 'Couper la musique' : 'Relancer la musique'}</Button>
+                  <Button type="button" size="sm" variant="outline" icon={<SkipForward className="h-4 w-4" />} onClick={() => { setMusicOn(true); playTrack(idxRef.current + 1); }}>Morceau suivant</Button>
+                </div>
+              )}
+            </>
+          )}
           <label className="mt-3 block text-xs font-semibold text-ink/70">Volume de la musique
             <input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} className="mt-1 w-full" />
           </label>
+        </div>
+        <div className="rounded-2xl border border-gold/30 bg-gold-50/60 p-4">
+          <Field label="Sujet de l’émission (lu par les auditeurs)" hint="Écrivez le thème du jour, une question, une histoire… Il s’affiche sur jesuiskcciste.com/radio pendant le direct.">
+            {(p) => <Textarea {...p} rows={5} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ex. : Tosungana — Une sœur nous écrit : son mari est sans travail depuis 9 mois et son ex lui propose une voiture… Que lui conseillez-vous ? Appelez l’émission !" />}
+          </Field>
+          {onAir && (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <Button type="button" size="sm" icon={<Send className="h-4 w-4" />} onClick={publishTopic} disabled={topic.trim() === topicSaved}>{topicSaved ? 'Mettre à jour le sujet' : 'Afficher aux auditeurs'}</Button>
+              {topic.trim() === topicSaved && topicSaved && <span className="text-xs text-emerald-700">✓ Affiché aux auditeurs</span>}
+            </div>
+          )}
+          {!onAir && <p className="mt-2 text-xs text-ink/55">Il sera affiché dès que vous passez à l’antenne.</p>}
         </div>
         {!onAir
           ? <Button type="button" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={goLive}>Passer à l’antenne</Button>

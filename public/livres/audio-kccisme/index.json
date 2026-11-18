@@ -1,0 +1,92 @@
+[
+ {
+  "id": "preface",
+  "titre": "Pr\u00e9face",
+  "fichier": "01-preface.mp3",
+  "secondes": 136
+ },
+ {
+  "id": "introduction",
+  "titre": "I. Introduction",
+  "fichier": "02-introduction.mp3",
+  "secondes": 485
+ },
+ {
+  "id": "eternel",
+  "titre": "II. L\u2019\u00c9ternel, le vrai Dieu",
+  "fichier": "03-eternel.mp3",
+  "secondes": 1446
+ },
+ {
+  "id": "croyances",
+  "titre": "III. Les croyances",
+  "fichier": "04-croyances.mp3",
+  "secondes": 1624
+ },
+ {
+  "id": "profession-de-foi",
+  "titre": "IV. La profession de foi",
+  "fichier": "05-profession-de-foi.mp3",
+  "secondes": 77
+ },
+ {
+  "id": "enseignement",
+  "titre": "V. L\u2019enseignement",
+  "fichier": "06-enseignement.mp3",
+  "secondes": 322
+ },
+ {
+  "id": "sacrements",
+  "titre": "VI. Les sacrements",
+  "fichier": "07-sacrements.mp3",
+  "secondes": 968
+ },
+ {
+  "id": "liturgie",
+  "titre": "VII. La liturgie",
+  "fichier": "08-liturgie.mp3",
+  "secondes": 863
+ },
+ {
+  "id": "fetes",
+  "titre": "VIII. Les f\u00eates eccl\u00e9siastiques",
+  "fichier": "09-fetes.mp3",
+  "secondes": 379
+ },
+ {
+  "id": "journees-saintes",
+  "titre": "IX. Les journ\u00e9es saintes",
+  "fichier": "10-journees-saintes.mp3",
+  "secondes": 35
+ },
+ {
+  "id": "commandements",
+  "titre": "X. Les commandements",
+  "fichier": "11-commandements.mp3",
+  "secondes": 308
+ },
+ {
+  "id": "discipline",
+  "titre": "XI. La discipline",
+  "fichier": "12-discipline.mp3",
+  "secondes": 723
+ },
+ {
+  "id": "siege-spirituel",
+  "titre": "XII. Du si\u00e8ge spirituel",
+  "fichier": "13-siege-spirituel.mp3",
+  "secondes": 60
+ },
+ {
+  "id": "conclusion",
+  "titre": "Conclusion",
+  "fichier": "14-conclusion.mp3",
+  "secondes": 46
+ },
+ {
+  "id": "auteur",
+  "titre": "L\u2019auteur",
+  "fichier": "15-auteur.mp3",
+  "secondes": 74
+ }
+]

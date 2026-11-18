@@ -1,22 +1,26 @@
-import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { WifiOff } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { useOfflineItems, useOnline } from '@/features/offline/offline';
 
-/** Informe l'utilisateur d'une perte de réseau. L'application ne fonctionne pas hors connexion. */
+/** Informe d'une perte de réseau et mène aux téléchargements (livre audio, chants, cantiques gardés hors ligne). */
 export function OfflineNotice() {
   const { tx } = useI18n();
-  const [offline, setOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
-  useEffect(() => {
-    const on = () => setOffline(false);
-    const off = () => setOffline(true);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
-  }, []);
-  if (!offline) return null;
+  const online = useOnline();
+  const items = useOfflineItems();
+  const { pathname } = useLocation();
+  if (online) return null;
   return (
     <div role="status" className="bg-red-600 text-white">
-      <p className="container-page flex items-center justify-center gap-2 py-1.5 text-xs font-medium"><WifiOff className="h-3.5 w-3.5" /> {tx('Vous êtes hors connexion. Les contenus ne peuvent pas être mis à jour.', 'You are offline. Content cannot be updated.', 'Está sem ligação. Os conteúdos não podem ser atualizados.')}</p>
+      <p className="container-page flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 py-1.5 text-center text-xs font-medium">
+        <WifiOff className="h-3.5 w-3.5" aria-hidden />
+        {tx('Vous êtes hors connexion. Les pages déjà ouvertes et vos téléchargements restent disponibles.', 'You are offline. Pages already opened and your downloads are still available.', 'Está sem ligação. As páginas já abertas e as suas descargas continuam disponíveis.')}
+        {pathname !== '/hors-ligne' && (
+          <Link to="/hors-ligne" className="font-semibold underline underline-offset-2">
+            {tx('Mes téléchargements', 'My downloads', 'As minhas descargas')}{items.length ? ` (${items.length})` : ''}
+          </Link>
+        )}
+      </p>
     </div>
   );
 }

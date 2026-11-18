@@ -3,90 +3,105 @@
   "id": "preface",
   "titre": "Pr\u00e9face",
   "fichier": "01-preface.mp3",
-  "secondes": 136
+  "secondes": 136,
+  "octets": 818294
  },
  {
   "id": "introduction",
   "titre": "I. Introduction",
   "fichier": "02-introduction.mp3",
-  "secondes": 485
+  "secondes": 485,
+  "octets": 2913213
  },
  {
   "id": "eternel",
   "titre": "II. L\u2019\u00c9ternel, le vrai Dieu",
   "fichier": "03-eternel.mp3",
-  "secondes": 1446
+  "secondes": 1446,
+  "octets": 8674524
  },
  {
   "id": "croyances",
   "titre": "III. Les croyances",
   "fichier": "04-croyances.mp3",
-  "secondes": 1624
+  "secondes": 1624,
+  "octets": 9745440
  },
  {
   "id": "profession-de-foi",
   "titre": "IV. La profession de foi",
   "fichier": "05-profession-de-foi.mp3",
-  "secondes": 77
+  "secondes": 77,
+  "octets": 463062
  },
  {
   "id": "enseignement",
   "titre": "V. L\u2019enseignement",
   "fichier": "06-enseignement.mp3",
-  "secondes": 322
+  "secondes": 322,
+  "octets": 1934161
  },
  {
   "id": "sacrements",
   "titre": "VI. Les sacrements",
   "fichier": "07-sacrements.mp3",
-  "secondes": 968
+  "secondes": 968,
+  "octets": 5807616
  },
  {
   "id": "liturgie",
   "titre": "VII. La liturgie",
   "fichier": "08-liturgie.mp3",
-  "secondes": 863
+  "secondes": 863,
+  "octets": 5181214
  },
  {
   "id": "fetes",
   "titre": "VIII. Les f\u00eates eccl\u00e9siastiques",
   "fichier": "09-fetes.mp3",
-  "secondes": 379
+  "secondes": 379,
+  "octets": 2273871
  },
  {
   "id": "journees-saintes",
   "titre": "IX. Les journ\u00e9es saintes",
   "fichier": "10-journees-saintes.mp3",
-  "secondes": 35
+  "secondes": 35,
+  "octets": 209480
  },
  {
   "id": "commandements",
   "titre": "X. Les commandements",
   "fichier": "11-commandements.mp3",
-  "secondes": 308
+  "secondes": 308,
+  "octets": 1847907
  },
  {
   "id": "discipline",
   "titre": "XI. La discipline",
   "fichier": "12-discipline.mp3",
-  "secondes": 723
+  "secondes": 723,
+  "octets": 4341120
  },
  {
   "id": "siege-spirituel",
   "titre": "XII. Du si\u00e8ge spirituel",
   "fichier": "13-siege-spirituel.mp3",
-  "secondes": 60
+  "secondes": 60,
+  "octets": 360103
  },
  {
   "id": "conclusion",
   "titre": "Conclusion",
   "fichier": "14-conclusion.mp3",
-  "secondes": 46
+  "secondes": 46,
+  "octets": 277721
  },
  {
   "id": "auteur",
   "titre": "L\u2019auteur",
   "fichier": "15-auteur.mp3",
-  "secondes": 74
+  "secondes": 74,
+  "octets": 442745
  }
 ]

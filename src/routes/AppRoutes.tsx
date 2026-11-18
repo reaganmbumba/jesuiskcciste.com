@@ -38,6 +38,7 @@ const JobsPage = lazy(() => import('@/pages/public/JobsPage'));
 const PushNotificationsPage = lazy(() => import('@/pages/public/PushNotificationsPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
 const AppInstallPage = lazy(() => import('@/pages/public/AppInstallPage'));
+const OfflinePage = lazy(() => import('@/pages/public/OfflinePage'));
 const MatriculePage = lazy(() => import('@/pages/public/MatriculePage'));
 const PagnePage = lazy(() => import('@/pages/public/PagnePage'));
 const NotFoundPage = lazy(() => import('@/pages/public/NotFoundPage'));
@@ -235,6 +236,7 @@ export function AppRoutes() {
         <Route path="notifications" element={<PushNotificationsPage />} />
         <Route path="confidentialite" element={<PrivacyPage />} />
         <Route path="application" element={<AppInstallPage />} />
+        <Route path="hors-ligne" element={<OfflinePage />} />
         <Route path="matricule" element={<MatriculePage />} />
         <Route path="pagne-kcc" element={<PagnePage />} />
         <Route path="acces-refuse" element={<ForbiddenPage />} />

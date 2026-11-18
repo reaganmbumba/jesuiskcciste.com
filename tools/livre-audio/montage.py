@@ -40,7 +40,7 @@ def main(narration, voix, sortie):
                         "-metadata", "album=Le KCCisme (livre audio)", "-metadata", f"track={n + 1}", mp3],
                        input=son.astype("<f4").tobytes(), check=True)
         duree = round(len(son) / SR)
-        index.append({"id": ch["id"], "titre": ch["titre"], "fichier": os.path.basename(mp3), "secondes": duree})
+        index.append({"id": ch["id"], "titre": ch["titre"], "fichier": os.path.basename(mp3), "secondes": duree, "octets": os.path.getsize(mp3)})
         print(f"{mp3} : {duree // 60} min {duree % 60:02d}")
     json.dump(index, open(os.path.join(sortie, "index.json"), "w"), indent=1)
     print("total :", sum(c["secondes"] for c in index) // 60, "min")

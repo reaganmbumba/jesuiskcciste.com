@@ -17,6 +17,7 @@ import { isAndroidApp } from '@/features/pwa/install';
 import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
 import { isForSale } from '@/features/music/shop';
 import { ShareButtons } from '@/components/common/ShareButtons';
+import { OfflineButton } from '@/features/offline/OfflineButton';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 
@@ -77,6 +78,8 @@ export default function MusicPage() {
                     </div>
                     <span className="hidden sm:block"><Badge tone={r.tone}>{pick(r.label)}</Badge></span>
                     <span className="text-xs tabular-nums text-ink/50">{formatDuration(t.durationSeconds)}</span>
+                    {/* Hors ligne : seulement les chants gratuits et autorisés (un chant à vendre s'achète). */}
+                    {t.audioUrl && !isForSale(t) && t.broadcastRights === 'authorized' && <OfflineButton compact target={{ url: t.audioUrl, title: t.title, kind: 'chant', group: artist?.name ?? t.author, page: `/musique?titre=${encodeURIComponent(t.id)}`, seconds: t.durationSeconds }} />}
                     {shopOpen && isForSale(t) && t.broadcastRights === 'authorized' && <BuyButton compact item={{ type: 'track', id: t.id, title: t.title, subtitle: artist?.name, amount: t.priceAmount!, currency: t.priceCurrency! }} onBuy={setBuying} />}
                   </li>
                 );

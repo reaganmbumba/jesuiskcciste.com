@@ -47,7 +47,7 @@ describe('Radio Je suis KCCiste', () => {
 });
 
 describe('Radio : émissions en direct et appels', () => {
-  const live = (extra = {}) => ({ url: 'https://stream.zeno.fm/abc', title: 'La voix du KCC', onAir: true, startedAt: '2026-10-22T20:00:00Z', callUrl: '', ...extra });
+  const live = (extra = {}) => ({ url: 'https://stream.zeno.fm/abc', title: 'La voix du KCC', onAir: true, startedAt: '2026-10-22T20:00:00Z', callUrl: '', rtc: '', calls: false, ...extra });
 
   it('n’accepte que des flux https', () => {
     expect(parseStreamUrl(' https://stream.zeno.fm/abc ')).toBe('https://stream.zeno.fm/abc');
@@ -61,6 +61,7 @@ describe('Radio : émissions en direct et appels', () => {
     expect(isLiveOn(live(), new Date('2026-10-23T02:01:00Z'))).toBe(false);
     expect(isLiveOn(live({ onAir: false }), new Date('2026-10-22T21:00:00Z'))).toBe(false);
     expect(isLiveOn(live({ url: '' }), new Date('2026-10-22T21:00:00Z'))).toBe(false);
+    expect(isLiveOn(live({ url: '', rtc: 'abcdef0123456789' }), new Date('2026-10-22T21:00:00Z'))).toBe(true);
     expect(radioSettingsOf({ radio: { songs: true, sermons: true, excluded: [] } }).live.onAir).toBe(false);
   });
 

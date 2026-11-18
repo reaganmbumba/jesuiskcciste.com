@@ -20,6 +20,12 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install --index-url https://download.pytorch.org/whl/cpu torch && pip install 'transformers>=4.40,<5' scipy numpy
+      - name: Inspecter les modèles lingala
+        run: |
+          for m in multilingual-tts/VITS-OpenBible-Lingala multilingual-tts/F5-TTS-OpenBible-Lingala facebook/mms-tts; do
+            echo "=== $m"; curl -s "https://huggingface.co/api/models/$m" | python -c "import json,sys;d=json.load(sys.stdin);print(d.get('cardData',{}).get('license'), d.get('gated'));[print('F', x['rfilename']) for x in d.get('siblings',[]) if 'lin' in x['rfilename'] or m!='facebook/mms-tts']" | head -40
+            curl -sL "https://huggingface.co/$m/raw/main/README.md" | head -80 | sed 's/^/R /'
+          done
       - name: Fabriquer la voix
         working-directory: tools/histoire-lingala
         run: for f in *.txt; do python voix.py "$f"; done

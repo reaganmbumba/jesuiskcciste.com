@@ -203,27 +203,54 @@ public class AlertService extends Service {
             JSONObject radio = value == null ? null : value.optJSONObject("radio");
             JSONObject live = radio == null ? null : radio.optJSONObject("live");
             SharedPreferences p = c.getSharedPreferences(PREFS, MODE_PRIVATE);
-            if (live == null) return;
-            boolean onAir = live.optBoolean("on_air", false);
-            String rtc = live.optString("rtc", "");
-            String url = live.optString("url", "");
-            String started = live.optString("started_at", "");
-            boolean isLive = onAir && (!rtc.isEmpty() || !url.isEmpty()) && fresh(started);
-            if (!isLive) return;
-            String key = started.isEmpty() ? rtc + url : started;
-            String last = p.getString("last_live", null);
-            if (key.equals(last)) return;
-            p.edit().putString("last_live", key).apply();
-            // première vérification après l'installation : on ne sonne que si l'émission vient de commencer
-            if (last == null && !recent(started, 15 * 60_000L)) return;
-            final String title = live.optString("title", "");
-            final String topic = live.optString("topic", "");
-            main.post(() -> { showLive(title, topic); startAlarm(getApplicationContext()); });
+            long now = System.currentTimeMillis();
+            // 1) le direct de l'animateur
+            if (live != null) {
+                boolean onAir = live.optBoolean("on_air", false);
+                String rtc = live.optString("rtc", "");
+                String url = live.optString("url", "");
+                String started = live.optString("started_at", "");
+                if (onAir && (!rtc.isEmpty() || !url.isEmpty()) && fresh(started)) {
+                    ring(p, started.isEmpty() ? rtc + url : started, started, live.optString("title", ""), live.optString("topic", ""));
+                    return;
+                }
+            }
+            // 2) les émissions programmées (passent seules à l'heure prévue)
+            org.json.JSONArray progs = radio == null ? null : radio.optJSONArray("programmes");
+            if (progs == null) return;
+            for (int i = 0; i < progs.length(); i++) {
+                JSONObject o = progs.optJSONObject(i);
+                if (o == null) continue;
+                String startsAt = o.optString("startsAt", o.optString("starts_at", ""));
+                long start = parse(startsAt);
+                double dur = o.optDouble("durationSeconds", o.optDouble("duration_seconds", 0));
+                if (start < 0 || dur <= 0) continue;
+                long end = start + (long) (dur * 1000);
+                final String key = "prog:" + o.optString("id", startsAt);
+                final String title = o.optString("title", "");
+                final String topic = o.optString("topic", "");
+                if (start <= now && now < end) { ring(p, key, startsAt, title, topic); return; }
+                if (start > now && start - now <= POLL_MS + 5_000L) {
+                    // commence avant la prochaine vérification : l'alarme sonne pile à l'heure
+                    final String sa = startsAt;
+                    main.postDelayed(() -> new Thread(() -> ring(c.getSharedPreferences(PREFS, MODE_PRIVATE), key, sa, title, topic)).start(), start - now);
+                }
+            }
         } catch (Exception ignored) {
             // pas de réseau : on réessaie à la minute suivante
         } finally {
             if (wl != null && wl.isHeld()) wl.release();
         }
+    }
+
+    /** Sonne une seule fois par émission (clé déjà vue = rien). */
+    private synchronized void ring(SharedPreferences p, String key, String started, String title, String topic) {
+        String last = p.getString("last_live", null);
+        if (key.equals(last)) return;
+        p.edit().putString("last_live", key).apply();
+        // première vérification après l'installation : on ne sonne que si l'émission vient de commencer
+        if (last == null && !recent(started, 15 * 60_000L)) return;
+        main.post(() -> { showLive(title, topic); startAlarm(getApplicationContext()); });
     }
 
     private static long parse(String iso) {

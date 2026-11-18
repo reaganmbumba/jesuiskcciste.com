@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { watchTrack } from './rtc';
 import { useRadioListeners } from './listeners';
-import { availableModes, buildRound, fetchRadioSettings, isLiveOn, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
+import { availableModes, buildRound, effectiveLive, fetchRadioSettings, isLiveOn, upcomingProgrammes, type RadioProgramme, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
 
 const MODE_KEY = 'kcc-radio-mode';
 /** Titres illisibles d'affilée avant d'arrêter la radio (fichier supprimé, réseau coupé…). */
@@ -31,6 +31,10 @@ interface RadioValue {
   liveTopic: string;
   /** Session du relais de l'émission faite depuis l'antenne du site (sinon vide). */
   liveRtc: string;
+  /** L'émission à l'antenne est une émission programmée (enregistrée à l'avance, sans appels). */
+  liveProgrammed: boolean;
+  /** Émissions programmées pas encore terminées. */
+  programmes: RadioProgramme[];
   /** L'auditeur écoute l'émission en direct. */
   onLive: boolean;
   mode: RadioMode;
@@ -87,9 +91,18 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const liveFailedAt = useRef(0);
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
-  const liveOn = isLiveOn(radio.live);
-  const liveRef = useRef({ on: liveOn, live: radio.live });
-  liveRef.current = { on: liveOn, live: radio.live };
+  // Horloge des émissions programmées : elles commencent et finissent à l'heure, sans attendre la relecture des réglages.
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    if (!radio.programmes.length) return;
+    const t = setInterval(() => setClock(Date.now()), 10_000);
+    return () => clearInterval(t);
+  }, [radio.programmes.length]);
+  const eff = useMemo(() => effectiveLive(radio, new Date(clock)), [radio, clock]);
+  const live = eff.live;
+  const liveOn = isLiveOn(live, new Date(clock));
+  const liveRef = useRef({ on: liveOn, live, programme: eff.programme });
+  liveRef.current = { on: liveOn, live, programme: eff.programme };
   const canLive = () => liveRef.current.on && Date.now() - liveFailedAt.current > LIVE_RETRY_MS;
   const markLive = (v: boolean) => { onLiveRef.current = v; setOnLive(v); };
 
@@ -135,6 +148,13 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     }
     dropRtc();
     a.src = url;
+    const prog = liveRef.current.programme;
+    if (prog) {
+      // Émission programmée : tout le monde l'entend au même endroit, comme un vrai direct.
+      const at = Math.max(0, (Date.now() - new Date(prog.startsAt).getTime()) / 1000);
+      const seek = () => { if (Math.abs(a.currentTime - at) > 2) { try { a.currentTime = at; } catch { /* pas encore possible */ } } };
+      a.addEventListener('loadedmetadata', seek, { once: true });
+    }
     a.play().catch(() => setPlaying(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -259,21 +279,29 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [active, refreshSettings]);
 
   // Le direct commence : on y bascule tout de suite. Il s'arrête : retour aux chants.
+  // Une émission programmée en remplace une autre : on change de fichier.
+  const liveSource = liveOn ? live.rtc || live.url : '';
   useEffect(() => {
     if (!active) return;
     if (liveOn && !onLiveRef.current && Date.now() - liveFailedAt.current > LIVE_RETRY_MS) playLive();
     else if (!liveOn && onLiveRef.current) next();
   }, [active, liveOn, next, playLive]);
+  const lastSource = useRef(liveSource);
+  useEffect(() => {
+    const prev = lastSource.current;
+    lastSource.current = liveSource;
+    if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
+  }, [active, liveSource, live.rtc, playLive]);
 
   const liveListeners = useRadioListeners(active && playing && onLive && liveOn, liveOn);
 
   // L'antenne du site a redémarré (nouvelle session du relais) : on se rebranche.
   useEffect(() => {
-    if (active && onLiveRef.current && radio.live.rtc && rtcSession.current && rtcSession.current !== radio.live.rtc) playLive();
-  }, [active, radio.live.rtc, playLive]);
+    if (active && onLiveRef.current && live.rtc && rtcSession.current && rtcSession.current !== live.rtc) playLive();
+  }, [active, live.rtc, playLive]);
 
   // Écran verrouillé et casque Bluetooth : titre affiché, pause et « suivant ».
-  const current = !active ? null : onLive ? liveItem(radio.live) : queue.list[queue.index] ?? null;
+  const current = !active ? null : onLive ? liveItem(live) : queue.list[queue.index] ?? null;
   const nextRef = useRef(next);
   nextRef.current = next;
   useEffect(() => {
@@ -289,7 +317,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(radio.live).title, callUrl: liveOn && radio.live.callUrl ? radio.live.callUrl : null, siteCalls: liveOn && !!radio.live.rtc && radio.live.calls, liveRtc: liveOn ? radio.live.rtc : '', liveTopic: liveOn ? radio.live.topic : '', liveListeners, onLive, mode: effectiveMode, modes, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), liveListeners, onLive, mode: effectiveMode, modes, items, current,
     upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
     time, duration,
     prepare, start, toggle, next, stop, setMode: changeMode,

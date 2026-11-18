@@ -37,6 +37,14 @@ export function isStandalone() {
   return window.matchMedia?.('(display-mode: standalone)').matches || nav.standalone === true || /KCCisteApp|wv\)/.test(navigator.userAgent);
 }
 
+/**
+ * Vrai dans l'application Android (Google Play). Google interdit d'y vendre des contenus
+ * numériques sans passer par son propre paiement : la boutique musicale y est donc masquée.
+ */
+export function isAndroidApp(ua = typeof navigator !== 'undefined' ? navigator.userAgent : '') {
+  return /KCCisteApp/.test(ua);
+}
+
 export function useInstallApp() {
   const [, force] = useState(0);
   useEffect(() => {

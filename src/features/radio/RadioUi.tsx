@@ -81,7 +81,7 @@ export function MiniRadioPlayer() {
   const { tx } = useI18n();
   const { pathname } = useLocation();
   const { active, playing, current, toggle, next, stop, time, duration, onLive } = useRadio();
-  if (!active || !current || pathname === '/radio') return null;
+  if (!active || !current || pathname.startsWith('/radio')) return null;
   const pct = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
   return (
     <div role="region" aria-label={RADIO_NAME}

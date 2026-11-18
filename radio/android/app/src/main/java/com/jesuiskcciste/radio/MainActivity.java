@@ -29,7 +29,7 @@ import java.util.List;
  * appeler l'émission) et lance la veille qui sonne une alarme quand une émission commence.
  */
 public class MainActivity extends Activity {
-    static final String HOME = "https://jesuiskcciste.com/radio";
+    static final String HOME = "https://jesuiskcciste.com/radio/app";
     private static final int REQ_MIC = 41;
     private static final int REQ_NOTIF = 42;
     private WebView web;
@@ -55,7 +55,8 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 String host = u.getHost() == null ? "" : u.getHost();
-                if (("https".equals(u.getScheme()) || "http".equals(u.getScheme())) && host.endsWith("jesuiskcciste.com")) return false;
+                if (("https".equals(u.getScheme()) || "http".equals(u.getScheme())) && host.endsWith("jesuiskcciste.com")
+                    && u.getPath() != null && u.getPath().startsWith("/radio/app")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) { }
                 return true;
             }
@@ -87,7 +88,10 @@ public class MainActivity extends Activity {
     }
 
     private String urlFrom(Intent i) {
-        if (i != null && i.getData() != null && "https".equals(i.getData().getScheme())) return i.getData().toString();
+        if (i != null && i.getData() != null && "https".equals(i.getData().getScheme())) {
+            String path = i.getData().getPath();
+            return path != null && path.startsWith("/radio/app") ? i.getData().toString() : HOME;
+        }
         return HOME;
     }
 

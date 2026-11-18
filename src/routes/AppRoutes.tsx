@@ -1,4 +1,5 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
+import { PageLoader } from '@/components/ui/Spinner';
 import { Route, Routes } from 'react-router-dom';
 import {
   Bell, Award, BarChart3, BookOpenCheck, CalendarDays, Building2, FileClock, GraduationCap, HandCoins, HandHeart,
@@ -15,6 +16,7 @@ import { useUnreadMessages } from '@/features/messages/MessagesUi';
 import { useI18n } from '@/i18n';
 
 // Découpage du code par page (chargement différé).
+const RadioAppPage = lazy(() => import('@/pages/public/RadioAppPage'));
 const HomePage = lazy(() => import('@/pages/public/HomePage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const TeachingsPage = lazy(() => import('@/pages/public/TeachingsPage'));
@@ -182,6 +184,8 @@ function AdminShell() {
 export function AppRoutes() {
   return (
     <Routes>
+      {/* Radio seule, plein écran (application des auditeurs) */}
+      <Route path="radio/app" element={<Suspense fallback={<PageLoader />}><RadioAppPage /></Suspense>} />
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
         <Route path="a-propos" element={<AboutPage />} />

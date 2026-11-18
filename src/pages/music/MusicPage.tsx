@@ -13,6 +13,7 @@ import { cn, formatDuration } from '@/utils/format';
 import { CoverArt } from '@/components/cards/Cards';
 import { useI18n } from '@/i18n';
 import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
+import { isAndroidApp } from '@/features/pwa/install';
 import { BuyButton, ProviderBadges, PurchaseDialog, type SaleItem } from '@/features/music/PurchaseDialog';
 import { isForSale } from '@/features/music/shop';
 import { ShareButtons } from '@/components/common/ShareButtons';
@@ -39,6 +40,8 @@ export default function MusicPage() {
   const list = useMemo(() => tracks.filter((t) => (!cat || t.category === cat) && (!q || `${t.title} ${t.author} ${artists.find((a) => a.id === t.artistId)?.name}`.toLowerCase().includes(q.toLowerCase()))), [tracks, artists, q, cat]);
   const current = tracks.find((t) => t.id === currentId) ?? null;
   const idx = list.findIndex((t) => t.id === currentId);
+  // Dans l'application Google Play, pas de vente de musique (règle de paiement de Google).
+  const shopOpen = !isAndroidApp();
   const forSale = tracks.some((t) => isForSale(t) && t.broadcastRights === 'authorized') || albums.some(isForSale);
   const cats = Array.from(new Set(tracks.map((t) => t.category)));
 
@@ -74,7 +77,7 @@ export default function MusicPage() {
                     </div>
                     <span className="hidden sm:block"><Badge tone={r.tone}>{pick(r.label)}</Badge></span>
                     <span className="text-xs tabular-nums text-ink/50">{formatDuration(t.durationSeconds)}</span>
-                    {isForSale(t) && t.broadcastRights === 'authorized' && <BuyButton compact item={{ type: 'track', id: t.id, title: t.title, subtitle: artist?.name, amount: t.priceAmount!, currency: t.priceCurrency! }} onBuy={setBuying} />}
+                    {shopOpen && isForSale(t) && t.broadcastRights === 'authorized' && <BuyButton compact item={{ type: 'track', id: t.id, title: t.title, subtitle: artist?.name, amount: t.priceAmount!, currency: t.priceCurrency! }} onBuy={setBuying} />}
                   </li>
                 );
               })}
@@ -89,19 +92,19 @@ export default function MusicPage() {
                 <div key={a.id} className="overflow-hidden rounded-xl bg-white shadow-soft">
                   {a.coverUrl ? <img src={a.coverUrl} alt="" className="aspect-square w-full object-cover" loading="lazy" /> : <CoverArt seed={a.id} icon={<Disc3 />} className="aspect-square" />}
                   <div className="p-3"><p className="truncate text-sm font-semibold text-night">{a.title}</p><p className="truncate text-xs text-ink/55">{artists.find((x) => x.id === a.artistId)?.name}{a.year ? ` · ${a.year}` : ''}</p>
-                    {isForSale(a) && <div className="mt-2"><BuyButton compact item={{ type: 'album', id: a.id, title: a.title, subtitle: artists.find((x) => x.id === a.artistId)?.name, amount: a.priceAmount!, currency: a.priceCurrency! }} onBuy={setBuying} /></div>}
+                    {shopOpen && isForSale(a) && <div className="mt-2"><BuyButton compact item={{ type: 'album', id: a.id, title: a.title, subtitle: artists.find((x) => x.id === a.artistId)?.name, amount: a.priceAmount!, currency: a.priceCurrency! }} onBuy={setBuying} /></div>}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-gold/40 bg-gold-50/70 p-5">
+          {shopOpen && <div className="rounded-2xl border border-gold/40 bg-gold-50/70 p-5">
             <p className="flex items-center gap-2 font-semibold text-night"><ShoppingBag className="h-5 w-5 text-gold-600" />{tx('Boutique musicale', 'Music shop', 'Loja de música')}</p>
             <p className="mt-1 text-sm text-ink/70">{forSale
               ? tx('Achetez les chants et albums marqués d’un prix et soutenez les artistes et chorales de la communauté. Paiement sécurisé depuis votre téléphone, téléchargement immédiat.', 'Buy the songs and albums showing a price and support the community’s artists and choirs. Secure payment from your phone, instant download.', 'Compre os cânticos e álbuns com preço e apoie os artistas e coros da comunidade. Pagamento seguro pelo telemóvel, descarga imediata.')
               : tx('Bientôt : achat des chants et albums de la communauté, payés depuis votre téléphone.', 'Coming soon: buy the community’s songs and albums, paid from your phone.', 'Em breve: compra dos cânticos e álbuns da comunidade, pagos pelo telemóvel.')}</p>
             <ProviderBadges className="mt-3" />
-          </div>
+          </div>}
         </aside>
       </section>
       <div className="container-page pb-12"><YouTubeMoreVideos /></div>

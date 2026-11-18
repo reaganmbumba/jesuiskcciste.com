@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/ui/Misc';
 import { Button, buttonClass } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
+import { KccismeAudio } from './KccismeAudio';
 
 /**
  * Le livre « Le KCCisme » (doctrine de l'EBNM/KCC), lisible avec un code d'accès.
@@ -73,6 +74,8 @@ export default function KccismeBookPage() {
         )}
         image={SHARE_IMAGE}
       />
+      {/* Le livre audio est libre pour tous ; seul le texte écrit demande le code. */}
+      <KccismeAudio />
       {book
         ? <Reader book={book} onLock={() => { store(null); setBook(null); }} />
         : <Gate checking={checking} onOpen={(b, code) => { store(code); setBook(b); }} />}

@@ -1,10 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.jesuiskcciste.connect"
-    compileSdk rootProject.ext.compileSdkVersion
+    namespace = "com.jesuiskcciste.connect"
+    compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.jesuiskcciste.connect"
+        // Identifiant définitif sur Google Play (ne plus jamais le changer).
+        applicationId "com.jesuiskcciste.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode((System.getenv("KCC_VERSION_CODE") ?: "1") as int)
@@ -13,7 +14,7 @@ android {
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
     // Clé de signature lue depuis l'environnement (secrets GitHub), jamais depuis le dépôt.

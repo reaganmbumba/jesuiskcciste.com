@@ -170,7 +170,7 @@ describe('envoi de la file', () => {
     expect(r1.pending).toBe(true);
     const r2 = await handleNotifications(new Request('https://x/api/notifications/envoyer', { method: 'POST' }), e, 'envoyer').then((r) => r.json());
     expect(r2.pending).toBe(false);
-    const sentTo = w.pushes.map((p) => p.url.split('/').pop());
+    const sentTo = w.pushes.map((p) => p.url.split('/').pop()).sort();
     expect(sentTo).toEqual(['1', '2', '3', '4', '5', '7']); // pas le n° 6 (autre sujet), chacun une seule fois
     expect(w.subs.map((s) => s.id)).not.toContain(3);
     expect(w.messages[0]).toMatchObject({ status: 'done', sent: 5 });

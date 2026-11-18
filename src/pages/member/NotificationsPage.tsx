@@ -9,6 +9,7 @@ import { listMyNotifications, notificationsRepo } from '@/services';
 import { useI18n } from '@/i18n';
 import { cn, formatDate } from '@/utils/format';
 import type { NotificationKind } from '@/types';
+import { NotifyCard } from '@/features/notifications/NotificationsUi';
 
 const ICONS: Record<NotificationKind, typeof Bell> = { announcement: Megaphone, event: CalendarDays, schedule_change: CalendarClock, course: GraduationCap, exam_result: ClipboardCheck, certificate: Award, project_update: HandHeart };
 
@@ -21,6 +22,7 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between"><h1 className="font-display text-2xl font-semibold text-night">Notifications</h1>{data.some((n) => !n.read) && <Button size="sm" variant="outline" icon={<CheckCheck className="h-4 w-4" />} onClick={markAll}>Tout marquer comme lu</Button>}</div>
+      <NotifyCard context="page" />
       {data.length ? (
         <Card><ul className="divide-y divide-night/[0.06]">
           {data.map((n) => { const Icon = ICONS[n.kind]; return (

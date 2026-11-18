@@ -10,6 +10,7 @@ import { YouTubeMoreVideos } from '@/components/common/YouTubeChannel';
 import { useAuth } from '@/features/auth/AuthContext';
 import { featuredLivestream, listLivestreams, useLiveSignal, liveEnd, liveWatchUrl, splitLivestreams, useNow } from '@/features/livestreams/livestreams';
 import { LiveSpotlight } from '@/features/livestreams/LivestreamUi';
+import { NotifyCard } from '@/features/notifications/NotificationsUi';
 import { useAsync } from '@/hooks/useAsync';
 import { useI18n } from '@/i18n';
 import { can } from '@/lib/permissions';
@@ -54,6 +55,8 @@ export default function LivePage() {
           <EmptyState icon={<Radio className="h-6 w-6" aria-hidden />} title={tx('Aucun direct programmé pour le moment.', 'No live stream scheduled yet.', 'Ainda não há transmissões agendadas.')}
             description={tx('Abonnez-vous à la chaîne YouTube et activez la cloche : vous serez prévenu dès le prochain culte en direct.', 'Subscribe to the YouTube channel and turn on the bell: you will be notified of the next live service.', 'Subscreva o canal YouTube e ative o sino: será avisado da próxima transmissão em direto.')} />
         )}
+
+        <NotifyCard context="live" className="mt-8" />
 
         {next.length > 0 && (
           <section className="mt-12" aria-labelledby="next-lives">

@@ -136,3 +136,52 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+/*
+ * Notifications sur le téléphone (Web Push) : le Worker Cloudflare envoie un message
+ * chiffré { title, body, url, tag, image } ; on l'affiche, et un toucher ouvre la page.
+ * Abonnement : src/features/notifications/notifications.ts ; envoi : worker/notifications.ts.
+ */
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : '' }; }
+  const options = {
+    body: d.body || '',
+    icon: '/icon-192.png',
+    badge: '/notification-badge.png',
+    tag: d.tag || undefined,
+    renotify: !!d.tag,
+    data: { url: d.url || '/' },
+  };
+  if (d.image) options.image = d.image;
+  event.waitUntil(self.registration.showNotification(d.title || 'JE SUIS KCCiste', options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+  if (target.origin !== self.location.origin) return;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list.find((c) => new URL(c.url).origin === self.location.origin && 'focus' in c);
+      if (open) return open.focus().then((c) => (c && 'navigate' in c ? c.navigate(target.href) : null)).catch(() => self.clients.openWindow(target.href));
+      return self.clients.openWindow(target.href);
+    }),
+  );
+});
+
+// Le navigateur a renouvelé l'abonnement : on prévient le site pour garder les mêmes sujets.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  const old = event.oldSubscription;
+  const key = old && old.options && old.options.applicationServerKey;
+  if (!key) return;
+  event.waitUntil(
+    (event.newSubscription ? Promise.resolve(event.newSubscription) : self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }))
+      .then((sub) => fetch('/api/notifications/renouvellement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldEndpoint: old.endpoint, subscription: sub.toJSON() }),
+      }))
+      .catch(() => {}),
+  );
+});

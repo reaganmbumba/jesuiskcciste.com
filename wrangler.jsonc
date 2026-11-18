@@ -11,6 +11,8 @@
     { "pattern": "jesuiskcciste.com", "custom_domain": true },
     { "pattern": "www.jesuiskcciste.com", "custom_domain": true }
   ],
+  // Toutes les minutes : envoi des notifications sur le téléphone (worker/notifications.ts).
+  "triggers": { "crons": ["* * * * *"] },
   "build": {
     "command": "npm run build"
   },

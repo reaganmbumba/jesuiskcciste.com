@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useI18n } from '@/i18n';
 import { useInstallApp, type Platform } from '@/features/pwa/install';
 import { cn } from '@/utils/format';
+import { NotifyCard } from '@/features/notifications/NotificationsUi';
 
 function Steps({ items }: { items: ReactNode[] }) {
   return (
@@ -71,6 +72,10 @@ export default function AppInstallPage() {
             </CardBody>
           </Card>
         ))}
+      </section>
+
+      <section className="container-page pb-8">
+        <NotifyCard context="page" className="max-w-3xl" />
       </section>
 
       <section className="container-page pb-16">

@@ -22,6 +22,7 @@ import { cn } from '@/utils/format';
 import { FullImage } from '@/components/ui/FullImage';
 import { usePageTexts } from '@/features/content/pageTexts';
 import { HomeLiveBlock } from '@/features/livestreams/LivestreamUi';
+import { NotifyCard } from '@/features/notifications/NotificationsUi';
 import { HomeRadioBlock } from '@/features/radio/RadioUi';
 import { HomeChallengeBlock } from '@/features/challenges/HomeChallengeBlock';
 
@@ -347,6 +348,8 @@ export default function HomePage() {
               </ul>
               <a href={`https://wa.me/${contact.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gold px-4 py-2.5 text-sm font-semibold text-night transition hover:bg-gold-300"><MessageCircle className="h-4 w-4" aria-hidden />{tx('Écrire sur WhatsApp', 'Message us on WhatsApp', 'Escrever no WhatsApp')}</a>
             </section>
+
+            <NotifyCard />
 
             <section className="rounded-3xl border border-gold/25 bg-gold-50 p-6 shadow-soft" aria-labelledby="share-title">
               <h2 id="share-title" className="font-display text-2xl font-medium text-night">{tx('Partager le site', 'Share the website', 'Partilhar o site')}</h2>

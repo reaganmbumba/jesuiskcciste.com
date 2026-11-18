@@ -1,0 +1,37 @@
+apply plugin: 'com.android.application'
+
+// Version : numéro de la construction GitHub (KCC_VERSION_CODE), sinon 1
+def vCode = (System.getenv('KCC_VERSION_CODE') ?: '1') as Integer
+def vName = System.getenv('KCC_VERSION_NAME') ?: '1.0.0'
+
+android {
+    namespace 'com.jesuiskcciste.radio'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.jesuiskcciste.radio'
+        minSdk 24
+        targetSdk 34
+        versionCode vCode
+        versionName vName
+    }
+    def ks = System.getenv('KCC_RADIO_KEYSTORE_PATH')
+    signingConfigs {
+        if (ks) {
+            radio {
+                storeFile file(ks)
+                storePassword System.getenv('KCC_RADIO_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KCC_RADIO_KEY_ALIAS')
+                keyPassword System.getenv('KCC_RADIO_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            if (ks) signingConfig signingConfigs.radio
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

@@ -1,0 +1,70 @@
+name: Radio Je suis KCCiste (Android)
+
+# Fabrique l'application Android des auditeurs (APK) et la publie dans une version GitHub « radio-apk-N ».
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'radio/android/**'
+      - '.github/workflows/radio-android.yml'
+  pull_request:
+    paths:
+      - 'radio/android/**'
+      - '.github/workflows/radio-android.yml'
+
+permissions:
+  contents: write
+
+env:
+  KCC_VERSION_CODE: ${{ github.run_number }}
+  KCC_VERSION_NAME: 1.0.${{ github.run_number }}
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # même clé de signature d'une construction à l'autre : les mises à jour s'installent par-dessus
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: kcc-radio-apk-key-v1
+      - name: Clé de signature (secret facultatif)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KCC_RADIO_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/radio.jks"
+            echo "KCC_RADIO_KEYSTORE_PATH=$RUNNER_TEMP/radio.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Construire l'APK
+        working-directory: radio/android
+        env:
+          KCC_RADIO_KEYSTORE_PASSWORD: ${{ secrets.KCC_RADIO_KEYSTORE_PASSWORD }}
+          KCC_RADIO_KEY_ALIAS: ${{ secrets.KCC_RADIO_KEY_ALIAS }}
+          KCC_RADIO_KEY_PASSWORD: ${{ secrets.KCC_RADIO_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          mkdir -p ../out
+          cp app/build/outputs/apk/debug/*.apk ../out/KCC-Radio.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KCC-Radio-apk
+          path: radio/out/KCC-Radio.apk
+      - if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: radio-apk-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Radio Je suis KCCiste Android ${{ env.KCC_VERSION_NAME }}
+          make_latest: false
+          body: |
+            Application Android des auditeurs de la Radio Je suis KCCiste : écouter le direct, lire le sujet, appeler l'émission.
+            Alarme de 30 secondes avec jingle d'annonce dès qu'une émission commence.
+          files: radio/out/KCC-Radio.apk

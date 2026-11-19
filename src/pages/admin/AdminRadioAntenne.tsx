@@ -40,11 +40,13 @@ function Section({ title: t, action, children }: { title: string; action?: React
  * envoyés au relais du site (pas besoin de Caster.fm ni de Jitsi). Les auditeurs qui appellent
  * depuis /radio arrivent dans la file ; « Prendre à l'antenne » mélange leur voix à l'émission.
  */
-export default function AdminRadioAntenne() {
+export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?: 'colmatage' | 'studio' }) {
   const { settings, setSettings } = useSiteSettings();
   const { profile } = useAuth();
   const { notify } = useToast();
   const appMode = isRadioDesktop();
+  // horloge du direct (affichage du temps d'antenne)
+  const [, setTick] = useState(0);
   const saved = radioSettingsOf(settings);
   const [title, setTitle] = useState(saved.live.title || 'Tosungana en direct');
   const [calls, setCalls] = useState(true);
@@ -351,6 +353,12 @@ export default function AdminRadioAntenne() {
   const waiting = queue.filter((a) => a.statut === 'attente');
   const live = queue.filter((a) => a.statut === 'antenne');
 
+  useEffect(() => {
+    if (!onAir || variant !== 'studio') return;
+    const t = window.setInterval(() => setTick((x) => x + 1), 1000);
+    return () => window.clearInterval(t);
+  }, [onAir, variant]);
+
   const who = profile ? `${profile.firstName} ${profile.lastName}`.trim() : '';
   const startedAt = radioSettingsOf(settings).live.startedAt;
   const startTime = onAir && startedAt ? new Date(startedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -359,6 +367,161 @@ export default function AdminRadioAntenne() {
   const td = 'border border-[#d3dae3] px-2 py-1.5 text-[13px] text-night';
   const lbl = 'border border-[#d3dae3] bg-[#f3f6f9] px-2 py-1.5 text-[13px] font-semibold text-[#2b3648] w-44';
   const fileBtn = 'cursor-pointer rounded-md border border-white/40 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-white/10';
+
+
+  if (variant === 'studio') {
+    const sec = onAir && startedAt ? Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)) : 0;
+    const clock = `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    const card = 'rounded-3xl border border-white/10 bg-white/[0.04] p-4';
+    const hd = 'mb-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-gold-300';
+    const field = 'w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-2.5 text-white placeholder:text-white/35 outline-none focus:border-gold/60 disabled:opacity-50';
+    const small = 'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold';
+    const lit = Math.round(Math.min(1, level * 1.4) * 20);
+    return (
+      <div className="min-h-[100dvh] bg-[#070a12] text-white">
+        <div className="pointer-events-none fixed inset-x-0 top-0 h-[60vh] bg-[radial-gradient(60%_50%_at_50%_20%,rgba(232,184,74,.16),transparent_70%)]" aria-hidden />
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[#070a12]/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-gold font-display text-[11px] font-bold tracking-wider text-gold">KCC</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-lg font-semibold leading-tight">Studio Radio KCC</p>
+            <p className="truncate text-xs text-white/55">{who || 'Animateur'}</p>
+          </div>
+          {onAir
+            ? <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-bold tabular-nums"><span className="h-2 w-2 animate-pulse rounded-full bg-white" />ON AIR {clock}</span>
+            : <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">Hors antenne</span>}
+        </header>
+
+        <main className="relative mx-auto max-w-lg space-y-4 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-4">
+          {/* Console : vu-mètre, gros bouton d'antenne, micro */}
+          <section className={card + ' text-center'}>
+            <div className="mx-auto flex h-12 max-w-xs items-end justify-center gap-1" aria-label="Niveau du micro">
+              {Array.from({ length: 20 }, (_, i) => (
+                <span key={i} className={`w-2 rounded-sm transition-colors ${i < lit ? (i > 16 ? 'bg-red-500' : i > 12 ? 'bg-gold' : 'bg-emerald-400') : 'bg-white/10'}`} style={{ height: `${30 + i * 3.5}%` }} />
+              ))}
+            </div>
+            <button type="button" onClick={onAir ? endShow : goLive} disabled={busy}
+              className={`mx-auto mt-5 grid h-32 w-32 place-items-center rounded-full text-center font-bold shadow-2xl transition active:scale-95 disabled:opacity-60 ${onAir ? 'bg-red-600 text-white shadow-red-900/50' : 'bg-gold text-night shadow-[0_14px_40px_-8px_rgba(232,184,74,.75)]'}`}>
+              <span>{busy ? '…' : onAir ? <>■<br />Terminer</> : <>●<br />Passer à<br />l’antenne</>}</span>
+            </button>
+            <p className="mt-3 text-sm text-white/65">{onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule.'}</p>
+            {onAir && <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {auditeurs ?? '…'} auditeur{(auditeurs ?? 0) > 1 ? 's' : ''}{taken.length ? ` · ${taken.length} au téléphone` : ''}</p>}
+            {onAir && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <button type="button" onClick={() => setMicMuted((m) => !m)} className={small + (micMuted ? ' bg-red-600 text-white' : ' bg-white/[0.08] text-white')}><Mic className="h-4 w-4" />{micMuted ? 'Micro coupé' : 'Micro actif'}</button>
+                {outputsOf(dest).length > 0 && (diffOn
+                  ? <button type="button" onClick={stopDiff} className={small + ' bg-white/[0.08] text-white'}><Square className="h-4 w-4" />Arrêter YouTube</button>
+                  : <button type="button" onClick={startDiff} className={small + ' bg-white/[0.08] text-white'}><Youtube className="h-4 w-4" />YouTube/Facebook</button>)}
+              </div>
+            )}
+          </section>
+
+          {!onAir && (
+            <section className={card + ' space-y-3'}>
+              <p className={hd}>Émission</p>
+              <input className={field} maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nom de l’émission" aria-label="Nom de l’émission" />
+              <select className={field} value={micId} onChange={(e) => setMicId(e.target.value)} aria-label="Micro">
+                <option value="" className="text-night">Micro du téléphone</option>
+                {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId} className="text-night">{m.label || `Micro ${i + 1}`}</option>)}
+              </select>
+              <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={calls} onChange={(e) => setCalls(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Accepter les appels des auditeurs</label>
+              <p className="text-xs text-white/45">Mettez des écouteurs pour éviter l’écho.</p>
+            </section>
+          )}
+
+          <section className={card}>
+            <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>
+            {!onAir && <p className="text-sm text-white/50">Les appels arrivent ici pendant le direct.</p>}
+            {onAir && !queue.length && <p className="text-sm text-white/50">Aucun appel pour le moment.</p>}
+            <ul className="space-y-2">
+              {live.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-red-500/60 bg-red-500/15 p-3">
+                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">🔴 {a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-red-200">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion…'}</p></div>
+                  <button type="button" onClick={() => hang(a, 'termine')} className={small + ' bg-red-600 text-white'}><PhoneOff className="h-4 w-4" /></button>
+                </li>
+              ))}
+              {waiting.map((a) => (
+                <li key={a.id} className="flex items-center gap-2 rounded-2xl bg-white/[0.05] p-3">
+                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-white/50">attend depuis {since(a.cree_le)}</p></div>
+                  <button type="button" onClick={() => take(a)} className={small + ' bg-emerald-600 text-white'} aria-label={`Prendre ${a.nom}`}><Headphones className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => hang(a, 'refuse')} className={small + ' bg-white/[0.08] text-white'} aria-label={`Refuser ${a.nom}`}><UserX className="h-4 w-4" /></button>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className={card}>
+            <p className={hd}>Sujet de l’émission
+              {onAir && <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className="rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-night disabled:opacity-40"><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher'}</button>}
+            </p>
+            <textarea rows={4} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className={field + ' resize-y'} placeholder="Thème du jour, question, histoire… lu par les auditeurs." />
+            {onAir && topic.trim() === topicSaved && topicSaved && <p className="mt-1 text-xs text-emerald-300">✓ Affiché aux auditeurs</p>}
+          </section>
+
+          <section className={card}>
+            <p className={hd}><span className="flex items-center gap-2"><Music2 className="h-3.5 w-3.5" />Musique de fond</span>
+              <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>
+            </p>
+            {!tracks.length && <p className="text-sm text-white/50">Ajoutez des morceaux : ils passent à tour de rôle sous votre voix.</p>}
+            <ol className="max-h-56 space-y-1 overflow-y-auto">
+              {tracks.map((t, i) => {
+                const now = onAir && i === trackIdx && musicOn;
+                return (
+                  <li key={t.url} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${now ? 'bg-gold/20 text-white' : 'text-white/75'}`}>
+                    <span className="w-6 text-right text-xs text-white/40">{now ? '▶' : i + 1}</span>
+                    <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }}>{t.name}</button>
+                    <button type="button" onClick={() => removeTrack(i)} className="p-1 text-white/40" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
+                  </li>
+                );
+              })}
+            </ol>
+            <div className="mt-3 flex items-center gap-2">
+              {onAir && !!tracks.length && <>
+                <button type="button" onClick={toggleMusic} className={small + ' bg-white/[0.08] text-white'} aria-label={musicOn ? 'Couper la musique' : 'Relancer la musique'}>{musicOn ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}</button>
+                <button type="button" onClick={() => { setMusicOn(true); playTrack(idxRef.current + 1); }} className={small + ' bg-white/[0.08] text-white'} aria-label="Morceau suivant"><SkipForward className="h-4 w-4" /></button>
+              </>}
+              <label className="flex flex-1 items-center gap-2 text-xs text-white/60">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" /></label>
+            </div>
+          </section>
+
+          <section className={card}>
+            <p className={hd}>Effets
+              <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ bruitage<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} /></label>
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {([['echo', 'Écho'], ['reverb', 'Réverb'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+                <button key={k} type="button" disabled={!onAir} onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]}
+                  className={`rounded-xl px-2 py-2.5 text-sm font-semibold disabled:opacity-40 ${voiceFx[k] ? 'bg-gold text-night' : 'bg-white/[0.08] text-white'}`}>{l}</button>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {PADS.map((p) => (
+                <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="rounded-2xl bg-white/[0.06] px-1 py-3 text-center text-[11px] font-semibold text-white/85 active:scale-95 active:bg-gold/30 disabled:opacity-40">
+                  <span className="block text-xl" aria-hidden>{p.emoji}</span>{p.label}
+                </button>
+              ))}
+              {myPads.map((p, i) => (
+                <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
+                  <span className="block text-xl" aria-hidden>🔊</span>{p.name}
+                </button>
+              ))}
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-xs text-white/60">Volume<input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" /></label>
+          </section>
+
+          <section className={card + ' space-y-3'}>
+            <p className={hd}><span className="flex items-center gap-2"><Youtube className="h-3.5 w-3.5 text-red-400" />YouTube et Facebook</span></p>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={dest.yt} onChange={(e) => updateDest({ yt: e.currentTarget.checked })} className="h-4 w-4 accent-[#e8b84a]" />YouTube</label>
+            {dest.yt && <input type="password" autoComplete="off" className={field} placeholder="Collez la clé de stream YouTube" aria-label="Clé de stream YouTube" value={dest.ytKey} onChange={(e) => updateDest({ ytKey: e.target.value })} />}
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={dest.fb} onChange={(e) => updateDest({ fb: e.currentTarget.checked })} className="h-4 w-4 accent-[#e8b84a]" />Facebook</label>
+            {dest.fb && <input type="password" autoComplete="off" className={field} placeholder="Collez la clé de stream Facebook" aria-label="Clé de stream Facebook" value={dest.fbKey} onChange={(e) => updateDest({ fbKey: e.target.value })} />}
+            <p className={`text-xs ${diffStatus && /refusé|valide|lente|coupé|Reconnectez/.test(diffStatus) ? 'text-red-300' : diffStatus ? 'text-emerald-300' : 'text-white/45'}`}>
+              {diffStatus || (outputsOf(dest).length ? '✓ Partira automatiquement quand vous passerez à l’antenne.' : 'La clé reste dans ce téléphone.')}
+            </p>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className={`${appMode ? 'min-h-screen' : '-m-4 sm:-m-6 lg:-m-8 min-h-[calc(100vh-68px)]'} flex flex-col bg-[#e9edf2]`}>

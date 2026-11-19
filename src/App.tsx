@@ -1,4 +1,4 @@
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { I18nProvider } from '@/i18n';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -23,8 +23,7 @@ export default function App() {
                   <ScrollToTop />
                   <AppRoutes />
                   <MiniRadioPlayer />
-                  <RequiredPhotoGate />
-                  <MatriculeWelcome />
+                  <MemberOverlays />
                 </RadioProvider>
               </BrowserRouter>
             </ToastProvider>
@@ -33,4 +32,11 @@ export default function App() {
       </I18nProvider>
     </ErrorBoundary>
   );
+}
+
+/** Fenêtres du compte (photo obligatoire, matricule) : jamais par-dessus la radio plein écran ni le studio. */
+function MemberOverlays() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/radio/app') || pathname.startsWith('/radio/studio')) return null;
+  return <><RequiredPhotoGate /><MatriculeWelcome /></>;
 }

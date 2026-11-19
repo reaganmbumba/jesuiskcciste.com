@@ -31,7 +31,7 @@ import java.util.List;
  * Hors direct, la radio automatique continue seule chez les auditeurs.
  */
 public class MainActivity extends Activity {
-    static final String HOME = "https://jesuiskcciste.com/admin/radio/antenne?app=1";
+    static final String HOME = "https://jesuiskcciste.com/radio/studio";
     private static final int REQ_MIC = 51;
     private static final int REQ_FILES = 52;
     private WebView web;
@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         web = new WebView(this);
-        web.setBackgroundColor(Color.parseColor("#2b3648"));
+        web.setBackgroundColor(Color.parseColor("#070a12"));
         setContentView(web);
 
         WebSettings s = web.getSettings();
@@ -79,7 +79,9 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 String host = u.getHost() == null ? "" : u.getHost();
-                if ("https".equals(u.getScheme()) && (host.equals("jesuiskcciste.com") || host.equals("www.jesuiskcciste.com"))) return false;
+                // seule la page du studio reste dans l'application ; le reste du site s'ouvre dans le navigateur
+                if ("https".equals(u.getScheme()) && (host.equals("jesuiskcciste.com") || host.equals("www.jesuiskcciste.com"))
+                    && u.getPath() != null && u.getPath().startsWith("/radio/studio")) return false;
                 try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) { }
                 return true;
             }
@@ -88,7 +90,7 @@ public class MainActivity extends Activity {
             public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError err) {
                 if (req.isForMainFrame()) {
                     view.loadDataWithBaseURL(null,
-                        "<html><body style='background:#2b3648;color:#fff;font-family:sans-serif;text-align:center;padding:40px'>"
+                        "<html><body style='background:#070a12;color:#fff;font-family:sans-serif;text-align:center;padding:40px'>"
                         + "<h2>🎙️ Studio Radio KCC</h2><p>Pas de connexion Internet.</p>"
                         + "<p><a style='color:#e8b84a' href='" + HOME + "'>Réessayer</a></p></body></html>",
                         "text/html", "utf-8", null);

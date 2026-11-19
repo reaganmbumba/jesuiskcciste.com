@@ -54,6 +54,8 @@ export interface RadioLive {
   calls: boolean;
   /** Sujet de l'émission écrit par l'animateur, affiché aux auditeurs pendant le direct. */
   topic: string;
+  /** Nom de l'animateur à l'antenne (pour ne pas lancer deux directs en même temps). */
+  host?: string;
 }
 
 export interface RadioSettings {
@@ -156,6 +158,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       rtc: typeof l.rtc === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(l.rtc) ? l.rtc : '',
       calls: l.calls === true,
       topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
+      ...(typeof l.host === 'string' && l.host ? { host: l.host.slice(0, 80) } : {}),
     },
     programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
   };

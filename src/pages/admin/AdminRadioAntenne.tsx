@@ -9,7 +9,7 @@ import { writeAudit } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
 import { radioSettingsOf, type RadioSettings } from '@/features/radio/radio';
 import { RADIO_NAME } from '@/features/radio/RadioUi';
-import { isRadioDesktop } from '@/features/radio/desktop';
+import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
 import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners } from '@/features/radio/listeners';
@@ -169,6 +169,7 @@ export default function AdminRadioAntenne() {
       if (outputsOf(dest).length) startDiff();
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
+      try { studioBridge()?.onAir?.(title.trim() || 'Émission en direct'); } catch { /* hors application */ }
       notify('Vous êtes à l’antenne. Les auditeurs de /radio basculent sur l’émission dans la minute.');
     } catch (e) {
       stopAll();
@@ -202,6 +203,7 @@ export default function AdminRadioAntenne() {
   }
 
   function stopAll() {
+    try { studioBridge()?.offAir?.(); } catch { /* hors application */ }
     stopDiff();
     lines.current.forEach((l) => { l.pc.close(); l.el.srcObject = null; });
     lines.current.clear();

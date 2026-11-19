@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          for k in 1 2 3 4 5 6 7 8 9 10 11 12; do
-            code=$(curl -s -r 1000000-1000099 -o /tmp/part -w '%{http_code}' https://jesuiskcciste.com/radio/emissions/a-la-decouverte-echo-du-ciel-2026-11-19.webm)
-            echo "essai $k : HTTP $code, $(stat -c %s /tmp/part) octets"
-            [ "$code" = "206" ] && break; sleep 30
+          for k in $(seq 1 16); do
+            code=$(curl -s -o /tmp/r -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' https://jesuiskcciste.com/api/live/call)
+            echo "essai $k : /api/live/call -> HTTP $code $(head -c 80 /tmp/r)"
+            [ "$code" != "405" ] && break; sleep 20
           done
-          curl -s -r 5000000-5000009 -D - -o /dev/null https://jesuiskcciste.com/radio/emissions/tosungana-reponse-maman-mams-2026-11-19.mp3 | grep -iE "^HTTP|content-range|accept-ranges"
+          curl -s -r 0-9 -o /dev/null -w 'emission: HTTP %{http_code}\n' https://jesuiskcciste.com/radio/emissions/tosungana-reponse-maman-mams-2026-11-19.mp3

@@ -27,11 +27,14 @@ export function kinshasaTime(d = new Date()): { h: number; m: number } {
   return { h: n('hour'), m: n('minute') };
 }
 
-/** « Il est quatorze heures » + « vingt-cinq » + « à Kinshasa. Vous écoutez Radio Je suis KCCiste. » */
-export function timeAnnouncement(d = new Date(), pick = Math.random): string[] {
+/**
+ * Annonce de l'heure façon animateur : « C'est l'heure ! … Il est exactement » + « quatorze heures »
+ * + « vingt-cinq » + « Vous êtes bien sur Radio Je suis KCCiste ! … Ding dong ».
+ */
+export function timeAnnouncement(d = new Date()): string[] {
   const { h, m } = kinshasaTime(d);
   const pad = (x: number) => String(x).padStart(2, '0');
-  return [`/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), `/radio/heure/fin${pick() < 0.5 ? 1 : 2}.mp3`];
+  return ['/radio/heure/intro.mp3', `/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), '/radio/heure/outro.mp3'];
 }
 
 interface RadioValue {

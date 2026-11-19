@@ -1,0 +1,20 @@
+name: tmp-voices
+on:
+  push:
+    branches: [claude/voices-fetch]
+permissions:
+  contents: write
+jobs:
+  v:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir v && cd v
+          B=https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/fr/fr_FR
+          for x in tom/medium/fr_FR-tom-medium upmc/medium/fr_FR-upmc-medium; do
+            curl -sSLf -O "$B/$x.onnx" -O "$B/$x.onnx.json"
+          done
+          ls -l
+          git init -q && git config user.name ci && git config user.email ci@example.com
+          git checkout -q -b claude/voices && git add . && git commit -qm voices
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/voices

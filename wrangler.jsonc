@@ -19,7 +19,9 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Les émissions de la radio passent par le Worker (worker/media.ts) : lecture par morceaux.
+    "run_worker_first": ["/radio/emissions/*"]
   },
   // Valeurs publiques (déjà dans .env.production) : la clé publishable est protégée par RLS.
   "vars": {

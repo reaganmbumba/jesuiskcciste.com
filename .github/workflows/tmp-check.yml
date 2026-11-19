@@ -6,7 +6,12 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - run: |
-          for u in https://jesuiskcciste.com/radio/emissions/a-la-decouverte-echo-du-ciel-2026-11-19.webm https://jesuiskcciste.com/radio/emissions/tosungana-reponse-maman-mams-2026-11-19.mp3; do
-            echo "== $u"; curl -s -r 1000000-1000099 -D - -o /tmp/part "$u" | grep -iE "^HTTP|content-range|accept-ranges|content-length"; echo "octets reçus: $(stat -c %s /tmp/part)"
-          done
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc -b
+      - run: npx tsc --noEmit -p worker 2>/dev/null || npx tsc --noEmit --skipLibCheck --target es2022 --module esnext --moduleResolution bundler --types @cloudflare/workers-types worker/index.ts || true
+      - run: npx vitest run
+      - run: npm run build
+      - run: npx wrangler deploy --dry-run --outdir /tmp/w 2>&1 | tail -5

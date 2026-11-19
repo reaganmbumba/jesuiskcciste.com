@@ -17,7 +17,7 @@ import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/ra
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
-type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string };
+type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null };
 type Line = { pc: RTCPeerConnection; node: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement };
 
 const since = (iso: string) => {
@@ -79,7 +79,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   const ctx = useRef<AudioContext | null>(null);
   const auditeurs = useRadioListeners(false, onAir);
-  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode }>({});
+  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
+  const [plateauLink, setPlateauLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
   const pub = useRef<Publish | null>(null);
   // YouTube / Facebook (par le relais) : clés gardées dans ce navigateur seulement
   const [dest, setDest] = useState<Destinations>(loadDestinations);
@@ -104,13 +106,31 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   useEffect(() => {
     if (!onAir || !supabase) return;
     const load = async () => {
-      const { data } = await supabase!.from('radio_appels').select('id, nom, ville, statut, cree_le, session_id').in('statut', ['attente', 'antenne']).order('cree_le');
+      const { data } = await supabase!.from('radio_appels').select('id, nom, ville, statut, cree_le, session_id, genre, siege').in('statut', ['attente', 'antenne']).order('cree_le');
       if (data) setQueue(data as Appel[]);
     };
     void load();
     const t = window.setInterval(load, 3000);
     return () => window.clearInterval(t);
   }, [onAir]);
+
+  // Invités du plateau : branchés à l'antenne dès qu'ils arrivent ; voix débranchée quand quelqu'un s'en va
+  const takeRef = useRef<(a: Appel) => Promise<void>>(async () => {});
+  const joining = useRef(new Set<string>());
+  useEffect(() => {
+    if (!onAir) return;
+    const ids = new Set(queue.map((a) => a.id));
+    lines.current.forEach((l, id) => {
+      if (ids.has(id)) return;
+      l.gain?.disconnect(); l.node?.disconnect(); l.pc.close(); l.el.srcObject = null;
+      lines.current.delete(id);
+      setTaken((t) => t.filter((x) => x !== id));
+    });
+    queue.filter((a) => a.genre === 'plateau' && a.statut === 'antenne' && !lines.current.has(a.id) && !joining.current.has(a.id)).forEach((a) => {
+      joining.current.add(a.id);
+      void takeRef.current(a).finally(() => joining.current.delete(a.id));
+    });
+  }, [queue, onAir]);
 
   // Vu-mètre de l'antenne
   useEffect(() => {
@@ -126,12 +146,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     return () => cancelAnimationFrame(raf);
   }, [onAir]);
 
+  /** Seul l'état du direct est écrit (fonction radio_live_set) : les animateurs radio n'ont aucun autre droit sur les réglages. */
   async function saveLive(live: Partial<RadioSettings['live']>) {
     const r = radioSettingsOf(settings);
-    const next = { ...settings, radio: { ...r, live: { ...r.live, ...live } } };
-    const { error } = await supabase!.from('site_settings').upsert({ key: 'public', value: snakify(next) });
+    const { error } = await supabase!.rpc('radio_live_set', { p_live: snakify(live) });
     if (error) throw error;
-    setSettings(next);
+    setSettings({ ...settings, radio: { ...r, live: { ...r.live, ...live } } });
   }
 
   async function goLive() {
@@ -152,25 +172,30 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const analyser = ac.createAnalyser();
       const sum = ac.createGain(); sum.connect(analyser);
       // voix → effets (écho, réverbération, voix radio) → antenne
-      const chain = voiceChain(ac, micGain, [program, retour, sum]);
+      // une sortie par place du plateau : chaque invité entend tout le monde sauf lui-même
+      const plateau = [0, 1, 2].map(() => ac.createMediaStreamDestination());
+      const chain = voiceChain(ac, micGain, [program, retour, sum, ...plateau]);
       (Object.keys(voiceFx) as VoiceFx[]).forEach((k) => chain.set(k, voiceFx[k]));
       const musicGain = ac.createGain();
       musicGain.gain.value = musicVol;
       musicGain.connect(program); musicGain.connect(retour); musicGain.connect(ac.destination); musicGain.connect(sum);
+      plateau.forEach((d) => musicGain.connect(d));
       // bruitages : à l'antenne, au téléphone des appelants et dans le casque
       const bus = ac.createGain(); bus.gain.value = fxVol;
       bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
+      plateau.forEach((d) => bus.connect(d));
       fx.current = { chain, bus };
       const musicEl = new Audio();
       musicEl.onended = () => playTrack(idxRef.current + 1);
       musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
       ac.createMediaElementSource(musicEl).connect(musicGain);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl };
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
       recorder.current = recOn ? recordShow(program.stream) : null;
       setState('Connexion au relais…');
-      pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0]);
+      pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0],
+        plateau.map((d, i) => ({ name: `plateau${i + 1}`, track: d.stream.getAudioTracks()[0] })));
       pub.current.pc.onconnectionstatechange = () => {
         const s = pub.current?.pc.connectionState;
         setState(s === 'connected' ? 'À l’antenne' : s === 'failed' ? 'Connexion perdue : arrêtez puis relancez l’antenne.' : s ?? '');
@@ -178,6 +203,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       await saveLive({ onAir: true, rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', topic: topic.trim(), startedAt: new Date().toISOString() });
       setTopicSaved(topic.trim());
       if (outputsOf(dest).length) startDiff();
+      // lien des invités du plateau (valable pendant cette émission)
+      void supabase.rpc('radio_plateau_lien').then(({ data: j }) => { if (j) setPlateauLink(`${window.location.origin}/radio/plateau?c=${String(j)}`); });
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
       try { studioBridge()?.onAir?.(title.trim() || 'Émission en direct'); } catch { /* hors application */ }
@@ -214,6 +241,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   }
 
   function stopAll() {
+    if (plateauLink) { void supabase?.rpc('radio_plateau_fermer'); setPlateauLink(''); }
     recorder.current?.cancel();
     recorder.current = null;
     try { studioBridge()?.offAir?.(); } catch { /* hors application */ }
@@ -266,6 +294,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           node.connect(gain);
           gain.connect(nodes.current.program!); // à l'antenne
           gain.connect(ac.destination); // dans le casque de l'animateur
+          const pl = nodes.current.plateau ?? [];
+          if (a.genre === 'plateau') {
+            // un invité du plateau : entendu des appelants et des autres invités, pas de lui-même
+            if (nodes.current.retour) gain.connect(nodes.current.retour);
+            pl.forEach((d, i) => { if (i + 1 !== a.siege) gain.connect(d); });
+          } else pl.forEach((d) => gain.connect(d)); // un appelant : entendu des invités du plateau
           lines.current.set(a.id, { pc: w.pc, node, gain, el });
           setTaken((t) => [...new Set([...t, a.id])]);
         }
@@ -273,10 +307,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       w.pc.addEventListener('track', () => setTimeout(attach, 0));
       attach();
       if (!lines.current.has(a.id)) lines.current.set(a.id, { pc: w.pc, node: undefined as unknown as MediaStreamAudioSourceNode, gain: undefined as unknown as GainNode, el });
-      await supabase!.from('radio_appels').update({ statut: 'antenne', modifie_le: new Date().toISOString() }).eq('id', a.id);
-      setQueue((q) => q.map((x) => (x.id === a.id ? { ...x, statut: 'antenne' } : x)));
+      if (a.statut !== 'antenne') {
+        await supabase!.from('radio_appels').update({ statut: 'antenne', modifie_le: new Date().toISOString() }).eq('id', a.id);
+        setQueue((q) => q.map((x) => (x.id === a.id ? { ...x, statut: 'antenne' } : x)));
+      }
     } catch (e) { notify(e instanceof Error ? e.message : 'Impossible de prendre cet appel.', 'error'); }
   }
+
+  takeRef.current = take;
 
   async function hang(a: Appel, statut: 'termine' | 'refuse') {
     const l = lines.current.get(a.id);
@@ -373,6 +411,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     return () => window.clearInterval(t);
   }, [onAir, variant]);
 
+  const copyLink = () => { void navigator.clipboard?.writeText(plateauLink).then(() => { setLinkCopied(true); window.setTimeout(() => setLinkCopied(false), 1500); }).catch(() => {}); };
+  const waLink = `https://wa.me/?text=${encodeURIComponent(`🎙️ Rejoins-moi sur le plateau de « ${title.trim() || 'Radio Je suis KCCiste'} » (Radio Je suis KCCiste). Ouvre ce lien, mets des écouteurs et appuie sur « Rejoindre le plateau » :\n${plateauLink}`)}`;
+  const seat = (a: Appel) => (a.genre === 'plateau' ? `🎙️ Plateau ${a.siege ?? ''} · ` : '');
+
   const who = profile ? `${profile.firstName} ${profile.lastName}`.trim() : '';
   const startedAt = radioSettingsOf(settings).live.startedAt;
   const startTime = onAir && startedAt ? new Date(startedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—';
@@ -429,6 +471,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             )}
           </section>
 
+          {onAir && plateauLink && (
+            <section className={card}>
+              <p className={hd}>Invités plateau (3 places)</p>
+              <p className="text-sm text-white/65">Envoyez ce lien : l’invité passe directement à l’antenne et entend tout le plateau.</p>
+              <p className="mt-2 truncate rounded-xl bg-white/[0.06] px-3 py-2 font-mono text-xs text-white/80">{plateauLink}</p>
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={copyLink} className={small + ' bg-white/[0.08] text-white'}>{linkCopied ? '✓ Copié' : 'Copier'}</button>
+                <a href={waLink} target="_blank" rel="noopener noreferrer" className={small + ' bg-emerald-600 text-white'}>WhatsApp</a>
+              </div>
+            </section>
+          )}
           {lastRec && !onAir && <RecordingPanel dark rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} />}
           {onAir && recorder.current && <p className="text-center text-xs text-red-300">● Enregistrement en cours</p>}
           {!onAir && (
@@ -452,7 +505,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <ul className="space-y-2">
               {live.map((a) => (
                 <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-red-500/60 bg-red-500/15 p-3">
-                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">🔴 {a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-red-200">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion…'}</p></div>
+                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">🔴 {seat(a)}{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-red-200">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion…'}</p></div>
                   <button type="button" onClick={() => hang(a, 'termine')} className={small + ' bg-red-600 text-white'}><PhoneOff className="h-4 w-4" /></button>
                 </li>
               ))}
@@ -579,7 +632,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <ul>
               {live.map((a) => (
                 <li key={a.id} className="border-b border-[#e3e8ee] border-l-4 border-l-red-600 bg-red-50 px-3 py-2">
-                  <p className="text-sm font-semibold text-night">🔴 {a.nom}{a.ville ? ` · ${a.ville}` : ''}</p>
+                  <p className="text-sm font-semibold text-night">🔴 {seat(a)}{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p>
                   <p className="text-[11px] text-red-700">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion de sa voix…'}</p>
                   <button type="button" onClick={() => hang(a, 'termine')} className="mt-1 inline-flex items-center gap-1 rounded border border-red-300 px-2 py-0.5 text-xs font-semibold text-red-700 hover:bg-red-100"><PhoneOff className="h-3 w-3" />Raccrocher</button>
                 </li>
@@ -596,6 +649,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               ))}
             </ul>
           </div>
+          {onAir && plateauLink && (
+            <div className="rounded border border-[#d3dae3] bg-white p-3">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Invités plateau (3 places)</p>
+              <p className="mt-1 text-xs text-ink/60">Envoyez ce lien : l’invité passe directement à l’antenne.</p>
+              <p className="mt-2 truncate rounded bg-[#f3f6f9] px-2 py-1 font-mono text-[11px]">{plateauLink}</p>
+              <div className="mt-2 flex gap-1.5">
+                <button type="button" onClick={copyLink} className="rounded border border-[#d3dae3] px-2 py-0.5 text-xs font-semibold">{linkCopied ? '✓ Copié' : 'Copier'}</button>
+                <a href={waLink} target="_blank" rel="noopener noreferrer" className="rounded bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">WhatsApp</a>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* Feuille principale */}

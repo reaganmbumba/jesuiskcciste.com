@@ -37,6 +37,6 @@ export default function App() {
 /** Fenêtres du compte (photo obligatoire, matricule) : jamais par-dessus la radio plein écran ni le studio. */
 function MemberOverlays() {
   const { pathname } = useLocation();
-  if (pathname.startsWith('/radio/app') || pathname.startsWith('/radio/studio')) return null;
+  if (pathname.startsWith('/radio/app') || pathname.startsWith('/radio/studio') || pathname.startsWith('/radio/plateau')) return null;
   return <><RequiredPhotoGate /><MatriculeWelcome /></>;
 }

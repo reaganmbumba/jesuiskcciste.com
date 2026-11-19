@@ -18,7 +18,7 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
   const j = (await r.json().catch(() => ({}))) as T & { error?: string; detail?: string };
   if (!r.ok) {
     const e = j.error === 'not-configured' ? 'Le relais du direct n’est pas activé sur le site.'
-      : j.error === 'forbidden' ? 'Ce compte n’est pas administrateur du site.'
+      : j.error === 'forbidden' ? 'Ce compte n’est pas animateur de la radio.'
         : `Le relais ne répond pas (${j.detail || j.error || r.status}).`;
     throw new Error(e);
   }
@@ -28,7 +28,7 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
 export type Watch = { pc: RTCPeerConnection; stream: MediaStream };
 
 /** Reçoit une piste (« audio », « retour » ou « voix ») d'une session du relais. */
-export async function watchTrack(sessionId: string, track: 'audio' | 'retour' | 'voix', onState?: (s: RTCPeerConnectionState) => void): Promise<Watch> {
+export async function watchTrack(sessionId: string, track: 'audio' | 'retour' | 'voix' | 'plateau1' | 'plateau2' | 'plateau3', onState?: (s: RTCPeerConnectionState) => void): Promise<Watch> {
   const j = await post<{ sessionId: string; sdp: string }>('watch', { sessionId, tracks: [track] });
   const pc = new RTCPeerConnection(ICE);
   const stream = new MediaStream();
@@ -42,14 +42,19 @@ export async function watchTrack(sessionId: string, track: 'audio' | 'retour' | 
 
 export type Publish = { pc: RTCPeerConnection; sessionId: string };
 
-/** L'animateur (jeton d'un administrateur) envoie l'antenne et le retour. */
-export async function publishShow(token: string, program: MediaStreamTrack, retour: MediaStreamTrack): Promise<Publish> {
+/**
+ * L'animateur envoie l'antenne et le retour, plus un retour par place du plateau
+ * (« plateau1 »…« plateau3 » : chaque invité entend tout le monde sauf lui-même).
+ */
+export async function publishShow(token: string, program: MediaStreamTrack, retour: MediaStreamTrack, extras: { name: string; track: MediaStreamTrack }[] = []): Promise<Publish> {
   const pc = new RTCPeerConnection(ICE);
   const a = pc.addTransceiver(program, { direction: 'sendonly' });
   const b = pc.addTransceiver(retour, { direction: 'sendonly' });
+  const more = extras.map((x) => ({ name: x.name, t: pc.addTransceiver(x.track, { direction: 'sendonly' }) }));
   await pc.setLocalDescription(await pc.createOffer());
   const j = await post<{ sessionId: string; sdp: string }>('publish', {
-    sdp: pc.localDescription?.sdp, tracks: [{ mid: a.mid, trackName: 'audio' }, { mid: b.mid, trackName: 'retour' }],
+    sdp: pc.localDescription?.sdp,
+    tracks: [{ mid: a.mid, trackName: 'audio' }, { mid: b.mid, trackName: 'retour' }, ...more.map((m) => ({ mid: m.t.mid, trackName: m.name }))],
   }, token);
   await pc.setRemoteDescription({ type: 'answer', sdp: j.sdp });
   return { pc, sessionId: j.sessionId };

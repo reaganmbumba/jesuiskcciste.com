@@ -17,6 +17,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUrl, radioSettingsOf, vocalWhatsappUrl, type RadioItem, type RadioSettings } from '@/features/radio/radio';
 import { AdminVocals } from '@/features/radio/AdminVocals';
 import { AdminProgrammes } from '@/features/radio/AdminProgrammes';
+import { AdminRadioCodes } from '@/features/radio/AdminRadioCodes';
 import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { JITSI_DOMAIN } from '@/features/meetings/meetings';
 
@@ -109,6 +110,7 @@ export default function AdminRadio() {
         </div>
       </CardBody></Card>
       <AdminProgrammes />
+      <AdminRadioCodes />
       <AdminVocals />
       <Card><CardBody className="space-y-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><MessageCircle className="h-5 w-5 text-gold-600" />Réglages des vocaux</h2>

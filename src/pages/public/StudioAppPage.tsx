@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Loader2, LogIn, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { can } from '@/lib/permissions';
 
 const AdminRadioAntenne = lazy(() => import('@/pages/admin/AdminRadioAntenne'));
@@ -25,6 +26,7 @@ export default function StudioAppPage() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [code, setCode] = useState('');
   useEffect(() => { document.title = 'Studio Radio KCC'; }, []);
 
   async function submit(e: FormEvent) {
@@ -34,6 +36,17 @@ export default function StudioAppPage() {
     try { await signIn(email.trim(), password); }
     catch (err) { setError(err instanceof Error ? err.message : 'Connexion impossible.'); }
     finally { setBusy(false); }
+  }
+
+  async function submitCode(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      const { error: err } = await supabase!.rpc('radio_code_utiliser', { p_code: code.trim().toUpperCase() });
+      if (err) throw new Error(err.message);
+      window.location.reload(); // le compte devient animateur : on recharge ses droits
+    } catch (err) { setError(err instanceof Error ? err.message : 'Code refusé.'); setBusy(false); }
   }
 
   if (loading) return <Wait />;
@@ -50,14 +63,23 @@ export default function StudioAppPage() {
             {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}Se connecter
           </button>
           <p className="text-center text-xs text-white/40">Mot de passe oublié ? Réinitialisez-le sur jesuiskcciste.com.</p>
+          <div className="mt-4 rounded-2xl border border-white/10 p-3 text-center text-sm text-white/70">
+            Nouvel animateur avec un code ?<br />
+            <a href="https://jesuiskcciste.com/inscription" className="font-semibold text-gold-300 underline">Créez d’abord votre compte</a>, puis revenez ici vous connecter et saisir votre code.
+          </div>
         </form>
       </Shell>
     );
   }
-  if (!can(profile, 'settings.manage')) {
+  if (!can(profile, 'radio.antenne') && !can(profile, 'settings.manage')) {
     return (
       <Shell>
-        <p className="text-center text-sm text-white/70">Ce compte n’est pas animateur de la radio. Demandez l’accès à l’administrateur du site.</p>
+        <form onSubmit={submitCode} className="space-y-3">
+          <p className="text-center text-sm text-white/70">Ce compte n’est pas encore animateur. Saisissez le code d’animateur que l’administrateur vous a donné.</p>
+          <input className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3 py-3 text-center font-mono text-lg uppercase tracking-widest text-white placeholder:text-white/30 outline-none focus:border-gold/60" placeholder="KCC-XXXX-XXXX" aria-label="Code d’animateur" value={code} onChange={(e) => setCode(e.target.value)} required />
+          {error && <p className="rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-200" role="alert">{error}</p>}
+          <button type="submit" disabled={busy} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold py-3 font-semibold text-night disabled:opacity-60">{busy && <Loader2 className="h-5 w-5 animate-spin" />}Valider le code</button>
+        </form>
         <button type="button" onClick={() => void signOut()} className="mx-auto mt-4 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold"><LogOut className="h-4 w-4" />Changer de compte</button>
       </Shell>
     );

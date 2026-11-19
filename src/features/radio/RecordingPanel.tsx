@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, Download, Loader2, X } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/lib/supabase';
-import { snakify } from '@/utils/case';
 import { formatDuration } from '@/utils/format';
 import { uploadSiteAudio } from '@/features/content/siteContent';
 import { radioSettingsOf, type RadioProgramme } from './radio';
@@ -44,10 +43,10 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
     try {
       const r = radioSettingsOf(settings);
       const p: RadioProgramme = { id: crypto.randomUUID?.() ?? `${Date.now()}`, title: `${title} (rediffusion)`.slice(0, 120), topic, url, startsAt: start.toISOString(), durationSeconds: rec.seconds };
-      const next = { ...settings, radio: { ...r, programmes: [...r.programmes, p] } };
-      const { error: e } = await supabase!.from('site_settings').upsert({ key: 'public', value: snakify(next) });
+      // fonction radio_programme_add : accessible aux animateurs radio, n'ajoute qu'une émission au programme
+      const { error: e } = await supabase!.rpc('radio_programme_add', { p });
       if (e) throw e;
-      setSettings(next);
+      setSettings({ ...settings, radio: { ...r, programmes: [...r.programmes, p] } });
       setPlanned(start.toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }));
     } catch (e) { setError(e instanceof Error ? e.message : 'La programmation a échoué.'); } finally { setBusy(false); }
   }

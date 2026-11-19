@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/Misc';
 import { useAuth } from '@/features/auth/AuthContext';
 import { ROLE_LABELS } from '@/lib/permissions';
 import { cn } from '@/utils/format';
+import { isRadioDesktop } from '@/features/radio/desktop';
 
 export interface SideItem { to: string; label: string; icon: ComponentType<{ className?: string }>; end?: boolean; badge?: number }
 
@@ -42,6 +43,9 @@ export function DashboardLayout({ items, title, variant = 'member' }: { items: S
       </div>
     </div>
   );
+
+  // Application Windows de la radio : l'antenne seule, plein écran, sans le menu.
+  if (isRadioDesktop()) return <div className="min-h-screen bg-mist"><Suspense fallback={<PageLoader />}><Outlet /></Suspense></div>;
 
   return (
     <div className="min-h-screen bg-mist">

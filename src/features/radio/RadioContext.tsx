@@ -29,7 +29,7 @@ export function kinshasaTime(d = new Date()): { h: number; m: number } {
 
 /**
  * Annonce de l'heure façon animateur : « C'est l'heure ! … Il est exactement » + « quatorze heures »
- * + « vingt-cinq » + « Vous êtes bien sur Radio Je suis KCCiste ! … Ding dong ».
+ * + « vingt-cinq » + « en RDC. … ».
  */
 export function timeAnnouncement(d = new Date()): string[] {
   const { h, m } = kinshasaTime(d);

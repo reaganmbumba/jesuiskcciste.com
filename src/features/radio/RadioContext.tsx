@@ -17,6 +17,8 @@ const FADE_IN = 1.5;
 const FADE_OUT = 3.5;
 /** Les chants passent un peu moins fort que les jingles et l'annonce de l'heure. */
 const SONG_LEVEL = 0.75;
+/** L'heure de Kinshasa est annoncée toutes les 15 minutes (à la fin du titre en cours). */
+const TIME_EVERY_MS = 15 * 60_000;
 
 /** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
 export function kinshasaTime(d = new Date()): { h: number; m: number } {
@@ -25,11 +27,14 @@ export function kinshasaTime(d = new Date()): { h: number; m: number } {
   return { h: n('hour'), m: n('minute') };
 }
 
-/** « Il est quatorze heures » + « vingt-cinq » + « à Kinshasa. Vous écoutez Radio Je suis KCCiste. » */
-export function timeAnnouncement(d = new Date(), pick = Math.random): string[] {
+/**
+ * Annonce de l'heure façon animateur : « C'est l'heure ! … Il est exactement » + « quatorze heures »
+ * + « vingt-cinq » + « Vous êtes bien sur Radio Je suis KCCiste ! … Ding dong ».
+ */
+export function timeAnnouncement(d = new Date()): string[] {
   const { h, m } = kinshasaTime(d);
   const pad = (x: number) => String(x).padStart(2, '0');
-  return [`/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), `/radio/heure/fin${pick() < 0.5 ? 1 : 2}.mp3`];
+  return ['/radio/heure/intro.mp3', `/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), '/radio/heure/outro.mp3'];
 }
 
 interface RadioValue {
@@ -117,6 +122,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const lastJingle = useRef(-1);
   /** Volume du titre en cours (les chants un peu plus bas). */
   const levelRef = useRef(1);
+  const lastTimeAnnounce = useRef(0);
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
   // Horloge des émissions programmées : elles commencent et finissent à l'heure, sans attendre la relecture des réglages.
@@ -268,20 +274,26 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     songsSinceJingle.current += 1;
     const a = audio.current;
     if (a && index >= 0) {
-      // Entre deux titres, comme une vraie radio : l'heure de Kinshasa, et tous les 3 titres un jingle de la station.
-      let urls: string[];
-      if (songsSinceJingle.current >= JINGLE_EVERY) {
+      // Entre deux titres, comme une vraie radio : l'heure de Kinshasa toutes les 15 minutes,
+      // et un jingle de la station tous les 3 titres.
+      let urls: string[] | null = null;
+      if (Date.now() - lastTimeAnnounce.current >= TIME_EVERY_MS) {
+        lastTimeAnnounce.current = Date.now();
+        urls = timeAnnouncement();
+      } else if (songsSinceJingle.current >= JINGLE_EVERY) {
         songsSinceJingle.current = 0;
         let j = Math.floor(Math.random() * JINGLES.length);
         if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
         lastJingle.current = j;
         urls = [JINGLES[j]];
-      } else urls = timeAnnouncement();
+      }
+      if (!urls) return go();
+      const list = urls;
       const step = (i: number) => {
-        if (i >= urls.length) { afterJingle.current = null; return go(); }
+        if (i >= list.length) { afterJingle.current = null; return go(); }
         afterJingle.current = () => step(i + 1);
         a.volume = 1;
-        a.src = urls[i];
+        a.src = list[i];
         a.play().catch(() => { const k = afterJingle.current; afterJingle.current = null; k?.(); });
       };
       step(0);

@@ -29,13 +29,13 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm version ${{ env.KCC_VERSION_NAME }} --no-git-tag-version --allow-same-version
       - name: Construire l'installateur
-        run: npx electron-builder --win nsis zip --x64 --publish never
+        run: npx electron-builder --win nsis portable --x64 --publish never
       - name: Rassembler
         shell: bash
         run: |
           mkdir -p ../out
-          cp dist/*.exe "../out/KCC-Radio-Setup.exe"
-          cp dist/*.zip "../out/KCC-Radio-Portable.zip"
+          cp dist/KCC-Radio-Setup-*.exe "../out/KCC-Radio-Setup.exe"
+          cp dist/KCC-Radio-Portable-*.exe "../out/KCC-Radio-Portable.exe"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: radio-${{ github.run_number }}
@@ -44,7 +44,7 @@ jobs:
           make_latest: true
           body: |
             Application Windows de l'antenne radio Je suis KCCiste.
-            Installez KCC-Radio-Setup.exe (ou, sur un ordinateur où l'installation est refusée, décompressez KCC-Radio-Portable.zip dans Documents et lancez « Radio Je suis KCCiste.exe »), ouvrez « Radio Je suis KCCiste » sur le Bureau, connectez-vous une fois avec votre compte administrateur du site.
+            Installez KCC-Radio-Setup.exe (ou, sur un ordinateur où l'installation est refusée, lancez directement KCC-Radio-Portable.exe, sans installation), ouvrez « Radio Je suis KCCiste » sur le Bureau, connectez-vous une fois avec votre compte administrateur du site.
           files: |
             radio/out/KCC-Radio-Setup.exe
-            radio/out/KCC-Radio-Portable.zip
+            radio/out/KCC-Radio-Portable.exe

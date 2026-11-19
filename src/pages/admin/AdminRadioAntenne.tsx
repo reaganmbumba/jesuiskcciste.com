@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { snakify } from '@/utils/case';
 import { writeAudit } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
-import { radioSettingsOf, type RadioSettings } from '@/features/radio/radio';
+import { fetchRadioSettings, isLiveOn, radioSettingsOf, type RadioSettings } from '@/features/radio/radio';
 import { RADIO_NAME } from '@/features/radio/RadioUi';
 import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
@@ -81,6 +81,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const auditeurs = useRadioListeners(false, onAir);
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
+  const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const pub = useRef<Publish | null>(null);
   // YouTube / Facebook (par le relais) : clés gardées dans ce navigateur seulement
@@ -155,10 +156,18 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     setSettings(next);
   }
 
-  async function goLive() {
+  async function goLive(force = false) {
     if (!supabase) return;
     setBusy(true);
     try {
+      // Un autre animateur est déjà à l'antenne : on ne le coupe pas, on propose de rejoindre son plateau.
+      const fresh = await fetchRadioSettings();
+      if (!force && fresh && fresh.live.rtc && isLiveOn(fresh.live)) {
+        setLocked({ host: fresh.live.host || 'Un autre animateur', title: fresh.live.title || 'une émission' });
+        setBusy(false);
+        return;
+      }
+      setLocked(null);
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error('Session expirée : reconnectez-vous.');
@@ -201,7 +210,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
         const s = pub.current?.pc.connectionState;
         setState(s === 'connected' ? 'À l’antenne' : s === 'failed' ? 'Connexion perdue : arrêtez puis relancez l’antenne.' : s ?? '');
       };
-      await saveLive({ onAir: true, rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', topic: topic.trim(), startedAt: new Date().toISOString() });
+      await saveLive({ onAir: true, host: (profile ? `${profile.firstName} ${profile.lastName}`.trim() : '') || 'Animateur', rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', topic: topic.trim(), startedAt: new Date().toISOString() });
       setTopicSaved(topic.trim());
       if (outputsOf(dest).length) startDiff();
       // lien des invités du plateau (valable pendant cette émission)
@@ -271,7 +280,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       recorder.current = null;
       if (rec) setLastRec({ rec, title: title.trim() || 'Émission', topic: topicSaved });
       stopAll();
-      await saveLive({ onAir: false, rtc: '', calls: false, topic: '' });
+      await saveLive({ onAir: false, rtc: '', calls: false, topic: '', host: '' });
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : fin');
       notify('Émission terminée : la radio reprend les chants et prédications.');
     } catch (e) { notify(e instanceof Error ? e.message : 'Erreur', 'error'); } finally { setBusy(false); }
@@ -412,6 +421,13 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     return () => window.clearInterval(t);
   }, [onAir, variant]);
 
+  const lockBox = (dark: boolean) => locked && !onAir && (
+    <div className={dark ? 'rounded-3xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-white' : 'rounded border border-red-300 bg-red-50 p-3 text-sm text-night'}>
+      <p className="font-semibold">🔴 {locked.host} est déjà en direct (« {locked.title} »).</p>
+      <p className={dark ? 'mt-1 text-white/70' : 'mt-1 text-ink/70'}>Pour faire l’émission ensemble, demandez-lui le lien du plateau et rejoignez-le. Si cette émission est en fait terminée (téléphone éteint, coupure), vous pouvez reprendre l’antenne.</p>
+      <button type="button" onClick={() => { if (window.confirm(`Reprendre l’antenne ? Le direct de ${locked.host} sera coupé chez les auditeurs.`)) void goLive(true); }} className="mt-2 rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white">Reprendre l’antenne quand même</button>
+    </div>
+  );
   const copyLink = () => { void navigator.clipboard?.writeText(plateauLink).then(() => { setLinkCopied(true); window.setTimeout(() => setLinkCopied(false), 1500); }).catch(() => {}); };
   const waLink = `https://wa.me/?text=${encodeURIComponent(`🎙️ Rejoins-moi sur le plateau de « ${title.trim() || 'Radio Je suis KCCiste'} » (Radio Je suis KCCiste). Ouvre ce lien, mets des écouteurs et appuie sur « Rejoindre le plateau » :\n${plateauLink}`)}`;
   const seat = (a: Appel) => (a.genre === 'plateau' ? `🎙️ Plateau ${a.siege ?? ''} · ` : '');
@@ -456,7 +472,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <span key={i} className={`w-2 rounded-sm transition-colors ${i < lit ? (i > 16 ? 'bg-red-500' : i > 12 ? 'bg-gold' : 'bg-emerald-400') : 'bg-white/10'}`} style={{ height: `${30 + i * 3.5}%` }} />
               ))}
             </div>
-            <button type="button" onClick={onAir ? endShow : goLive} disabled={busy}
+            <button type="button" onClick={onAir ? endShow : () => void goLive()} disabled={busy}
               className={`mx-auto mt-5 grid h-32 w-32 place-items-center rounded-full text-center font-bold shadow-2xl transition active:scale-95 disabled:opacity-60 ${onAir ? 'bg-red-600 text-white shadow-red-900/50' : 'bg-gold text-night shadow-[0_14px_40px_-8px_rgba(232,184,74,.75)]'}`}>
               <span>{busy ? '…' : onAir ? <>■<br />Terminer</> : <>●<br />Passer à<br />l’antenne</>}</span>
             </button>
@@ -472,6 +488,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             )}
           </section>
 
+          {lockBox(true)}
           {onAir && plateauLink && (
             <section className={card}>
               <p className={hd}>Invités plateau (3 places)</p>
@@ -608,7 +625,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           ? <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
           : outputsOf(dest).length > 0 && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Youtube className="h-4 w-4" />} onClick={startDiff}>YouTube/Facebook</Button>)}
         {!onAir
-          ? <Button type="button" size="sm" className="bg-white text-[#2b3648] hover:bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={goLive}>Passer à l’antenne</Button>
+          ? <Button type="button" size="sm" className="bg-white text-[#2b3648] hover:bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
           : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>Terminer l’émission</Button>}
         <span className={`text-xs font-semibold ${onAir ? 'text-emerald-300' : 'text-white/60'}`}>{onAir ? `● ${state || 'À l’antenne'}` : 'Hors antenne'}</span>
       </header>
@@ -678,6 +695,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </tbody></table>
           </div>
 
+          {locked && !onAir && <div className="mb-4">{lockBox(false)}</div>}
           {lastRec && !onAir && <div className="mb-4"><RecordingPanel rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} /></div>}
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="space-y-4">

@@ -13,6 +13,8 @@ import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
 import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners } from '@/features/radio/listeners';
+import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
+import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string };
@@ -84,6 +86,11 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [diffStatus, setDiffStatus] = useState('');
   const [diffOn, setDiffOn] = useState(false);
   const diff = useRef<{ stop: () => void } | null>(null);
+  // Enregistrement du direct (téléchargement, rediffusion)
+  const [recOn, setRecOn] = useState(() => { try { return localStorage.getItem('kcc-radio-rec') !== '0'; } catch { return true; } });
+  const recorder = useRef<ShowRecorder | null>(null);
+  const [lastRec, setLastRec] = useState<{ rec: ShowRecording; title: string; topic: string } | null>(null);
+  const toggleRec = (v: boolean) => { setRecOn(v); try { localStorage.setItem('kcc-radio-rec', v ? '1' : '0'); } catch { /* navigation privée */ } };
   const screenInfo = useRef<ScreenInfo>({ title: '', topic: '', listeners: null, callsOpen: false });
   const lines = useRef<Map<string, Line>>(new Map());
   const [taken, setTaken] = useState<string[]>([]);
@@ -160,6 +167,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       ac.createMediaElementSource(musicEl).connect(musicGain);
       nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl };
       if (tracksRef.current.length && musicOn) playTrack(0);
+      setLastRec(null);
+      recorder.current = recOn ? recordShow(program.stream) : null;
       setState('Connexion au relais…');
       pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0]);
       pub.current.pc.onconnectionstatechange = () => {
@@ -205,6 +214,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   }
 
   function stopAll() {
+    recorder.current?.cancel();
+    recorder.current = null;
     try { studioBridge()?.offAir?.(); } catch { /* hors application */ }
     stopDiff();
     lines.current.forEach((l) => { l.pc.close(); l.el.srcObject = null; });
@@ -227,6 +238,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     setBusy(true);
     try {
       for (const a of queue) await supabase!.from('radio_appels').update({ statut: 'termine', modifie_le: new Date().toISOString() }).eq('id', a.id);
+      const rec = await recorder.current?.stop();
+      recorder.current = null;
+      if (rec) setLastRec({ rec, title: title.trim() || 'Émission', topic: topicSaved });
       stopAll();
       await saveLive({ onAir: false, rtc: '', calls: false, topic: '' });
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : fin');
@@ -415,6 +429,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             )}
           </section>
 
+          {lastRec && !onAir && <RecordingPanel dark rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} />}
+          {onAir && recorder.current && <p className="text-center text-xs text-red-300">● Enregistrement en cours</p>}
           {!onAir && (
             <section className={card + ' space-y-3'}>
               <p className={hd}>Émission</p>
@@ -424,6 +440,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId} className="text-night">{m.label || `Micro ${i + 1}`}</option>)}
               </select>
               <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={calls} onChange={(e) => setCalls(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Accepter les appels des auditeurs</label>
+              <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={recOn} onChange={(e) => toggleRec(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Enregistrer l’émission (téléchargement, rediffusion)</label>
               <p className="text-xs text-white/45">Mettez des écouteurs pour éviter l’écho.</p>
             </section>
           )}
@@ -596,6 +613,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </tbody></table>
           </div>
 
+          {lastRec && !onAir && <div className="mb-4"><RecordingPanel rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} /></div>}
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="space-y-4">
               <Section title="Informations de l’émission">
@@ -607,6 +625,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                       {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId}>{m.label || `Micro ${i + 1}`}</option>)}
                     </select></td></tr>
                   <tr><td className={lbl}>Appels des auditeurs</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={calls} disabled={onAir} onChange={(e) => setCalls(e.currentTarget.checked)} /> Accepter les appels</label></td></tr>
+                  <tr><td className={lbl}>Enregistrement</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={recOn} disabled={onAir} onChange={(e) => toggleRec(e.currentTarget.checked)} /> Enregistrer l’émission (téléchargement, rediffusion)</label></td></tr>
                   <tr><td className={lbl}>Animateur</td><td className={td}>{who || '—'}</td></tr>
                 </tbody></table>
                 <p className="px-3 py-2 text-[11px] text-ink/55">Utilisez un casque pour éviter l’écho.</p>

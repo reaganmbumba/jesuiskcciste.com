@@ -4,12 +4,14 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -20,6 +22,7 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,6 +82,11 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
                 Uri u = req.getUrl();
                 String host = u.getHost() == null ? "" : u.getHost();
+                // « Télécharger » l'enregistrement de l'émission : dans le dossier Téléchargements du téléphone
+                if (host.endsWith(".supabase.co") && u.getQueryParameter("download") != null) {
+                    saveToPhone(u);
+                    return true;
+                }
                 // seule la page du studio reste dans l'application ; le reste du site s'ouvre dans le navigateur
                 if ("https".equals(u.getScheme()) && (host.equals("jesuiskcciste.com") || host.equals("www.jesuiskcciste.com"))
                     && u.getPath() != null && u.getPath().startsWith("/radio/studio")) return false;
@@ -125,6 +133,22 @@ public class MainActivity extends Activity {
         if (!need.isEmpty()) requestPermissions(need.toArray(new String[0]), 50);
 
         web.loadUrl(HOME);
+    }
+
+    private void saveToPhone(Uri u) {
+        try {
+            String name = u.getQueryParameter("download");
+            if (name == null || name.isEmpty()) name = "emission-radio-kcc.webm";
+            DownloadManager.Request r = new DownloadManager.Request(u)
+                .setTitle(name)
+                .setDescription("Enregistrement de l'émission · Radio Je suis KCCiste")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name);
+            ((DownloadManager) getSystemService(DOWNLOAD_SERVICE)).enqueue(r);
+            Toast.makeText(this, "Téléchargement dans « Téléchargements »…", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            try { startActivity(new Intent(Intent.ACTION_VIEW, u)); } catch (Exception ignored) { }
+        }
     }
 
     private boolean hasMic() {

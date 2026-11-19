@@ -17,8 +17,8 @@ const FADE_IN = 1.5;
 const FADE_OUT = 3.5;
 /** Les chants passent un peu moins fort que les jingles et l'annonce de l'heure. */
 const SONG_LEVEL = 0.75;
-/** L'heure de Kinshasa est annoncée toutes les 15 minutes (à la fin du titre en cours). */
-const TIME_EVERY_MS = 15 * 60_000;
+/** Pendant un jingle, la musique descend à 10 % de son volume (le jingle joue à 100 %). */
+const DUCK = 0.1;
 
 /** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
 export function kinshasaTime(d = new Date()): { h: number; m: number } {
@@ -122,7 +122,49 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const lastJingle = useRef(-1);
   /** Volume du titre en cours (les chants un peu plus bas). */
   const levelRef = useRef(1);
-  const lastTimeAnnounce = useRef(0);
+  /** Jingles joués PAR-DESSUS la musique, sur un second lecteur. */
+  const jingleEl = useRef<HTMLAudioElement>(null);
+  const jingleBusy = useRef(false);
+  const duck = useRef(1);
+  const fadeV = useRef(1);
+  const duckTimer = useRef(0);
+  const lastQuarter = useRef('');
+  const applyVolume = () => {
+    const a = audio.current;
+    if (!a || onLiveRef.current) return;
+    a.volume = Math.max(0, Math.min(1, fadeV.current * levelRef.current * duck.current));
+  };
+  /** Baisse ou remonte la musique en douceur (0,4 s). */
+  const rampDuck = (to: number) => {
+    window.clearInterval(duckTimer.current);
+    const from = duck.current, t0 = performance.now();
+    duckTimer.current = window.setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / 400);
+      duck.current = from + (to - from) * k;
+      applyVolume();
+      if (k >= 1) window.clearInterval(duckTimer.current);
+    }, 40);
+  };
+  /** Joue une suite de fichiers par-dessus la musique, qui baisse le temps du jingle. */
+  const playOver = (urls: string[]) => {
+    const j = jingleEl.current, a = audio.current;
+    if (!j || !a || jingleBusy.current || a.paused || onLiveRef.current) return;
+    jingleBusy.current = true;
+    rampDuck(DUCK);
+    let i = 0;
+    const end = () => { j.onended = null; j.onerror = null; jingleBusy.current = false; rampDuck(1); };
+    const step = () => {
+      if (i >= urls.length) return end();
+      j.src = urls[i++];
+      j.volume = 1;
+      j.play().catch(end);
+    };
+    j.onended = step;
+    j.onerror = step;
+    step();
+  };
+  const playOverRef = useRef(playOver);
+  playOverRef.current = playOver;
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
   // Horloge des émissions programmées : elles commencent et finissent à l'heure, sans attendre la relecture des réglages.
@@ -156,6 +198,10 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const a = audio.current;
     if (!a) return;
     afterJingle.current = null;
+    jingleEl.current?.pause();
+    jingleBusy.current = false;
+    window.clearInterval(duckTimer.current);
+    duck.current = 1;
     a.volume = 1;
     markLive(true);
     setTime(0);
@@ -226,7 +272,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     setTime(0);
     setDuration(item.durationSeconds ?? 0);
     afterJingle.current = null;
-    a.volume = 0.05;
+    fadeV.current = 0.05;
+    applyVolume();
     a.src = item.url;
     a.play().catch(() => setPlaying(false));
   }, []);
@@ -271,33 +318,14 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const go = index + 1 < list.length
       ? () => playQueue(list, index + 1)
       : () => playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
+    // Tous les 3 titres, un jingle de la station passe par-dessus le début du chant suivant.
     songsSinceJingle.current += 1;
-    const a = audio.current;
-    if (a && index >= 0) {
-      // Entre deux titres, comme une vraie radio : l'heure de Kinshasa toutes les 15 minutes,
-      // et un jingle de la station tous les 3 titres.
-      let urls: string[] | null = null;
-      if (Date.now() - lastTimeAnnounce.current >= TIME_EVERY_MS) {
-        lastTimeAnnounce.current = Date.now();
-        urls = timeAnnouncement();
-      } else if (songsSinceJingle.current >= JINGLE_EVERY) {
-        songsSinceJingle.current = 0;
-        let j = Math.floor(Math.random() * JINGLES.length);
-        if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
-        lastJingle.current = j;
-        urls = [JINGLES[j]];
-      }
-      if (!urls) return go();
-      const list = urls;
-      const step = (i: number) => {
-        if (i >= list.length) { afterJingle.current = null; return go(); }
-        afterJingle.current = () => step(i + 1);
-        a.volume = 1;
-        a.src = list[i];
-        a.play().catch(() => { const k = afterJingle.current; afterJingle.current = null; k?.(); });
-      };
-      step(0);
-      return;
+    if (index >= 0 && songsSinceJingle.current >= JINGLE_EVERY) {
+      songsSinceJingle.current = 0;
+      let j = Math.floor(Math.random() * JINGLES.length);
+      if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
+      lastJingle.current = j;
+      window.setTimeout(() => playOverRef.current([JINGLES[j]]), 2500);
     }
     go();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -315,6 +343,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
 
   const stop = useCallback(() => {
     audio.current?.pause();
+    jingleEl.current?.pause();
     setActive(false);
   }, []);
 
@@ -323,7 +352,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     if (!active || (!a?.src && !a?.srcObject)) return start();
     if (a.paused && onLiveRef.current) playLive(); // reprendre au direct, pas là où on s'était arrêté
     else if (a.paused) a.play().catch(() => setPlaying(false));
-    else a.pause();
+    else { a.pause(); jingleEl.current?.pause(); }
   }, [active, playLive, start]);
 
   const changeMode = useCallback((m: RadioMode) => {
@@ -334,7 +363,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   // Un autre lecteur du site démarre (chant, prédication, vidéo) : la radio s'arrête.
   useEffect(() => {
     const onPlay = (e: Event) => {
-      if (e.target !== audio.current && e.target instanceof HTMLMediaElement) stop();
+      if (e.target !== audio.current && e.target !== jingleEl.current && e.target instanceof HTMLMediaElement) stop();
     };
     document.addEventListener('play', onPlay, true);
     return () => document.removeEventListener('play', onPlay, true);
@@ -361,6 +390,19 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     lastSource.current = liveSource;
     if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
   }, [active, liveSource, live.rtc, playLive]);
+
+  // L'heure exacte de la RDC (Kinshasa) à h00, h15, h30 et h45, par-dessus la musique.
+  useEffect(() => {
+    if (!active || !playing) return;
+    const t = window.setInterval(() => {
+      const { h, m } = kinshasaTime();
+      const key = `${h}:${m}`;
+      if (m % 15 !== 0 || key === lastQuarter.current || onLiveRef.current) return;
+      lastQuarter.current = key;
+      playOverRef.current(timeAnnouncement());
+    }, 5000);
+    return () => window.clearInterval(t);
+  }, [active, playing]);
 
   const liveListeners = useRadioListeners(active && playing && onLive && liveOn, liveOn);
 
@@ -402,18 +444,19 @@ export function RadioProvider({ children }: { children: ReactNode }) {
         className="hidden"
         onPlay={(e) => {
           setPlaying(true);
-          document.querySelectorAll('audio, video').forEach((x) => { if (x !== e.currentTarget) (x as HTMLMediaElement).pause(); });
+          document.querySelectorAll('audio, video').forEach((x) => { if (x !== e.currentTarget && x !== jingleEl.current) (x as HTMLMediaElement).pause(); });
         }}
         onPause={() => setPlaying(false)}
         onPlaying={() => { errors.current = 0; }}
         onTimeUpdate={(e) => {
           const a = e.currentTarget;
           setTime(a.currentTime);
-          if (onLiveRef.current || afterJingle.current) return;
+          if (onLiveRef.current) return;
           // fondu d'entrée et de sortie : on passe d'un titre à l'autre en douceur
           const d = Number.isFinite(a.duration) ? a.duration : 0;
           const v = Math.min(1, a.currentTime / FADE_IN, d > FADE_OUT * 2 ? (d - a.currentTime) / FADE_OUT : 1);
-          a.volume = Math.max(0.04, Math.min(1, v)) * levelRef.current;
+          fadeV.current = Math.max(0.04, Math.min(1, v));
+          applyVolume();
         }}
         onLoadedMetadata={(e) => { if (Number.isFinite(e.currentTarget.duration)) setDuration(e.currentTarget.duration); }}
         onEnded={() => {
@@ -431,6 +474,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
           next();
         }}
       />
+      <audio ref={jingleEl} preload="auto" className="hidden" />
     </Ctx.Provider>
   );
 }

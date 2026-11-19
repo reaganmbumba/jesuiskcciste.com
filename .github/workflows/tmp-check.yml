@@ -1,0 +1,18 @@
+name: tmp-check
+on:
+  push:
+    branches: [claude/radio-synchro]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc -b
+      - run: npx vitest run
+      - run: npm run build
+      - name: Le serveur du site accepte-t-il les sauts dans les fichiers audio ?
+        run: |
+          curl -sSI -H "Range: bytes=1000000-1000099" https://jesuiskcciste.com/radio/emissions/a-la-decouverte-echo-du-ciel-2026-11-19.webm | grep -iE "^HTTP|content-range|accept-ranges|content-type|content-length" || true

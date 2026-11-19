@@ -196,6 +196,15 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   };
 
   /** Branche le flux de l'émission en direct. */
+  /** Remet l'émission programmée à la minute où en sont tous les auditeurs. */
+  const syncProgramme = (a: HTMLAudioElement) => {
+    const prog = liveRef.current.programme;
+    if (!prog || !onLiveRef.current) return;
+    const at = (Date.now() - new Date(prog.startsAt).getTime()) / 1000;
+    if (at < 0 || at > prog.durationSeconds) return;
+    if (Math.abs(a.currentTime - at) > 3) { try { a.currentTime = at; } catch { /* pas encore possible */ } }
+  };
+
   const playLive = useCallback(() => {
     const a = audio.current;
     if (!a) return;
@@ -232,12 +241,14 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     }
     dropRtc();
     a.src = url;
-    const prog = liveRef.current.programme;
-    if (prog) {
+    if (liveRef.current.programme) {
       // Émission programmée : tout le monde l'entend au même endroit, comme un vrai direct.
-      const at = Math.max(0, (Date.now() - new Date(prog.startsAt).getTime()) / 1000);
-      const seek = () => { if (Math.abs(a.currentTime - at) > 2) { try { a.currentTime = at; } catch { /* pas encore possible */ } } };
-      a.addEventListener('loadedmetadata', seek, { once: true });
+      // Celui qui arrive 30 minutes après le début entend la 30e minute. La position est
+      // recalculée au moment même du saut (le chargement peut prendre quelques secondes).
+      const sync = () => syncProgramme(a);
+      a.addEventListener('loadedmetadata', sync, { once: true });
+      a.addEventListener('canplay', sync, { once: true });
+      a.addEventListener('playing', sync, { once: true });
     }
     a.play().catch(() => setPlaying(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -383,6 +394,17 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     lastSource.current = liveSource;
     if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
   }, [active, liveSource, live.rtc, playLive]);
+
+  // Pendant une émission programmée : on vérifie toutes les 20 secondes que l'auditeur est
+  // toujours au même endroit que les autres (téléphone en veille, coupure réseau…).
+  useEffect(() => {
+    if (!active || !playing) return;
+    const t = window.setInterval(() => {
+      const a = audio.current;
+      if (a && !a.paused && onLiveRef.current && liveRef.current.programme) syncProgramme(a);
+    }, 20_000);
+    return () => window.clearInterval(t);
+  }, [active, playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Par-dessus la musique (baissée à 10 %) : l'heure exacte à h00, h15, h30 et h45,
   // et le jingle de la station toutes les 7 minutes.

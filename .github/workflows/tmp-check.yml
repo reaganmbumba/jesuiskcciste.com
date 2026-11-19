@@ -1,0 +1,17 @@
+name: tmp-check
+on:
+  push:
+    branches: [claude/radio-heure]
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci --no-audit --no-fund
+      - run: npx tsc -b
+      - run: npx vitest run
+      - run: npm run build

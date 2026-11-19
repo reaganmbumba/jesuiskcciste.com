@@ -15,6 +15,22 @@ const JINGLE_EVERY = 3;
 /** Fondus d'entrée et de sortie de chaque titre (secondes) : les titres s'enchaînent sans coupure nette. */
 const FADE_IN = 1.5;
 const FADE_OUT = 3.5;
+/** Les chants passent un peu moins fort que les jingles et l'annonce de l'heure. */
+const SONG_LEVEL = 0.75;
+
+/** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
+export function kinshasaTime(d = new Date()): { h: number; m: number } {
+  const parts = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Africa/Kinshasa', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d);
+  const n = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0) % (t === 'hour' ? 24 : 60);
+  return { h: n('hour'), m: n('minute') };
+}
+
+/** « Il est quatorze heures » + « vingt-cinq » + « à Kinshasa. Vous écoutez Radio Je suis KCCiste. » */
+export function timeAnnouncement(d = new Date(), pick = Math.random): string[] {
+  const { h, m } = kinshasaTime(d);
+  const pad = (x: number) => String(x).padStart(2, '0');
+  return [`/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), `/radio/heure/fin${pick() < 0.5 ? 1 : 2}.mp3`];
+}
 
 interface RadioValue {
   /** Le catalogue est chargé (avant : rien n'est connu). */
@@ -99,6 +115,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const afterJingle = useRef<(() => void) | null>(null);
   const songsSinceJingle = useRef(0);
   const lastJingle = useRef(-1);
+  /** Volume du titre en cours (les chants un peu plus bas). */
+  const levelRef = useRef(1);
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
   // Horloge des émissions programmées : elles commencent et finissent à l'heure, sans attendre la relecture des réglages.
@@ -198,6 +216,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     setQueue(queueRef.current);
     const item = list[index];
     if (!a || !item) { setActive(false); return; }
+    levelRef.current = item.kind === 'song' ? SONG_LEVEL : 1;
     setTime(0);
     setDuration(item.durationSeconds ?? 0);
     afterJingle.current = null;
@@ -248,15 +267,24 @@ export function RadioProvider({ children }: { children: ReactNode }) {
       : () => playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
     songsSinceJingle.current += 1;
     const a = audio.current;
-    if (a && index >= 0 && songsSinceJingle.current >= JINGLE_EVERY) {
-      songsSinceJingle.current = 0;
-      let j = Math.floor(Math.random() * JINGLES.length);
-      if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
-      lastJingle.current = j;
-      afterJingle.current = go;
-      a.volume = 1;
-      a.src = JINGLES[j];
-      a.play().catch(() => { const k = afterJingle.current; afterJingle.current = null; k?.(); });
+    if (a && index >= 0) {
+      // Entre deux titres, comme une vraie radio : l'heure de Kinshasa, et tous les 3 titres un jingle de la station.
+      let urls: string[];
+      if (songsSinceJingle.current >= JINGLE_EVERY) {
+        songsSinceJingle.current = 0;
+        let j = Math.floor(Math.random() * JINGLES.length);
+        if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
+        lastJingle.current = j;
+        urls = [JINGLES[j]];
+      } else urls = timeAnnouncement();
+      const step = (i: number) => {
+        if (i >= urls.length) { afterJingle.current = null; return go(); }
+        afterJingle.current = () => step(i + 1);
+        a.volume = 1;
+        a.src = urls[i];
+        a.play().catch(() => { const k = afterJingle.current; afterJingle.current = null; k?.(); });
+      };
+      step(0);
       return;
     }
     go();
@@ -373,7 +401,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
           // fondu d'entrée et de sortie : on passe d'un titre à l'autre en douceur
           const d = Number.isFinite(a.duration) ? a.duration : 0;
           const v = Math.min(1, a.currentTime / FADE_IN, d > FADE_OUT * 2 ? (d - a.currentTime) / FADE_OUT : 1);
-          a.volume = Math.max(0.05, Math.min(1, v));
+          a.volume = Math.max(0.04, Math.min(1, v)) * levelRef.current;
         }}
         onLoadedMetadata={(e) => { if (Number.isFinite(e.currentTarget.duration)) setDuration(e.currentTarget.duration); }}
         onEnded={() => {

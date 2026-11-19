@@ -11,7 +11,6 @@ const MAX_ERRORS = 5;
 const LIVE_RETRY_MS = 3 * 60_000;
 /** Habillage de l'antenne : un jingle « Radio Je suis KCCiste » tous les quelques titres, comme une vraie radio. */
 const JINGLES = Array.from({ length: 9 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
-const JINGLE_EVERY = 3;
 /** Fondus d'entrée et de sortie de chaque titre (secondes) : les titres s'enchaînent sans coupure nette. */
 const FADE_IN = 1.5;
 const FADE_OUT = 3.5;
@@ -19,9 +18,9 @@ const FADE_OUT = 3.5;
 const SONG_LEVEL = 0.75;
 /** Pendant un jingle, la musique descend à 10 % de son volume (le jingle joue à 100 %). */
 const DUCK = 0.1;
-/** L'heure exacte est annoncée toutes les 7 minutes d'écoute (la première, une minute après le début). */
-const TIME_EVERY_MS = 7 * 60_000;
-const TIME_FIRST_MS = 60_000;
+/** Le jingle de la station passe toutes les 7 minutes d'écoute (le premier, une minute après le début). */
+const STATION_EVERY_MS = 7 * 60_000;
+const STATION_FIRST_MS = 60_000;
 
 /** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
 export function kinshasaTime(d = new Date()): { h: number; m: number } {
@@ -121,7 +120,6 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const liveFailedAt = useRef(0);
   /** Pendant un jingle : ce qui doit être joué juste après. */
   const afterJingle = useRef<(() => void) | null>(null);
-  const songsSinceJingle = useRef(0);
   const lastJingle = useRef(-1);
   /** Volume du titre en cours (les chants un peu plus bas). */
   const levelRef = useRef(1);
@@ -131,7 +129,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const duck = useRef(1);
   const fadeV = useRef(1);
   const duckTimer = useRef(0);
-  const nextTimeAt = useRef(0);
+  const nextStationAt = useRef(0);
+  const lastQuarter = useRef('');
   const applyVolume = () => {
     const a = audio.current;
     if (!a || onLiveRef.current) return;
@@ -321,15 +320,6 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const go = index + 1 < list.length
       ? () => playQueue(list, index + 1)
       : () => playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
-    // Tous les 3 titres, un jingle de la station passe par-dessus le début du chant suivant.
-    songsSinceJingle.current += 1;
-    if (index >= 0 && songsSinceJingle.current >= JINGLE_EVERY) {
-      songsSinceJingle.current = 0;
-      let j = Math.floor(Math.random() * JINGLES.length);
-      if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
-      lastJingle.current = j;
-      window.setTimeout(() => playOverRef.current([JINGLES[j]]), 2500);
-    }
     go();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playLive, playQueue]);
@@ -394,14 +384,28 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
   }, [active, liveSource, live.rtc, playLive]);
 
-  // L'heure exacte de la RDC (Kinshasa) toutes les 7 minutes, par-dessus la musique.
+  // Par-dessus la musique (baissée à 10 %) : l'heure exacte à h00, h15, h30 et h45,
+  // et le jingle de la station toutes les 7 minutes.
   useEffect(() => {
     if (!active || !playing) return;
-    if (!nextTimeAt.current || nextTimeAt.current < Date.now() - TIME_EVERY_MS) nextTimeAt.current = Date.now() + TIME_FIRST_MS;
+    if (!nextStationAt.current || nextStationAt.current < Date.now() - STATION_EVERY_MS) nextStationAt.current = Date.now() + STATION_FIRST_MS;
     const t = window.setInterval(() => {
-      if (Date.now() < nextTimeAt.current || onLiveRef.current || jingleBusy.current) return;
-      nextTimeAt.current = Date.now() + TIME_EVERY_MS;
-      playOverRef.current(timeAnnouncement());
+      if (onLiveRef.current || jingleBusy.current) return;
+      const { h, m } = kinshasaTime();
+      const key = `${h}:${m}`;
+      if (m % 15 === 0 && key !== lastQuarter.current) {
+        lastQuarter.current = key;
+        nextStationAt.current = Math.max(nextStationAt.current, Date.now() + 2 * 60_000);
+        playOverRef.current(timeAnnouncement());
+        return;
+      }
+      if (Date.now() >= nextStationAt.current) {
+        nextStationAt.current = Date.now() + STATION_EVERY_MS;
+        let j = Math.floor(Math.random() * JINGLES.length);
+        if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
+        lastJingle.current = j;
+        playOverRef.current([JINGLES[j]]);
+      }
     }, 5000);
     return () => window.clearInterval(t);
   }, [active, playing]);

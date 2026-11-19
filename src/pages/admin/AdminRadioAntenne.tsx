@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Headphones, Mic, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
+import { Headphones, Mic, Youtube, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Checkbox, Field, Input, Textarea } from '@/components/ui/Form';
@@ -15,6 +15,7 @@ import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
 import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners } from '@/features/radio/listeners';
+import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string };
 type Line = { pc: RTCPeerConnection; node: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement };
@@ -65,6 +66,12 @@ export default function AdminRadioAntenne() {
   const auditeurs = useRadioListeners(false, onAir);
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode }>({});
   const pub = useRef<Publish | null>(null);
+  // YouTube / Facebook (par le relais) : clés gardées dans ce navigateur seulement
+  const [dest, setDest] = useState<Destinations>(loadDestinations);
+  const [diffStatus, setDiffStatus] = useState('');
+  const [diffOn, setDiffOn] = useState(false);
+  const diff = useRef<{ stop: () => void } | null>(null);
+  const screenInfo = useRef<ScreenInfo>({ title: '', topic: '', listeners: null, callsOpen: false });
   const lines = useRef<Map<string, Line>>(new Map());
   const [taken, setTaken] = useState<string[]>([]);
 
@@ -148,6 +155,7 @@ export default function AdminRadioAntenne() {
       };
       await saveLive({ onAir: true, rtc: pub.current.sessionId, calls, title: title.trim() || 'Émission en direct', topic: topic.trim(), startedAt: new Date().toISOString() });
       setTopicSaved(topic.trim());
+      if (outputsOf(dest).length) startDiff();
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
       notify('Vous êtes à l’antenne. Les auditeurs de /radio basculent sur l’émission dans la minute.');
@@ -157,7 +165,33 @@ export default function AdminRadioAntenne() {
     } finally { setBusy(false); }
   }
 
+  function updateDest(patch: Partial<Destinations>) {
+    setDest((d) => { const n = { ...d, ...patch }; saveDestinations(n); return n; });
+  }
+
+  function startDiff() {
+    const audio = nodes.current.program?.stream.getAudioTracks()[0];
+    const outputs = outputsOf(dest);
+    if (!audio) return;
+    if (!outputs.length) { notify('Cochez YouTube ou Facebook et collez la clé de stream.', 'error'); return; }
+    diff.current?.stop();
+    diff.current = startDiffusion({
+      token: async () => (await supabase!.auth.getSession()).data.session?.access_token ?? null,
+      audio, analyser: nodes.current.analyser ?? null, outputs,
+      info: () => screenInfo.current,
+      onStatus: (t) => setDiffStatus(t),
+    });
+    setDiffOn(true);
+  }
+
+  function stopDiff() {
+    diff.current?.stop();
+    diff.current = null;
+    setDiffOn(false);
+  }
+
   function stopAll() {
+    stopDiff();
     lines.current.forEach((l) => { l.pc.close(); l.el.srcObject = null; });
     lines.current.clear();
     setTaken([]);
@@ -300,6 +334,7 @@ export default function AdminRadioAntenne() {
   useEffect(() => { if (nodes.current.micGain) nodes.current.micGain.gain.value = micMuted ? 0 : 1; }, [micMuted]);
   useEffect(() => () => { if (pub.current) stopAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  screenInfo.current = { title: title.trim() || 'Émission en direct', topic: topicSaved, listeners: auditeurs ?? null, callsOpen: calls };
   const waiting = queue.filter((a) => a.statut === 'attente');
   const live = queue.filter((a) => a.statut === 'antenne');
 
@@ -361,6 +396,29 @@ export default function AdminRadioAntenne() {
             </div>
           )}
           {!onAir && <p className="mt-2 text-xs text-ink/55">Il sera affiché dès que vous passez à l’antenne.</p>}
+        </div>
+        <div className="rounded-2xl border border-red-200 bg-red-50/50 p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-night"><Youtube className="h-4 w-4 text-red-600" />Diffuser aussi sur YouTube et Facebook</p>
+          <p className="mt-1 text-xs text-ink/60">Le son de l’émission part en direct sur votre chaîne avec une image animée (logo KCC, titre, sujet, égaliseur). Collez vous-même la clé de stream (YouTube Studio → Passer au direct → Clé de stream ; Facebook → Vidéo en direct → Clé de stream). Elle reste dans cet ordinateur. Gardez cette page ouverte pendant l’émission.</p>
+          <div className="mt-3 space-y-3">
+            <div>
+              <Checkbox label="YouTube" checked={dest.yt} onChange={(e) => updateDest({ yt: e.currentTarget.checked })} />
+              {dest.yt && <Input className="mt-2" type="password" autoComplete="off" placeholder="Clé de stream YouTube" aria-label="Clé de stream YouTube" value={dest.ytKey} onChange={(e) => updateDest({ ytKey: e.target.value })} />}
+            </div>
+            <div>
+              <Checkbox label="Facebook" checked={dest.fb} onChange={(e) => updateDest({ fb: e.currentTarget.checked })} />
+              {dest.fb && <Input className="mt-2" type="password" autoComplete="off" placeholder="Clé de stream Facebook" aria-label="Clé de stream Facebook" value={dest.fbKey} onChange={(e) => updateDest({ fbKey: e.target.value })} />}
+            </div>
+          </div>
+          {onAir && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {diffOn
+                ? <Button type="button" size="sm" variant="outline" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
+                : <Button type="button" size="sm" icon={<Youtube className="h-4 w-4" />} onClick={startDiff} disabled={!outputsOf(dest).length}>Envoyer sur YouTube/Facebook</Button>}
+            </div>
+          )}
+          {!onAir && outputsOf(dest).length > 0 && <p className="mt-2 text-xs text-emerald-700">✓ Partira automatiquement quand vous passerez à l’antenne.</p>}
+          {diffStatus && <p className={`mt-2 text-sm ${/refusé|valide|lente|coupé|Reconnectez/.test(diffStatus) ? 'text-red-700' : 'text-emerald-700'}`}>{diffStatus}</p>}
         </div>
         {!onAir
           ? <Button type="button" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={goLive}>Passer à l’antenne</Button>

@@ -9,6 +9,12 @@ const MODE_KEY = 'kcc-radio-mode';
 const MAX_ERRORS = 5;
 /** Après une coupure du flux en direct, on ne le retente qu'après ce délai (un chant passe entre-temps). */
 const LIVE_RETRY_MS = 3 * 60_000;
+/** Habillage de l'antenne : un jingle « Radio Je suis KCCiste » tous les quelques titres, comme une vraie radio. */
+const JINGLES = Array.from({ length: 9 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
+const JINGLE_EVERY = 3;
+/** Fondus d'entrée et de sortie de chaque titre (secondes) : les titres s'enchaînent sans coupure nette. */
+const FADE_IN = 1.5;
+const FADE_OUT = 3.5;
 
 interface RadioValue {
   /** Le catalogue est chargé (avant : rien n'est connu). */
@@ -89,6 +95,10 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const [onLive, setOnLive] = useState(false);
   const onLiveRef = useRef(false);
   const liveFailedAt = useRef(0);
+  /** Pendant un jingle : ce qui doit être joué juste après. */
+  const afterJingle = useRef<(() => void) | null>(null);
+  const songsSinceJingle = useRef(0);
+  const lastJingle = useRef(-1);
 
   const radio = useMemo(() => remote ?? radioSettingsOf(settings), [remote, settings]);
   // Horloge des émissions programmées : elles commencent et finissent à l'heure, sans attendre la relecture des réglages.
@@ -121,6 +131,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const playLive = useCallback(() => {
     const a = audio.current;
     if (!a) return;
+    afterJingle.current = null;
+    a.volume = 1;
     markLive(true);
     setTime(0);
     setDuration(0);
@@ -188,6 +200,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     if (!a || !item) { setActive(false); return; }
     setTime(0);
     setDuration(item.durationSeconds ?? 0);
+    afterJingle.current = null;
+    a.volume = 0.05;
     a.src = item.url;
     a.play().catch(() => setPlaying(false));
   }, []);
@@ -229,8 +243,23 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     if (onLiveRef.current && liveRef.current.on && Date.now() - liveFailedAt.current > LIVE_RETRY_MS) return;
     if (!onLiveRef.current && canLive()) return playLive();
     const { list, index } = queueRef.current;
-    if (index + 1 < list.length) playQueue(list, index + 1);
-    else playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
+    const go = index + 1 < list.length
+      ? () => playQueue(list, index + 1)
+      : () => playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
+    songsSinceJingle.current += 1;
+    const a = audio.current;
+    if (a && index >= 0 && songsSinceJingle.current >= JINGLE_EVERY) {
+      songsSinceJingle.current = 0;
+      let j = Math.floor(Math.random() * JINGLES.length);
+      if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
+      lastJingle.current = j;
+      afterJingle.current = go;
+      a.volume = 1;
+      a.src = JINGLES[j];
+      a.play().catch(() => { const k = afterJingle.current; afterJingle.current = null; k?.(); });
+      return;
+    }
+    go();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playLive, playQueue]);
 
@@ -307,7 +336,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
     const ms = navigator.mediaSession;
-    ms.metadata = current ? new MediaMetadata({ title: current.title, artist: current.subtitle, album: 'Radio Je suis KCCiste', artwork: [{ src: current.imageUrl || '/images/logo-kcc.svg' }] }) : null;
+    // Écran verrouillé : la radio se présente comme un direct continu, avec le logo KCC.
+    ms.metadata = current ? new MediaMetadata({ title: current.kind === 'live' ? current.title : 'Radio Je suis KCCiste', artist: current.kind === 'live' ? 'En direct' : 'En direct · 24 h/24', album: 'Radio Je suis KCCiste', artwork: [{ src: '/images/logo-kcc.svg' }] }) : null;
     const set = (action: MediaSessionAction, fn: (() => void) | null) => { try { ms.setActionHandler(action, fn); } catch { /* action non prise en charge */ } };
     set('play', current ? () => void audio.current?.play() : null);
     set('pause', current ? () => audio.current?.pause() : null);
@@ -336,11 +366,25 @@ export function RadioProvider({ children }: { children: ReactNode }) {
         }}
         onPause={() => setPlaying(false)}
         onPlaying={() => { errors.current = 0; }}
-        onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          setTime(a.currentTime);
+          if (onLiveRef.current || afterJingle.current) return;
+          // fondu d'entrée et de sortie : on passe d'un titre à l'autre en douceur
+          const d = Number.isFinite(a.duration) ? a.duration : 0;
+          const v = Math.min(1, a.currentTime / FADE_IN, d > FADE_OUT * 2 ? (d - a.currentTime) / FADE_OUT : 1);
+          a.volume = Math.max(0.05, Math.min(1, v));
+        }}
         onLoadedMetadata={(e) => { if (Number.isFinite(e.currentTarget.duration)) setDuration(e.currentTarget.duration); }}
-        onEnded={() => (onLiveRef.current ? leaveLive() : next())}
+        onEnded={() => {
+          const k = afterJingle.current;
+          if (k) { afterJingle.current = null; return k(); }
+          return onLiveRef.current ? leaveLive() : next();
+        }}
         onError={() => {
           if (!active) return;
+          const k = afterJingle.current;
+          if (k) { afterJingle.current = null; return k(); }
           if (onLiveRef.current) return leaveLive();
           errors.current += 1;
           if (errors.current >= Math.min(MAX_ERRORS, Math.max(1, queueRef.current.list.length))) { setFailed(true); stop(); return; }

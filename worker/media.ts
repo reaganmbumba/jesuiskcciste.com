@@ -29,6 +29,21 @@ function slice(body: ReadableStream<Uint8Array>, start: number, end: number): Re
   });
 }
 
+/** Taille de chaque fichier, mesurée une fois (le service interne ne la donne pas toujours). */
+const sizes = new Map<string, number>();
+
+async function sizeOf(url: string, headers: Headers, assets: { fetch(r: Request): Promise<Response> }): Promise<number> {
+  const known = sizes.get(url);
+  if (known) return known;
+  const res = await assets.fetch(new Request(url, { headers }));
+  if (!res.ok || !res.body) return 0;
+  const reader = res.body.getReader();
+  let n = 0;
+  for (;;) { const { done, value } = await reader.read(); if (done) break; n += value.length; }
+  if (n) sizes.set(url, n);
+  return n;
+}
+
 export async function serveMedia(request: Request, assets: { fetch(r: Request): Promise<Response> }): Promise<Response> {
   const range = request.headers.get('Range');
   const headers = new Headers(request.headers);
@@ -38,7 +53,10 @@ export async function serveMedia(request: Request, assets: { fetch(r: Request): 
   const out = new Headers(res.headers);
   out.set('Accept-Ranges', 'bytes');
   out.set('Cache-Control', 'public, max-age=3600');
-  const size = Number(res.headers.get('Content-Length') || 0);
+  let size = Number(res.headers.get('Content-Length') || 0);
+  if (size) sizes.set(request.url, size);
+  else if (range) size = await sizeOf(request.url, headers, assets);
+  if (size && !range) out.set('Content-Length', String(size));
   const m = range ? /^bytes=(\d*)-(\d*)$/.exec(range.trim()) : null;
   if (!m || !size || request.method !== 'GET') return new Response(res.body, { status: res.status, headers: out });
   let start: number, end: number;

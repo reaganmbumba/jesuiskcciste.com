@@ -19,6 +19,9 @@ const FADE_OUT = 3.5;
 const SONG_LEVEL = 0.75;
 /** Pendant un jingle, la musique descend à 10 % de son volume (le jingle joue à 100 %). */
 const DUCK = 0.1;
+/** L'heure exacte est annoncée toutes les 7 minutes d'écoute (la première, une minute après le début). */
+const TIME_EVERY_MS = 7 * 60_000;
+const TIME_FIRST_MS = 60_000;
 
 /** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
 export function kinshasaTime(d = new Date()): { h: number; m: number } {
@@ -128,7 +131,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const duck = useRef(1);
   const fadeV = useRef(1);
   const duckTimer = useRef(0);
-  const lastQuarter = useRef('');
+  const nextTimeAt = useRef(0);
   const applyVolume = () => {
     const a = audio.current;
     if (!a || onLiveRef.current) return;
@@ -391,14 +394,13 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
   }, [active, liveSource, live.rtc, playLive]);
 
-  // L'heure exacte de la RDC (Kinshasa) à h00, h15, h30 et h45, par-dessus la musique.
+  // L'heure exacte de la RDC (Kinshasa) toutes les 7 minutes, par-dessus la musique.
   useEffect(() => {
     if (!active || !playing) return;
+    if (!nextTimeAt.current || nextTimeAt.current < Date.now() - TIME_EVERY_MS) nextTimeAt.current = Date.now() + TIME_FIRST_MS;
     const t = window.setInterval(() => {
-      const { h, m } = kinshasaTime();
-      const key = `${h}:${m}`;
-      if (m % 15 !== 0 || key === lastQuarter.current || onLiveRef.current) return;
-      lastQuarter.current = key;
+      if (Date.now() < nextTimeAt.current || onLiveRef.current || jingleBusy.current) return;
+      nextTimeAt.current = Date.now() + TIME_EVERY_MS;
       playOverRef.current(timeAnnouncement());
     }, 5000);
     return () => window.clearInterval(t);

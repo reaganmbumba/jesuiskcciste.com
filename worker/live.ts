@@ -19,8 +19,8 @@
 export interface LiveEnv { SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string }
 
 const RTC = 'https://rtc.live.cloudflare.com/v1/apps/';
-const TRACKS = new Set(['video', 'audio', 'retour']);
-const WATCHABLE = new Set(['video', 'audio', 'retour', 'voix']);
+const TRACKS = new Set(['video', 'audio', 'retour', 'plateau1', 'plateau2', 'plateau3']);
+const WATCHABLE = new Set(['video', 'audio', 'retour', 'voix', 'plateau1', 'plateau2', 'plateau3']);
 const SID = /^[A-Za-z0-9_-]{8,128}$/;
 
 const json = (body: unknown, status = 200) =>
@@ -37,13 +37,13 @@ async function rtc(env: LiveEnv, path: string, method: string, body?: unknown) {
   return data;
 }
 
-/** Le jeton appartient-il à un administrateur central du site ? (fonction has_permission de la base) */
-async function isAdmin(env: LiveEnv, token: string): Promise<boolean> {
+/** Le jeton a-t-il cette permission ? (fonction has_permission de la base) */
+async function hasPermission(env: LiveEnv, token: string, permission: string): Promise<boolean> {
   if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !token) return false;
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/has_permission`, {
     method: 'POST',
     headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_permission: 'settings.manage' }),
+    body: JSON.stringify({ p_permission: permission }),
   });
   return r.ok && (await r.json()) === true;
 }
@@ -56,9 +56,12 @@ export async function handleLive(request: Request, env: LiveEnv, path: string): 
   try {
     if (path === 'publish') {
       const token = (request.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
-      if (!(await isAdmin(env, token))) return json({ error: 'forbidden' }, 403);
       const sdp = typeof body.sdp === 'string' ? body.sdp : '';
       const tracks = Array.isArray(body.tracks) ? body.tracks as { mid?: unknown; trackName?: unknown }[] : [];
+      // La vidéo (studio /direct) reste aux administrateurs ; l'antenne radio (son seul) aussi aux animateurs radio.
+      const audioOnly = tracks.every((t) => String(t.trackName) !== 'video');
+      const allowed = (await hasPermission(env, token, 'settings.manage')) || (audioOnly && (await hasPermission(env, token, 'radio.antenne')));
+      if (!allowed) return json({ error: 'forbidden' }, 403);
       if (!sdp || sdp.length > 100000 || !tracks.length || tracks.some((t) => typeof t.mid !== 'string' || !TRACKS.has(String(t.trackName)))) return json({ error: 'input' }, 400);
       const s = await rtc(env, '/sessions/new', 'POST');
       const sessionId = String(s.sessionId);

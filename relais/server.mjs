@@ -29,17 +29,22 @@ const MAX_OUTPUTS = 5;
 
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
-async function isAdmin(token) {
-  if (TEST_OUTPUT && token === 'test') return true;
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !token) return false;
+async function hasPerm(token, perm) {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/has_permission`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_permission: 'settings.manage' }),
+      body: JSON.stringify({ p_permission: perm }),
     });
     return r.ok && (await r.json()) === true;
   } catch { return false; }
+}
+
+/** Administrateur du site, ou animateur de la radio (envoi du direct radio vers YouTube/Facebook). */
+async function isAdmin(token) {
+  if (TEST_OUTPUT && token === 'test') return true;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !token) return false;
+  return (await hasPerm(token, 'settings.manage')) || (await hasPerm(token, 'radio.antenne'));
 }
 
 /** Destination acceptée : rtmp:// ou rtmps:// + clé (sans espace ni caractère de commande). */

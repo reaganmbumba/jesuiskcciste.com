@@ -18,6 +18,7 @@ import { useI18n } from '@/i18n';
 // Découpage du code par page (chargement différé).
 const RadioAppPage = lazy(() => import('@/pages/public/RadioAppPage'));
 const StudioAppPage = lazy(() => import('@/pages/public/StudioAppPage'));
+const PlateauPage = lazy(() => import('@/pages/public/PlateauPage'));
 const HomePage = lazy(() => import('@/pages/public/HomePage'));
 const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
 const TeachingsPage = lazy(() => import('@/pages/public/TeachingsPage'));
@@ -189,6 +190,8 @@ export function AppRoutes() {
       <Route path="radio/app" element={<Suspense fallback={<PageLoader />}><RadioAppPage /></Suspense>} />
       {/* Studio de l'animateur, plein écran (application Studio Radio KCC) */}
       <Route path="radio/studio" element={<Suspense fallback={<PageLoader />}><StudioAppPage /></Suspense>} />
+      {/* Invités du plateau de la radio (lien envoyé par l'animateur) */}
+      <Route path="radio/plateau" element={<Suspense fallback={<PageLoader />}><PlateauPage /></Suspense>} />
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
         <Route path="a-propos" element={<AboutPage />} />

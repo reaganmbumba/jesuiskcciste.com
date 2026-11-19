@@ -14,6 +14,7 @@ export type RoleKey =
   | 'music_manager'
   | 'solidarity_manager'
   | 'moderator'
+  | 'radio_host'
   | 'member'
   | 'visitor';
 

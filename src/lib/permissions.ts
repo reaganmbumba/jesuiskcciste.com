@@ -26,6 +26,7 @@ export type Permission =
   | 'expenses.manage'
   | 'moderation'
   | 'settings.manage'
+  | 'radio.antenne'
   | 'audit.read';
 
 export const ROLE_LABELS: Record<RoleKey, string> = {
@@ -36,6 +37,7 @@ export const ROLE_LABELS: Record<RoleKey, string> = {
   music_manager: 'Responsable musical',
   solidarity_manager: 'Gestionnaire de solidarité',
   moderator: 'Modérateur',
+  radio_host: 'Animateur radio',
   member: 'Membre',
   visitor: 'Visiteur',
 };
@@ -45,7 +47,7 @@ export const ROLE_PERMISSIONS: Record<RoleKey, Permission[]> = {
     'admin.access', 'members.read_private', 'members.manage', 'parishes.manage', 'sections.manage',
     'announcements.create', 'announcements.moderate', 'events.manage', 'courses.manage', 'exams.manage',
     'certificates.manage', 'music.manage', 'projects.manage', 'contributions.read', 'contributions.manage',
-    'expenses.manage', 'moderation', 'settings.manage', 'audit.read',
+    'expenses.manage', 'moderation', 'settings.manage', 'audit.read', 'radio.antenne',
   ],
   // Portée limitée à sa paroisse (contrôlée en base par parish_id).
   parish_leader: ['admin.access', 'members.read_private', 'sections.manage', 'announcements.create', 'events.manage'],
@@ -56,6 +58,8 @@ export const ROLE_PERMISSIONS: Record<RoleKey, Permission[]> = {
   music_manager: ['admin.access', 'music.manage'],
   solidarity_manager: ['admin.access', 'projects.manage', 'contributions.read', 'contributions.manage', 'expenses.manage'],
   moderator: ['admin.access', 'announcements.moderate', 'moderation'],
+  // Uniquement l'antenne de la radio (application Studio Radio KCC), aucun autre droit.
+  radio_host: ['radio.antenne'],
   member: [],
   visitor: [],
 };

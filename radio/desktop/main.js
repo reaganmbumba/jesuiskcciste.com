@@ -3,7 +3,7 @@
 // même quand la fenêtre est réduite.
 const { app, BrowserWindow, Menu, session, shell, dialog } = require('electron');
 
-const HOME = 'https://jesuiskcciste.com/admin/radio/antenne';
+const HOME = 'https://jesuiskcciste.com/admin/radio/antenne?app=1';
 const OK_HOSTS = new Set(['jesuiskcciste.com', 'www.jesuiskcciste.com']);
 const ours = (u) => { try { return OK_HOSTS.has(new URL(u).hostname); } catch { return false; } };
 
@@ -26,10 +26,12 @@ function offlinePage(err) {
 function createWindow() {
   win = new BrowserWindow({
     width: 1280, height: 860, minWidth: 420, minHeight: 600,
-    title: 'Radio Je suis KCCiste', backgroundColor: '#0e1830', autoHideMenuBar: true,
+    title: 'Radio Je suis KCCiste', backgroundColor: '#2b3648', autoHideMenuBar: true,
     icon: require('path').join(__dirname, 'build', 'icon.png'),
     webPreferences: { contextIsolation: true, sandbox: true, backgroundThrottling: false, spellcheck: false },
   });
+  // l'antenne s'affiche en plein écran, façon logiciel (sans le menu du site)
+  win.webContents.setUserAgent(win.webContents.getUserAgent() + ' KCCRadioDesktop/1');
   win.loadURL(HOME);
   win.webContents.on('did-fail-load', (_e, code, desc, url, isMain) => { if (isMain && code !== -3) win.loadURL(offlinePage(desc)); });
   // Liens vers d'autres sites (WhatsApp, YouTube…) : dans le navigateur habituel

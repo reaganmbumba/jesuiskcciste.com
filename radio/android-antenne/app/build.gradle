@@ -1,0 +1,37 @@
+apply plugin: 'com.android.application'
+
+// Version : numéro de la construction GitHub (KCC_VERSION_CODE), sinon 1
+def vCode = (System.getenv('KCC_VERSION_CODE') ?: '1') as Integer
+def vName = System.getenv('KCC_VERSION_NAME') ?: '1.0.0'
+
+android {
+    namespace 'com.jesuiskcciste.antenne'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.jesuiskcciste.antenne'
+        minSdk 24
+        targetSdk 34
+        versionCode vCode
+        versionName vName
+    }
+    def ks = System.getenv('KCC_ANTENNE_KEYSTORE_PATH')
+    signingConfigs {
+        if (ks) {
+            antenne {
+                storeFile file(ks)
+                storePassword System.getenv('KCC_ANTENNE_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KCC_ANTENNE_KEY_ALIAS')
+                keyPassword System.getenv('KCC_ANTENNE_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            if (ks) signingConfig signingConfigs.antenne
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

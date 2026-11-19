@@ -1,0 +1,70 @@
+name: Studio Radio KCC (Android)
+
+# Fabrique l'application Android de l'animateur (Studio) (APK) et la publie dans une version GitHub « studio-apk-N ».
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'radio/android-antenne/**'
+      - '.github/workflows/radio-antenne-android.yml'
+  pull_request:
+    paths:
+      - 'radio/android-antenne/**'
+      - '.github/workflows/radio-antenne-android.yml'
+
+permissions:
+  contents: write
+
+env:
+  KCC_VERSION_CODE: ${{ github.run_number }}
+  KCC_VERSION_NAME: 1.0.${{ github.run_number }}
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # même clé de signature d'une construction à l'autre : les mises à jour s'installent par-dessus
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: kcc-studio-apk-key-v1
+      - name: Clé de signature (secret facultatif)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KCC_ANTENNE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/antenne.jks"
+            echo "KCC_ANTENNE_KEYSTORE_PATH=$RUNNER_TEMP/antenne.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Construire l'APK
+        working-directory: radio/android-antenne
+        env:
+          KCC_ANTENNE_KEYSTORE_PASSWORD: ${{ secrets.KCC_ANTENNE_KEYSTORE_PASSWORD }}
+          KCC_ANTENNE_KEY_ALIAS: ${{ secrets.KCC_ANTENNE_KEY_ALIAS }}
+          KCC_ANTENNE_KEY_PASSWORD: ${{ secrets.KCC_ANTENNE_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          mkdir -p ../out-antenne
+          cp app/build/outputs/apk/debug/*.apk ../out-antenne/KCC-Studio-Radio.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KCC-Studio-Radio-apk
+          path: radio/out-antenne/KCC-Studio-Radio.apk
+      - if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: studio-apk-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Studio Radio KCC Android ${{ env.KCC_VERSION_NAME }}
+          make_latest: false
+          body: |
+            Studio Radio KCC : l'antenne de la Radio Je suis KCCiste sur le téléphone de l'animateur (direct, appels, musique, sujet, effets, YouTube/Facebook).
+            Hors direct, la radio automatique continue seule chez les auditeurs.
+          files: radio/out-antenne/KCC-Studio-Radio.apk

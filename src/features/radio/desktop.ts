@@ -12,3 +12,10 @@ export function isRadioDesktop(): boolean {
     return navigator.userAgent.includes('KCCRadioDesktop');
   }
 }
+
+type StudioBridge = { onAir?: (title: string) => void; offAir?: () => void };
+/** Application Android « Studio Radio KCC » : on la prévient du début et de la fin du direct (écran allumé, micro gardé actif). */
+export function studioBridge(): StudioBridge | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return (window as unknown as { KCCStudio?: StudioBridge }).KCCStudio;
+}

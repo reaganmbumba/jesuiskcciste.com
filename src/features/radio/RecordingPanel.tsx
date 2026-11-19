@@ -46,7 +46,8 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
       // fonction radio_programme_add : accessible aux animateurs radio, n'ajoute qu'une émission au programme
       const { error: e } = await supabase!.rpc('radio_programme_add', { p });
       if (e) throw e;
-      setSettings({ ...settings, radio: { ...r, programmes: [...r.programmes, p] } });
+      const next = { ...settings, radio: { ...r, programmes: [...r.programmes, p] } };
+      setSettings(next);
       setPlanned(start.toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }));
     } catch (e) { setError(e instanceof Error ? e.message : 'La programmation a échoué.'); } finally { setBusy(false); }
   }

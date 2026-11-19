@@ -151,7 +151,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     const r = radioSettingsOf(settings);
     const { error } = await supabase!.rpc('radio_live_set', { p_live: snakify(live) });
     if (error) throw error;
-    setSettings({ ...settings, radio: { ...r, live: { ...r.live, ...live } } });
+    const next = { ...settings, radio: { ...r, live: { ...r.live, ...live } } };
+    setSettings(next);
   }
 
   async function goLive() {

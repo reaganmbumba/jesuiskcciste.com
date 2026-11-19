@@ -1,5 +1,6 @@
 package com.jesuiskcciste.radio;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -50,6 +51,8 @@ public class AlertService extends Service {
 
     static final String ACTION_STOP_ALARM = "com.jesuiskcciste.radio.STOP_ALARM";
     static final String ACTION_DISABLE = "com.jesuiskcciste.radio.DISABLE";
+    /** Alarme Android programmée à l'heure exacte d'une émission. */
+    static final String ACTION_RING = "com.jesuiskcciste.radio.RING";
 
     private static MediaPlayer player;
     private static Vibrator vibrator;
@@ -101,6 +104,11 @@ public class AlertService extends Service {
             stopForeground(true);
             stopSelf();
             return START_NOT_STICKY;
+        }
+        if (intent != null && ACTION_RING.equals(intent.getAction())) {
+            final String key = intent.getStringExtra("key"), sa = intent.getStringExtra("startsAt");
+            final String title = intent.getStringExtra("title"), topic = intent.getStringExtra("topic");
+            if (key != null) new Thread(() -> ring(getSharedPreferences(PREFS, MODE_PRIVATE), key, sa == null ? "" : sa, title == null ? "" : title, topic == null ? "" : topic)).start();
         }
         if (!running) { running = true; handler.post(tick); }
         return START_STICKY;
@@ -204,6 +212,30 @@ public class AlertService extends Service {
             JSONObject live = radio == null ? null : radio.optJSONObject("live");
             SharedPreferences p = c.getSharedPreferences(PREFS, MODE_PRIVATE);
             long now = System.currentTimeMillis();
+            // Émissions programmées : chaque début à venir reçoit une alarme Android à l'heure exacte
+            // (elle sonne même téléphone en veille, sans attendre la vérification de la minute).
+            org.json.JSONArray progs = radio == null ? null : radio.optJSONArray("programmes");
+            String nowKey = null, nowStart = null, nowTitle = null, nowTopic = null;
+            java.util.Set<String> wanted = new java.util.HashSet<>();
+            if (progs != null) {
+                for (int i = 0; i < progs.length(); i++) {
+                    JSONObject o = progs.optJSONObject(i);
+                    if (o == null) continue;
+                    String startsAt = o.optString("startsAt", o.optString("starts_at", ""));
+                    long start = parse(startsAt);
+                    double dur = o.optDouble("durationSeconds", o.optDouble("duration_seconds", 0));
+                    if (start < 0 || dur <= 0) continue;
+                    long end = start + (long) (dur * 1000);
+                    String key = "prog:" + o.optString("id", startsAt);
+                    String title = o.optString("title", ""), topic = o.optString("topic", "");
+                    if (start <= now && now < end && nowKey == null) { nowKey = key; nowStart = startsAt; nowTitle = title; nowTopic = topic; }
+                    if (start > now && start - now < 8L * 86_400_000L) {
+                        schedule(c, key, startsAt, start, title, topic);
+                        wanted.add(key);
+                    }
+                }
+            }
+            cancelOthers(c, p, wanted);
             // 1) le direct de l'animateur
             if (live != null) {
                 boolean onAir = live.optBoolean("on_air", false);
@@ -215,32 +247,48 @@ public class AlertService extends Service {
                     return;
                 }
             }
-            // 2) les émissions programmées (passent seules à l'heure prévue)
-            org.json.JSONArray progs = radio == null ? null : radio.optJSONArray("programmes");
-            if (progs == null) return;
-            for (int i = 0; i < progs.length(); i++) {
-                JSONObject o = progs.optJSONObject(i);
-                if (o == null) continue;
-                String startsAt = o.optString("startsAt", o.optString("starts_at", ""));
-                long start = parse(startsAt);
-                double dur = o.optDouble("durationSeconds", o.optDouble("duration_seconds", 0));
-                if (start < 0 || dur <= 0) continue;
-                long end = start + (long) (dur * 1000);
-                final String key = "prog:" + o.optString("id", startsAt);
-                final String title = o.optString("title", "");
-                final String topic = o.optString("topic", "");
-                if (start <= now && now < end) { ring(p, key, startsAt, title, topic); return; }
-                if (start > now && start - now <= POLL_MS + 5_000L) {
-                    // commence avant la prochaine vérification : l'alarme sonne pile à l'heure
-                    final String sa = startsAt;
-                    main.postDelayed(() -> new Thread(() -> ring(c.getSharedPreferences(PREFS, MODE_PRIVATE), key, sa, title, topic)).start(), start - now);
-                }
-            }
+            // 2) l'émission programmée en cours (si l'alarme exacte n'a pas pu sonner)
+            if (nowKey != null) ring(p, nowKey, nowStart, nowTitle, nowTopic);
         } catch (Exception ignored) {
             // pas de réseau : on réessaie à la minute suivante
         } finally {
             if (wl != null && wl.isHeld()) wl.release();
         }
+    }
+
+    private static PendingIntent ringIntent(Context c, String key, String startsAt, String title, String topic) {
+        Intent i = new Intent(c, AlarmActions.class).setAction(ACTION_RING)
+            .putExtra("key", key).putExtra("startsAt", startsAt).putExtra("title", title).putExtra("topic", topic);
+        return PendingIntent.getBroadcast(c, key.hashCode(), i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    /** Alarme exacte au début d'une émission programmée. */
+    private void schedule(Context c, String key, String startsAt, long at, String title, String topic) {
+        AlarmManager am = (AlarmManager) c.getSystemService(ALARM_SERVICE);
+        if (am == null) return;
+        PendingIntent pi = ringIntent(c, key, startsAt, title, topic);
+        try {
+            if (Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms()) {
+                am.setAlarmClock(new AlarmManager.AlarmClockInfo(at, openApp()), pi);
+            } else {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+            }
+        } catch (SecurityException e) {
+            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, pi);
+        }
+    }
+
+    /** Une émission retirée du programme : son alarme est annulée. */
+    private void cancelOthers(Context c, SharedPreferences p, java.util.Set<String> wanted) {
+        AlarmManager am = (AlarmManager) c.getSystemService(ALARM_SERVICE);
+        java.util.Set<String> before = p.getStringSet("scheduled", new java.util.HashSet<>());
+        for (String k : before) {
+            if (wanted.contains(k) || am == null) continue;
+            Intent i = new Intent(c, AlarmActions.class).setAction(ACTION_RING);
+            PendingIntent pi = PendingIntent.getBroadcast(c, k.hashCode(), i, PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE);
+            if (pi != null) { am.cancel(pi); pi.cancel(); }
+        }
+        p.edit().putStringSet("scheduled", new java.util.HashSet<>(wanted)).apply();
     }
 
     /** Sonne une seule fois par émission (clé déjà vue = rien). */

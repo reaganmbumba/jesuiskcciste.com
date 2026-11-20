@@ -16,6 +16,7 @@ import { useRadioListeners } from '@/features/radio/listeners';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { RadioGrid } from '@/features/radio/RadioGrid';
+import { YouTubeChat } from '@/features/radio/YouTubeChat';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null };
@@ -617,6 +618,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </ul>
           </section>
 
+          <YouTubeChat dark />
+
           <section className={card}>
             <p className={hd}>Sujet de l’émission
               {onAir && <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className="rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-night disabled:opacity-40"><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher'}</button>}
@@ -856,6 +859,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 </div>
                 <label className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#2b3648]">Volume des bruitages<input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="flex-1" /></label>
               </Section>
+
+              <YouTubeChat />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

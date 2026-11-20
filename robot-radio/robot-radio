@@ -1,0 +1,19 @@
+#!/bin/sh
+# Commandes du robot radio sur le serveur :
+#   robot-radio etat              ce que fait le robot (dernières lignes du journal)
+#   robot-radio cle NOUVELLE-CLE  changer la clé de stream YouTube
+#   robot-radio mise-a-jour       reprendre la dernière version depuis GitHub
+#   robot-radio redemarrer | arreter
+set -eu
+case "${1:-etat}" in
+  etat) systemctl is-active robot-radio || true; journalctl -u robot-radio -n 25 --no-pager -o cat ;;
+  cle)
+    [ -n "${2:-}" ] || { echo "Usage : robot-radio cle NOUVELLE-CLE"; exit 1; }
+    umask 077; grep -v '^YOUTUBE_KEY=' /etc/robot-radio.env > /etc/robot-radio.env.tmp || true
+    printf 'YOUTUBE_KEY=%s\n' "$2" >> /etc/robot-radio.env.tmp; mv /etc/robot-radio.env.tmp /etc/robot-radio.env
+    systemctl restart robot-radio; echo "Clé changée, robot redémarré." ;;
+  mise-a-jour) curl -fsSL https://raw.githubusercontent.com/reaganmbumba/jesuiskcciste.com/main/robot-radio/installer.sh | sh ;;
+  redemarrer) systemctl restart robot-radio; echo "Robot redémarré." ;;
+  arreter) systemctl stop robot-radio; echo "Robot arrêté (il repartira au prochain redémarrage du serveur)." ;;
+  *) sed -n '2,7p' "$0" ;;
+esac

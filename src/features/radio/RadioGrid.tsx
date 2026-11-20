@@ -138,7 +138,7 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       setDraft(null);
     } catch (e) { setMsg(e instanceof Error ? e.message : 'L’enregistrement a échoué.'); setDraft((d) => d?.filter((x) => !done.includes(x)) ?? null); } finally {
       setSaving(0);
-      if (done.length) { const r = radioSettingsOf(settings); setSettings({ ...settings, radio: { ...r, programmes: [...r.programmes, ...done] } }); }
+      if (done.length) { const r = radioSettingsOf(settings); const next = { ...settings, radio: { ...r, programmes: [...r.programmes, ...done] } }; setSettings(next); }
     }
   }
 

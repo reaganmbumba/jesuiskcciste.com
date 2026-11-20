@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Download, Loader2, Plus, Search, Trash2, Upload } from 'lucide-react';
+import { CalendarClock, Download, Loader2, Plus, RefreshCw, Search, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/lib/supabase';
 import { uploadSiteAudio } from '@/features/content/siteContent';
@@ -14,7 +14,12 @@ export const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { t
 const todayKin = () => new Date().toLocaleDateString('fr-CA', { timeZone: TZ });
 const QUICK = ['06:00', '09:00', '12:00', '12:30', '15:00', '18:30', '20:00', '21:00'];
 
-type Source = { url: string; title: string; subtitle: string; seconds: number | null };
+type Kind = 'emission' | 'sermon' | 'song';
+type Source = { url: string; title: string; subtitle: string; seconds: number | null; kind: Kind };
+
+/** Heures de départ du programme automatique (toutes les deux heures, heure de Kinshasa). */
+const AUTO_SLOTS = ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
+const shuffle = <T,>(a: T[]): T[] => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
 
 /** Durée d'un fichier en ligne (lecture des seules informations du début). */
 function probe(url: string): Promise<number | null> {
@@ -62,9 +67,9 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       const url = s.url?.startsWith('/') ? `https://jesuiskcciste.com${s.url}` : s.url;
       if (url && /^https:\/\//.test(url) && !seen.has(url)) { seen.add(url); out.push({ ...s, url }); }
     };
-    [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds }));
-    items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds }));
-    items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds }));
+    [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds, kind: 'emission' }));
+    items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'sermon' }));
+    items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'song' }));
     return out;
   }, [all, items]);
   const q = query.trim().toLowerCase();
@@ -74,6 +79,69 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const endMs = (p: RadioProgramme) => new Date(p.startsAt).getTime() + p.durationSeconds * 1000;
 
   /** Créneau libre touché : son début, ou le prochain quart d'heure s'il a déjà commencé. */
+  // Programme automatique : une proposition variée que l'animateur revoit avant d'enregistrer
+  const [draft, setDraft] = useState<RadioProgramme[] | null>(null);
+  const [saving, setSaving] = useState(0);
+
+  function generate() {
+    setMsg('');
+    const usable = library.filter((x) => x.seconds && x.seconds > 0 && x.seconds <= 6 * 3600);
+    // ce qui est déjà passé hier ou prévu ce jour passe en dernier, pour varier d'un jour à l'autre
+    const recent = new Set(all.filter((p) => Math.abs(new Date(p.startsAt).getTime() - startMs('12:00')) < 2 * 86_400_000).map((p) => p.url));
+    const pools: Record<Kind, Source[]> = { sermon: [], emission: [], song: [] };
+    usable.forEach((x) => pools[x.kind].push(x));
+    (Object.keys(pools) as Kind[]).forEach((k) => {
+      const sh = shuffle(pools[k]);
+      pools[k] = [...sh.filter((x) => !recent.has(x.url)), ...sh.filter((x) => recent.has(x.url))];
+    });
+    if (!usable.length) { setMsg('Aucun audio avec une durée connue dans le système.'); return; }
+    // ordre des genres : prédications et émissions en alternance, un chant de temps en temps
+    const order = shuffle<Kind>(['sermon', 'emission', 'sermon', 'song', 'emission', 'sermon', 'song', 'emission', 'sermon']);
+    const taken = new Set<string>();
+    const busy = list.map((p) => [new Date(p.startsAt).getTime(), endMs(p)] as const);
+    const out: RadioProgramme[] = [];
+    let k = 0;
+    AUTO_SLOTS.forEach((slot, i) => {
+      const start = startMs(slot);
+      if (start < Date.now() + 2 * 60_000) return;
+      // place libre jusqu'à l'émission suivante (ou au créneau suivant)
+      const nextBusy = Math.min(...busy.filter(([s]) => s >= start).map(([s]) => s), startMs('00:00') + 86_400_000);
+      if (busy.some(([s, e]) => s <= start && start < e)) return;
+      const room = Math.min(nextBusy, i + 1 < AUTO_SLOTS.length ? startMs(AUTO_SLOTS[i + 1]) : Infinity) - start;
+      const tries: Kind[] = [order[k++ % order.length], 'sermon', 'emission', 'song'];
+      for (const kind of tries) {
+        const pick = pools[kind].find((x) => !taken.has(x.url) && (x.seconds ?? 0) * 1000 <= room);
+        if (!pick) continue;
+        taken.add(pick.url);
+        const name = kind === 'emission' ? `${pick.title} (rediffusion)` : kind === 'song' ? `Chant : ${pick.title}` : pick.title;
+        out.push({ id: crypto.randomUUID?.() ?? `${Date.now()}-${i}`, title: name.slice(0, 120), topic: '', url: pick.url, startsAt: new Date(start).toISOString(), durationSeconds: Math.round(pick.seconds ?? 0) });
+        break;
+      }
+    });
+    if (!out.length) { setMsg('Plus de place libre ce jour-là pour un programme automatique.'); return; }
+    setOpen(false);
+    setDraft(out);
+  }
+
+  async function saveDraft() {
+    if (!draft?.length) return;
+    setMsg('');
+    const done: RadioProgramme[] = [];
+    try {
+      for (const p of draft) {
+        if (new Date(p.startsAt).getTime() < Date.now()) continue;
+        setSaving(done.length + 1);
+        const { error } = await supabase!.rpc('radio_programme_add', { p });
+        if (error) throw new Error(`« ${p.title} » : ${error.message}`);
+        done.push(p);
+      }
+      setDraft(null);
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'L’enregistrement a échoué.'); setDraft((d) => d?.filter((x) => !done.includes(x)) ?? null); } finally {
+      setSaving(0);
+      if (done.length) { const r = radioSettingsOf(settings); const next = { ...settings, radio: { ...r, programmes: [...r.programmes, ...done] } }; setSettings(next); }
+    }
+  }
+
   function openGap(from: number) {
     const q = 15 * 60_000;
     const at = from > now ? from : Math.ceil((now + 60_000) / q) * q;
@@ -191,8 +259,31 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
           <button key={t} type="button" onClick={() => openAt(t)} className={small + ' ' + c.btn}><Plus className="h-3.5 w-3.5" />{t}</button>
         ))}
         <button type="button" onClick={() => openAt(time)} className={small + ' bg-gold text-night'}><Plus className="h-4 w-4" />Autre heure</button>
+        <button type="button" onClick={generate} className={small + ' ' + c.btn}><Wand2 className="h-4 w-4" />Générer un programme</button>
         <button type="button" onClick={() => void poster()} disabled={!list.length} className={small + ' ' + c.btn}><Download className="h-4 w-4" />Affiche du programme (JPG)</button>
       </div>
+
+      {draft && (
+        <div className="mt-4 space-y-2 border-t border-current/10 pt-4">
+          <p className="text-sm font-semibold">Proposition de programme — {new Date(`${day}T12:00:00+01:00`).toLocaleDateString('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <p className={`text-xs ${c.sub}`}>Choisie dans tous les audios du système, sans répétition. Retirez ce qui ne convient pas, ou demandez une autre proposition. Entre ces émissions, la radio joue ses chants.</p>
+          <ol className="space-y-1.5">
+            {draft.map((p) => (
+              <li key={p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${c.show}`}>
+                <span className="w-24 shrink-0 text-sm font-bold tabular-nums">{hhmm(new Date(p.startsAt).getTime())} → {hhmm(endMs(p))}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.title}</span>
+                <button type="button" onClick={() => setDraft((d) => d?.filter((x) => x.id !== p.id) ?? null)} className={`p-1 ${c.sub}`} aria-label={`Retirer ${p.title}`}><X className="h-4 w-4" /></button>
+              </li>
+            ))}
+          </ol>
+          {msg && <p className="text-sm text-red-500" role="alert">{msg}</p>}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button type="button" onClick={() => void saveDraft()} disabled={!!saving || !draft.length} className={small + ' bg-gold text-night'}>{saving ? <><Loader2 className="h-4 w-4 animate-spin" />{saving}/{draft.length}</> : <><CalendarClock className="h-4 w-4" />Enregistrer ce programme</>}</button>
+            <button type="button" onClick={generate} disabled={!!saving} className={small + ' ' + c.btn}><RefreshCw className="h-4 w-4" />Autre proposition</button>
+            <button type="button" onClick={() => setDraft(null)} disabled={!!saving} className={small + ' ' + c.btn}>Annuler</button>
+          </div>
+        </div>
+      )}
 
       {open && (
         <div id="grille-form" className="mt-4 space-y-3 border-t border-current/10 pt-4">
@@ -228,7 +319,7 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
           </div>
         </div>
       )}
-      {!open && msg && <p className="mt-2 text-sm text-red-500" role="alert">{msg}</p>}
+      {!open && !draft && msg && <p className="mt-2 text-sm text-red-500" role="alert">{msg}</p>}
     </section>
   );
 }

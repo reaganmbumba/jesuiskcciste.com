@@ -15,6 +15,7 @@ import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@
 import { useRadioListeners } from '@/features/radio/listeners';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
+import { RadioGrid } from '@/features/radio/RadioGrid';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null };
@@ -516,6 +517,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </section>
           )}
 
+          {!onAir && <RadioGrid dark />}
+
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>
             {!onAir && <p className="text-sm text-white/50">Les appels arrivent ici pendant le direct.</p>}
@@ -788,6 +791,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
             </div>
           </div>
+          <div className="mt-4"><RadioGrid /></div>
         </main>
       </div>
     </div>

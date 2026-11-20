@@ -92,7 +92,7 @@ export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true,
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
 /** Les auditeurs vérifient toutes les minutes si un direct commence ou s'arrête. */
-export const LIVE_POLL_MS = 60_000;
+export const LIVE_POLL_MS = 20_000;
 export const LIVE_KEY = 'live';
 
 /** Adresse de flux acceptée : https uniquement (le site est en https). Vide = null. */

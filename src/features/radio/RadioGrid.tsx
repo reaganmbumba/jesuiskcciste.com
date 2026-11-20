@@ -46,7 +46,9 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const [topic, setTopic] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [now, setNow] = useState(Date.now);
   useEffect(() => { prepare(); }, [prepare]);
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 20_000); return () => window.clearInterval(t); }, []);
 
   const all = radioSettingsOf(settings).programmes;
   const list = all.filter((p) => dayOf(p.startsAt) === day).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -55,7 +57,11 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const library = useMemo<Source[]>(() => {
     const seen = new Set<string>();
     const out: Source[] = [];
-    const add = (s: Source) => { if (s.url && /^https:\/\//.test(s.url) && !seen.has(s.url)) { seen.add(s.url); out.push(s); } };
+    const add = (s: Source) => {
+      // les chants du site (/audio/…) deviennent une adresse complète, valable pour tous les auditeurs
+      const url = s.url?.startsWith('/') ? `https://jesuiskcciste.com${s.url}` : s.url;
+      if (url && /^https:\/\//.test(url) && !seen.has(url)) { seen.add(url); out.push({ ...s, url }); }
+    };
     [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds }));
     items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds }));
     items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds }));
@@ -67,8 +73,16 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const startMs = (t: string) => new Date(`${day}T${t}:00+01:00`).getTime();
   const endMs = (p: RadioProgramme) => new Date(p.startsAt).getTime() + p.durationSeconds * 1000;
 
+  /** Créneau libre touché : son début, ou le prochain quart d'heure s'il a déjà commencé. */
+  function openGap(from: number) {
+    const q = 15 * 60_000;
+    const at = from > now ? from : Math.ceil((now + 60_000) / q) * q;
+    openAt(hhmm(at));
+  }
+
   function openAt(t: string) {
     setTime(t); setOpen(true); setMsg(''); setPicked(null); setFile(null); setTitle(''); setTopic('');
+    window.setTimeout(() => document.getElementById('grille-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
 
   async function save() {
@@ -144,25 +158,36 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
         <p className={`flex items-center gap-2 ${c.hd}`}><CalendarClock className="h-4 w-4" />Grille des programmes</p>
         <input type="date" value={day} onChange={(e) => setDay(e.target.value || todayKin())} className={c.field + ' py-1.5 text-sm'} aria-label="Jour" />
       </div>
-      <p className={`mt-1 text-xs ${c.sub}`}>Heure de Kinshasa. Entre les émissions, la radio joue seule ses chants, ses jingles et l’heure.</p>
+      <p className={`mt-1 text-xs ${c.sub}`}>Heure de Kinshasa. Touchez une heure libre, cherchez l’audio, enregistrez : à l’heure dite, tous les auditeurs l’entendent en même temps, et ceux qui arrivent en retard le prennent là où il en est. Entre les émissions, la radio joue seule ses chants, ses jingles et l’heure.</p>
 
       <ol className="mt-3 space-y-1.5">
         {rows.map((r, i) => r.p ? (
-          <li key={r.p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${c.show}`}>
+          <li key={r.p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${c.show} ${r.from <= now && now < r.to ? 'ring-2 ring-red-500' : ''} ${r.to <= now ? 'opacity-50' : ''}`}>
             <span className="w-24 shrink-0 text-sm font-bold tabular-nums">{hhmm(r.from)} → {hhmm(r.to)}</span>
             <span className="min-w-0 flex-1 truncate text-sm font-semibold">{r.p.title}</span>
+            {r.from <= now && now < r.to && <span className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">En cours</span>}
             {r.to > Date.now() && <button type="button" onClick={() => void remove(r.p!)} className="p-1 text-red-500" aria-label={`Retirer ${r.p.title}`}><Trash2 className="h-4 w-4" /></button>}
           </li>
         ) : (
-          <li key={`g${i}`} className={`flex items-center gap-3 rounded-xl px-3 py-1.5 text-xs ${c.row} ${c.sub}`}>
-            <span className="w-24 shrink-0 tabular-nums">{hhmm(r.from)} → {r.to >= dayEnd ? '24:00' : hhmm(r.to)}</span>
-            <span className="flex-1">Chants de la radio</span>
+          <li key={`g${i}`}>
+            {r.to > now + 5 * 60_000 ? (
+              <button type="button" onClick={() => openGap(r.from)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-1.5 text-left text-xs ${c.row} ${c.sub} ${c.item}`}>
+                <span className="w-24 shrink-0 tabular-nums">{hhmm(r.from)} → {r.to >= dayEnd ? '24:00' : hhmm(r.to)}</span>
+                <span className="flex-1">Chants de la radio</span>
+                <span className="inline-flex items-center gap-1 font-semibold text-gold"><Plus className="h-3.5 w-3.5" />Programmer ici</span>
+              </button>
+            ) : (
+              <div className={`flex items-center gap-3 rounded-xl px-3 py-1.5 text-xs opacity-50 ${c.row} ${c.sub}`}>
+                <span className="w-24 shrink-0 tabular-nums">{hhmm(r.from)} → {r.to >= dayEnd ? '24:00' : hhmm(r.to)}</span>
+                <span className="flex-1">Chants de la radio</span>
+              </div>
+            )}
           </li>
         ))}
       </ol>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {QUICK.filter((t) => startMs(t) > Date.now()).map((t) => (
+        {QUICK.filter((t) => startMs(t) > now).map((t) => (
           <button key={t} type="button" onClick={() => openAt(t)} className={small + ' ' + c.btn}><Plus className="h-3.5 w-3.5" />{t}</button>
         ))}
         <button type="button" onClick={() => openAt(time)} className={small + ' bg-gold text-night'}><Plus className="h-4 w-4" />Autre heure</button>
@@ -170,7 +195,7 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       </div>
 
       {open && (
-        <div className="mt-4 space-y-3 border-t border-current/10 pt-4">
+        <div id="grille-form" className="mt-4 space-y-3 border-t border-current/10 pt-4">
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-sm font-semibold">Heure de début</label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={c.field} />

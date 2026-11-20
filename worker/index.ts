@@ -118,7 +118,7 @@ export default {
     const push = /^\/api\/notifications\/([a-z]+)$/.exec(url.pathname);
     if (push) return handleNotifications(request, env, push[1]);
     // Émissions de la radio : lecture par morceaux, pour rejoindre le direct en cours de route
-    if (url.pathname.startsWith('/radio/emissions/')) return serveMedia(request, env.ASSETS);
+    if (url.pathname.startsWith('/radio/emissions/') || url.pathname.startsWith('/audio/')) return serveMedia(request, env.ASSETS);
     const live = /^\/api\/live\/(publish|watch|answer|call)$/.exec(url.pathname);
     if (live) return handleLive(request, env, live[1]);
     if (request.method === 'GET') {

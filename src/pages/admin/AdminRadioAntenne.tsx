@@ -517,7 +517,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </section>
           )}
 
-          {!onAir && <RadioGrid dark />}
+          <RadioGrid dark />
 
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>

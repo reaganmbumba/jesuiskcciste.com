@@ -21,7 +21,7 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     // Le Worker passe en premier pour l API (/api/…, dont l antenne radio) et pour les émissions de la radio (lecture par morceaux, worker/media.ts).
-    "run_worker_first": ["/api/*", "/radio/emissions/*"]
+    "run_worker_first": ["/api/*", "/radio/emissions/*", "/audio/*"]
   },
   // Valeurs publiques (déjà dans .env.production) : la clé publishable est protégée par RLS.
   "vars": {

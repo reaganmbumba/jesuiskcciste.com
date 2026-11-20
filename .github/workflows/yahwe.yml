@@ -1,0 +1,41 @@
+name: yahwe-tmp
+on: { push: { branches: [claude/transcription-tmp] } }
+permissions: { contents: write }
+jobs:
+  t:
+    if: "!contains(github.event.head_commit.message, 'skip')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install
+        run: |
+          pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -q faster-whisper piper-tts soundfile numpy
+          mkdir -p /tmp/v; cd /tmp/v
+          for v in tom siwis; do for e in onnx onnx.json; do curl -sL -o fr_FR-$v-medium.$e https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/$v/medium/fr_FR-$v-medium.$e; done; done
+          ls -la /tmp/v
+      - name: Exchange keys
+        run: |
+          set -e; umask 077
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /tmp/runner.key 2>/dev/null
+          openssl pkey -in /tmp/runner.key -pubout -out runner.pub
+          git config user.name ci; git config user.email ci@example.com
+          git add runner.pub; git commit -qm "runner key skip"; git push -q
+          for i in $(seq 1 120); do git pull -q --rebase || true; [ -f key.rsa ] && break; sleep 10; done
+          [ -f key.rsa ]
+          openssl pkeyutl -decrypt -inkey /tmp/runner.key -in key.rsa -out /tmp/k
+          openssl enc -d -aes-256-cbc -pbkdf2 -in audio.enc -out /tmp/orig.mp3 -pass file:/tmp/k
+          ffmpeg -v error -y -i /tmp/orig.mp3 -ar 44100 -ac 2 /tmp/orig.wav
+          ffmpeg -v error -y -i /tmp/orig.mp3 -ar 16000 -ac 1 /tmp/a16.wav
+      - name: Replace
+        run: python .github/yahwe.py
+      - name: Return encrypted
+        run: |
+          ffmpeg -v error -y -i /tmp/out.wav -c:a libmp3lame -b:a 192k /tmp/out.mp3
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/out.mp3 -out out.enc -pass file:/tmp/k
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/list.txt -out list.enc -pass file:/tmp/k
+          git pull -q --rebase || true
+          git add out.enc list.enc; git commit -qm "result skip"; git push -q

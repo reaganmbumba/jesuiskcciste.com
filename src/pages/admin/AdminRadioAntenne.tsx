@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { snakify } from '@/utils/case';
 import { writeAudit } from '@/services';
 import { useAuth } from '@/features/auth/AuthContext';
-import { fetchRadioSettings, isLiveOn, radioSettingsOf, type RadioSettings } from '@/features/radio/radio';
+import { currentProgramme, fetchRadioSettings, isLiveOn, radioSettingsOf, type RadioProgramme, type RadioSettings } from '@/features/radio/radio';
 import { RADIO_NAME } from '@/features/radio/RadioUi';
 import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
@@ -67,6 +67,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   tracksRef.current = tracks;
   const idxRef = useRef(0);
   const [musicVol, setMusicVol] = useState(0.25);
+  // Émission programmée pendant le direct : elle continue à sa place (même minute que pour
+  // tous les auditeurs), sous la voix de l'animateur ; il en règle le volume ou la coupe.
+  const [progVol, setProgVol] = useState(0.3);
+  const [progCut, setProgCut] = useState(false);
+  const [progNow, setProgNow] = useState<RadioProgramme | null>(null);
+  const progList = useRef(saved.programmes);
+  progList.current = saved.programmes;
+  const progFetched = useRef<RadioProgramme[] | null>(null);
   // Sujet de l'émission, lu par les auditeurs sur /radio
   const [topic, setTopic] = useState(saved.live.topic || '');
   const [topicSaved, setTopicSaved] = useState(saved.live.topic || '');
@@ -80,7 +88,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   const ctx = useRef<AudioContext | null>(null);
   const auditeurs = useRadioListeners(false, onAir);
-  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
+  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -191,6 +199,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       musicGain.gain.value = musicVol;
       musicGain.connect(program); musicGain.connect(retour); musicGain.connect(ac.destination); musicGain.connect(sum);
       plateau.forEach((d) => musicGain.connect(d));
+      // émission programmée de l'heure, sous la voix (volume réglé par l'animateur)
+      const progGain = ac.createGain(); progGain.gain.value = 0;
+      progGain.connect(program); progGain.connect(retour); progGain.connect(ac.destination); progGain.connect(sum);
+      plateau.forEach((d) => progGain.connect(d));
+      const progEl = new Audio();
+      progEl.crossOrigin = 'anonymous';
+      progEl.preload = 'auto';
+      ac.createMediaElementSource(progEl).connect(progGain);
       // bruitages : à l'antenne, au téléphone des appelants et dans le casque
       const bus = ac.createGain(); bus.gain.value = fxVol;
       bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
@@ -200,7 +216,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       musicEl.onended = () => playTrack(idxRef.current + 1);
       musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
       ac.createMediaElementSource(musicEl).connect(musicGain);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau };
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
       recorder.current = recOn ? recordShow(program.stream) : null;
@@ -219,7 +235,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
       try { studioBridge()?.onAir?.(title.trim() || 'Émission en direct'); } catch { /* hors application */ }
-      notify('Vous êtes à l’antenne. Les auditeurs de /radio basculent sur l’émission dans la minute.');
+      notify('Vous êtes à l’antenne. Les auditeurs basculent sur votre direct en 20 secondes environ ; les appels sont ouverts.');
     } catch (e) {
       stopAll();
       notify(e instanceof Error ? e.message : 'L’antenne n’a pas démarré.', 'error');
@@ -264,6 +280,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     pub.current = null;
     nodes.current.mic?.getTracks().forEach((t) => t.stop());
     nodes.current.musicEl?.pause();
+    if (nodes.current.progEl) { nodes.current.progEl.pause(); nodes.current.progEl.removeAttribute('src'); }
+    setProgNow(null);
+    setProgCut(false);
     void ctx.current?.close();
     ctx.current = null;
     if (nodes.current.musicEl) nodes.current.musicEl.onended = null;
@@ -408,7 +427,65 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     } catch (e) { notify(e instanceof Error ? e.message : 'Erreur', 'error'); }
   }
 
-  useEffect(() => { if (nodes.current.musicGain) nodes.current.musicGain.gain.value = musicVol; }, [musicVol]);
+  // La musique de fond se tait tant que l'émission programmée passe sous la voix.
+  useEffect(() => { if (nodes.current.musicGain) nodes.current.musicGain.gain.value = progNow && !progCut ? 0 : musicVol; }, [musicVol, progNow, progCut]);
+  useEffect(() => {
+    const g = nodes.current.progGain, ac = ctx.current;
+    if (g && ac) g.gain.setTargetAtTime(progNow && !progCut ? progVol : 0, ac.currentTime, 0.15);
+  }, [progVol, progCut, progNow, onAir]);
+
+  // Pendant le direct : l'émission de l'heure suit la grille, à la seconde près.
+  useEffect(() => {
+    if (!onAir) return;
+    let n = 0;
+    const tick = () => {
+      if (n++ % 6 === 0) void fetchRadioSettings().then((r) => { if (r) progFetched.current = r.programmes; }).catch(() => undefined);
+      const el = nodes.current.progEl;
+      if (!el) return;
+      const p = currentProgramme(progFetched.current ?? progList.current);
+      setProgNow((prev) => (prev?.id === p?.id ? prev : p));
+      if (!p) {
+        if (el.dataset.id) { el.pause(); el.removeAttribute('src'); delete el.dataset.id; }
+        return;
+      }
+      const start = new Date(p.startsAt).getTime();
+      const at = () => (Date.now() - start) / 1000;
+      if (el.dataset.id !== p.id) {
+        el.dataset.id = p.id;
+        el.src = p.url;
+        el.addEventListener('loadedmetadata', () => { try { el.currentTime = at(); } catch { /* plus tard */ } }, { once: true });
+      } else if (el.readyState > 0 && Math.abs(el.currentTime - at()) > 3) {
+        try { el.currentTime = at(); } catch { /* plus tard */ }
+      }
+      if (el.paused) void el.play().catch(() => undefined);
+    };
+    tick();
+    const t = window.setInterval(tick, 5000);
+    return () => window.clearInterval(t);
+  }, [onAir]);
+
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const progBox = (light: boolean) => {
+    if (!onAir || !progNow) return null;
+    const pos = Math.max(0, (Date.now() - new Date(progNow.startsAt).getTime()) / 1000);
+    const btn = light ? 'rounded border border-[#d3dae3] px-3 py-1.5 text-sm font-semibold' : 'rounded-xl bg-white/[0.08] px-3 py-2 text-sm font-semibold text-white';
+    return (
+      <section className={light ? 'rounded border-2 border-gold bg-gold/10 p-3 text-night' : 'rounded-3xl border border-gold/60 bg-gold/[0.12] p-4 text-white'}>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-gold">Émission programmée sous votre voix</p>
+        <p className="mt-1 truncate font-semibold">{progNow.title}</p>
+        <p className={`text-xs ${light ? 'text-ink/60' : 'text-white/60'}`}>{mmss(pos)} / {mmss(progNow.durationSeconds)} · elle continue à sa place : en quittant l’antenne, les auditeurs la retrouvent à la même minute.</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className={`flex flex-1 items-center gap-2 text-xs ${progCut ? 'opacity-40' : ''}`}>Volume du programme
+            <input type="range" min={0} max={1} step={0.05} value={progVol} disabled={progCut} onChange={(e) => setProgVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" />
+            <span className="w-9 text-right tabular-nums">{Math.round(progVol * 100)} %</span>
+          </label>
+          <button type="button" onClick={() => setProgCut((v) => !v)} className={progCut ? 'rounded-xl bg-gold px-3 py-2 text-sm font-bold text-night' : btn}>
+            {progCut ? 'Remettre le programme' : 'Couper le programme (100 % direct)'}
+          </button>
+        </div>
+      </section>
+    );
+  };
   useEffect(() => { if (nodes.current.micGain) nodes.current.micGain.gain.value = micMuted ? 0 : 1; }, [micMuted]);
   useEffect(() => () => { if (pub.current) stopAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -547,6 +624,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <textarea rows={4} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className={field + ' resize-y'} placeholder="Thème du jour, question, histoire… lu par les auditeurs." />
             {onAir && topic.trim() === topicSaved && topicSaved && <p className="mt-1 text-xs text-emerald-300">✓ Affiché aux auditeurs</p>}
           </section>
+
+          {progBox(false)}
 
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Music2 className="h-3.5 w-3.5" />Musique de fond</span>
@@ -722,6 +801,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <p className="border-t border-[#e3e8ee] px-3 py-1.5 text-[11px] text-ink/55">{onAir ? (topic.trim() === topicSaved && topicSaved ? '✓ Affiché aux auditeurs' : 'Cliquez sur « Afficher aux auditeurs » en haut à droite.') : 'Il sera affiché dès que vous passez à l’antenne.'}</p>
               </Section>
 
+              {progBox(true)}
               <Section title="Musique de fond" action={<label className={fileBtn}><Music2 className="mr-1 inline h-3 w-3" />+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>}>
                 <table className="w-full"><thead><tr><th className={th + ' w-10'}>N°</th><th className={th}>Morceau</th><th className={th + ' w-24'}>État</th><th className={th + ' w-8'} /></tr></thead>
                   <tbody>

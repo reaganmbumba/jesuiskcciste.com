@@ -1,0 +1,14 @@
+name: dl-tmp
+on: { push: { branches: [claude/transcription-tmp] } }
+permissions: { contents: write }
+jobs:
+  t:
+    if: "!contains(github.event.head_commit.message, 'skip')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p dl
+          while IFS='|' read -r name url; do [ -n "$name" ] && curl -sfL -o "dl/$name" "$url" && ls -la "dl/$name"; done < urls.txt
+          git config user.name ci; git config user.email ci@example.com
+          git rm -q urls.txt; git add dl; git commit -qm "dl skip"; git push -q

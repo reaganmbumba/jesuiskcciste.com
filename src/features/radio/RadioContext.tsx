@@ -381,7 +381,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [active, refreshSettings]);
 
   // Le direct commence : on y bascule tout de suite. Il s'arrête : retour aux chants.
-  // Une émission programmée en remplace une autre : on change de fichier.
+  // Une émission programmée en remplace une autre : on change de fichier. L'animateur passe
+  // à l'antenne pendant une émission programmée (ou la quitte) : on bascule aussi.
   const liveSource = liveOn ? live.rtc || live.url : '';
   useEffect(() => {
     if (!active) return;
@@ -392,8 +393,8 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const prev = lastSource.current;
     lastSource.current = liveSource;
-    if (active && onLiveRef.current && liveSource && prev && prev !== liveSource && !live.rtc) playLive();
-  }, [active, liveSource, live.rtc, playLive]);
+    if (active && onLiveRef.current && liveSource && prev && prev !== liveSource) playLive();
+  }, [active, liveSource, playLive]);
 
   // Pendant une émission programmée : on vérifie toutes les 20 secondes que l'auditeur est
   // toujours au même endroit que les autres (téléphone en veille, coupure réseau…).

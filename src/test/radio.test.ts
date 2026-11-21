@@ -20,7 +20,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' }, programmes: [] });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' }, programmes: [], semaine: [] });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });
@@ -138,5 +138,27 @@ describe('émissions programmées', () => {
   it('le direct de l’animateur passe avant l’émission programmée', () => {
     const r = radioSettingsOf({ radio: { programmes: [p], live: { onAir: true, rtc: 'abcdefgh12345678', startedAt: '2026-11-20T18:05:00.000Z' } } } as never);
     expect(effectiveLive(r, new Date('2026-11-20T18:10:00Z')).programme).toBeNull();
+  });
+});
+
+import { parseSemaine } from '@/features/radio/radio';
+import { joursLabel } from '@/features/radio/programmePoster';
+describe('grille type de la semaine', () => {
+  it('garde les créneaux valides, triés par heure', () => {
+    const s = parseSemaine([
+      { id: 'b', jours: [1, 2], heure: '20:00', source: 'predication' },
+      { id: 'a', jours: [7, 9], heure: '05:00', source: 'fichier', url: 'https://jesuiskcciste.com/audio/x.mp3', durationSeconds: 300, titre: 'Prière' },
+      { id: 'c', jours: [], heure: '10:00', source: 'emission' },
+      { id: 'd', jours: [1], heure: '10h', source: 'emission' },
+      { id: 'e', jours: [1], heure: '11:00', source: 'autre' },
+    ]);
+    expect(s.map((x) => x.id)).toEqual(['a', 'b']);
+    expect(s[0]).toMatchObject({ jours: [7], url: 'https://jesuiskcciste.com/audio/x.mp3', durationSeconds: 300 });
+    expect(parseSemaine('x')).toEqual([]);
+  });
+  it('décrit les jours', () => {
+    expect(joursLabel([1, 2, 3, 4, 5, 6, 7])).toBe('Tous les jours');
+    expect(joursLabel([5, 1, 2, 3, 4])).toBe('Lun – Ven');
+    expect(joursLabel([6, 7])).toBe('Sam, Dim');
   });
 });

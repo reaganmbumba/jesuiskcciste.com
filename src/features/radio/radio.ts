@@ -72,6 +72,33 @@ export interface RadioSettings {
   live: RadioLive;
   /** Émissions enregistrées à l'avance, diffusées seules à l'heure prévue (même ordinateur éteint). */
   programmes: RadioProgramme[];
+  /** Grille type de la semaine : la base remplit seule les 7 prochains jours chaque nuit. */
+  semaine: RadioSlot[];
+}
+
+/** Créneau de la grille type. jours : 1 = lundi … 7 = dimanche. */
+export interface RadioSlot {
+  id: string;
+  jours: number[];
+  heure: string;
+  source: 'fichier' | 'predication' | 'emission';
+  titre?: string;
+  url?: string;
+  durationSeconds?: number;
+}
+
+export function parseSemaine(raw: unknown): RadioSlot[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((x): RadioSlot[] => {
+    const o = x as Partial<RadioSlot>;
+    if (!o || typeof o.heure !== 'string' || !/^\d{2}:\d{2}$/.test(o.heure)) return [];
+    if (o.source !== 'fichier' && o.source !== 'predication' && o.source !== 'emission') return [];
+    const jours = Array.isArray(o.jours) ? o.jours.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7) : [];
+    if (!jours.length) return [];
+    return [{ id: String(o.id ?? ''), jours, heure: o.heure, source: o.source,
+      ...(o.titre ? { titre: String(o.titre) } : {}),
+      ...(o.source === 'fichier' && typeof o.url === 'string' ? { url: o.url, durationSeconds: Number(o.durationSeconds) || 0 } : {}) }];
+  }).sort((a, b) => a.heure.localeCompare(b.heure));
 }
 
 /** Émission programmée : un fichier audio qui passe à l'antenne à une date et une heure fixées. */
@@ -87,7 +114,7 @@ export interface RadioProgramme {
 }
 
 export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' };
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive, programmes: [] };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive, programmes: [], semaine: [] };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
@@ -161,6 +188,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       ...(typeof l.host === 'string' && l.host ? { host: l.host.slice(0, 80) } : {}),
     },
     programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
+    semaine: parseSemaine((r as { semaine?: unknown } | undefined)?.semaine),
   };
 }
 

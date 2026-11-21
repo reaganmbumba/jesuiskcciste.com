@@ -16,6 +16,8 @@ import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
 import { DedicacesPanel } from '@/features/radio/DedicacesPanel';
 import { RadioStats } from '@/features/radio/RadioStats';
 import { JournalAntenne } from '@/features/radio/JournalAntenne';
+import { Conduite } from '@/features/radio/Conduite';
+import { Charte } from '@/features/radio/Charte';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -789,10 +791,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </ul>
           </section>
 
+          {onAir && <Conduite title={title} dark />}
           <DedicacesPanel dark />
           <YouTubeChat dark />
           <RadioStats dark />
           <JournalAntenne dark />
+          <Charte dark />
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
@@ -1065,10 +1069,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <label className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#2b3648]">Volume des bruitages<input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="flex-1" /></label>
               </Section>
 
+              {onAir && <Conduite title={title} />}
               <DedicacesPanel />
               <YouTubeChat />
               <RadioStats />
               <JournalAntenne />
+              <Charte />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

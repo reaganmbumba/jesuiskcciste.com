@@ -85,7 +85,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [, setTick] = useState(0);
   const saved = radioSettingsOf(settings);
   const [title, setTitle] = useState(saved.live.title || 'Tosungana en direct');
-  const [calls, setCalls] = useState(true);
+  // Où vont les appels des auditeurs : la régie (file d'attente du Studio) ou le WhatsApp de la radio
+  const [callMode, setCallModeState] = useState<'regie' | 'whatsapp'>(() => (saved.live.callMode === 'whatsapp' ? 'whatsapp' : 'regie'));
+  const [calls, setCalls] = useState(() => saved.live.callMode !== 'whatsapp');
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [micId, setMicId] = useState('');
   const [onAir, setOnAir] = useState(false);
@@ -304,6 +306,32 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     setSilenceAlert(`${at} : ${SILENCE_S} secondes de silence à l’antenne. La radio a lancé ${what} toute seule. Vérifiez le micro et la ligne.`);
     notify(`Silence à l’antenne : ${what} lancé automatiquement.`, 'error');
   }
+
+  async function setCallMode(m: 'regie' | 'whatsapp') {
+    setCallModeState(m);
+    setCalls(m === 'regie');
+    try {
+      await saveLive({ callMode: m, ...(onAir && !recMode ? { calls: m === 'regie' } : {}) });
+      notify(m === 'whatsapp' ? 'Appels dirigés vers le WhatsApp de la radio.' : 'Appels dirigés vers la régie du Studio.');
+    } catch (e) { notify(e instanceof Error ? e.message : 'Réglage impossible.', 'error'); }
+  }
+  const waReady = /^https:\/\/wa\.me\//.test(saved.live.callUrl);
+  const callSwitch = (dark: boolean) => (
+    <div>
+      <p className={dark ? 'text-sm text-white/85' : 'text-sm font-semibold text-night'}>Appels des auditeurs</p>
+      <div className="mt-1.5 grid grid-cols-2 gap-2">
+        {(['regie', 'whatsapp'] as const).map((m) => (
+          <button key={m} type="button" onClick={() => void setCallMode(m)} aria-pressed={callMode === m}
+            className={'rounded-xl px-3 py-2 text-sm font-semibold ' + (callMode === m ? (m === 'whatsapp' ? 'bg-[#25D366] text-white' : 'bg-gold text-night') : dark ? 'bg-white/[0.08] text-white/70' : 'border border-[#d3dae3] text-ink/70')}>
+            {m === 'regie' ? '🎙️ Régie' : '💬 WhatsApp'}
+          </button>
+        ))}
+      </div>
+      <p className={dark ? 'mt-1 text-xs text-white/50' : 'mt-1 text-xs text-ink/55'}>
+        {callMode === 'regie' ? 'Les appels arrivent dans la file du Studio pendant vos directs, et passent à l’antenne quand vous les prenez.' : waReady ? 'Le bouton « Appeler la radio » ouvre votre WhatsApp, à tout moment (même sans direct). Les appels ne passent pas à l’antenne.' : 'Aucun numéro WhatsApp réglé : ajoutez-le dans Administration › Radio (« Appeler l’émission »).'}
+      </p>
+    </div>
+  );
 
   /** Seul l'état du direct est écrit (fonction radio_live_set) : les animateurs radio n'ont aucun autre droit sur les réglages. */
   async function saveLive(live: Partial<RadioSettings['live']>) {
@@ -899,7 +927,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <option value="" className="text-night">Micro du téléphone</option>
                 {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId} className="text-night">{m.label || `Micro ${i + 1}`}</option>)}
               </select>
-              <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={calls} onChange={(e) => setCalls(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Accepter les appels des auditeurs</label>
+              {callSwitch(true)}
               <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={recOn} onChange={(e) => toggleRec(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Enregistrer l’émission (téléchargement, rediffusion)</label>
               <p className="text-xs text-white/45">Mettez des écouteurs pour éviter l’écho.</p>
             </section>
@@ -1114,7 +1142,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <div className="text-center"><img src="/images/logo-kcc.svg" alt="KCC" className="mx-auto h-14" /><p className="mt-1 text-[10px] font-bold tracking-[0.3em] text-[#2b3648]">RADIO KCC</p></div>
             <div className="min-w-0 flex-1 text-center">
               <h1 className="font-display text-xl font-bold uppercase text-[#2b3648] sm:text-2xl">Antenne en direct — Radio Je suis KCCiste</h1>
-              <p className="mt-1 text-xs text-ink/60">Émission : <b>{title || '—'}</b> | Appels : <b>{calls ? 'ouverts' : 'fermés'}</b> | Diffusion : <b>jesuiskcciste.com/radio{diffOn ? ', YouTube/Facebook' : ''}</b></p>
+              <p className="mt-1 text-xs text-ink/60">Émission : <b>{title || '—'}</b> | Appels : <b>{callMode === 'whatsapp' ? 'WhatsApp' : calls ? 'régie' : 'fermés'}</b> | Diffusion : <b>jesuiskcciste.com/radio{diffOn ? ', YouTube/Facebook' : ''}</b></p>
             </div>
             <table className="text-[13px]"><tbody>
               <tr><td className={lbl.replace('w-44', 'w-24')}>Statut</td><td className={`${td} text-right font-semibold ${recMode ? 'text-orange-600' : onAir ? 'text-red-600' : ''}`}>{recMode ? (recPaused ? '⏸ PAUSE' : '⏺ BROUILLON') : onAir ? '● EN DIRECT' : 'Hors antenne'}</td></tr>
@@ -1149,7 +1177,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                       <option value="">Micro par défaut</option>
                       {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId}>{m.label || `Micro ${i + 1}`}</option>)}
                     </select></td></tr>
-                  <tr><td className={lbl}>Appels des auditeurs</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={calls} disabled={onAir} onChange={(e) => setCalls(e.currentTarget.checked)} /> Accepter les appels</label></td></tr>
+                  <tr><td className={lbl}>Appels des auditeurs</td><td className={td}>{callSwitch(false)}</td></tr>
                   <tr><td className={lbl}>Enregistrement</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={recOn} disabled={onAir} onChange={(e) => toggleRec(e.currentTarget.checked)} /> Enregistrer l’émission (téléchargement, rediffusion)</label></td></tr>
                   <tr><td className={lbl}>Animateur</td><td className={td}>{who || '—'}</td></tr>
                 </tbody></table>

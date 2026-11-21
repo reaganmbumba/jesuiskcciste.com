@@ -150,8 +150,17 @@ export function ListenerCount({ light = true, compact, className }: { light?: bo
  */
 export function CallShowButton({ className }: { className?: string }) {
   const { tx } = useI18n();
-  const { callUrl, siteCalls, stop } = useRadio();
+  const { callUrl, siteCalls, whatsappCall, stop } = useRadio();
   const [open, setOpen] = useState(false);
+  if (whatsappCall) {
+    // Appels dirigés vers le WhatsApp de la radio : nouvelle fenêtre, la radio continue de jouer
+    return (
+      <a href={whatsappCall} target="_blank" rel="noopener noreferrer"
+        className={cn('inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1ebe5b]', className)}>
+        <Phone className="h-4 w-4" aria-hidden />{tx('Appeler la radio', 'Call the radio', 'Ligar para a rádio')}
+      </a>
+    );
+  }
   if (siteCalls) {
     return (
       <>

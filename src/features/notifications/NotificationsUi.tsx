@@ -12,7 +12,7 @@ type Tx = (fr: string, en: string, pt: string) => string;
 
 export function topicLabel(t: Topic, tx: Tx): { label: string; description: string } {
   switch (t) {
-    case 'direct': return { label: tx('Cultes en direct', 'Live services', 'Cultos em direto'), description: tx('Quand un culte ou une fête commence en direct.', 'When a service or feast starts live.', 'Quando um culto ou uma festa começa em direto.') };
+    case 'direct': return { label: tx('Cultes et radio en direct', 'Live services and radio', 'Cultos e rádio em direto'), description: tx('Quand un culte, une fête ou une émission de la radio commence en direct.', 'When a service, a feast or a radio show starts live.', 'Quando um culto, uma festa ou um programa da rádio começa em direto.') };
     case 'communiques': return { label: tx('Communiqués et actualités', 'Announcements and news', 'Comunicados e notícias'), description: tx('Quand un communiqué ou un article paraît.', 'When an announcement or article is published.', 'Quando sai um comunicado ou um artigo.') };
     case 'predications': return { label: tx('Nouvelles prédications', 'New sermons', 'Novas pregações'), description: tx('Quand une prédication audio est ajoutée.', 'When an audio sermon is added.', 'Quando é adicionada uma pregação áudio.') };
   }

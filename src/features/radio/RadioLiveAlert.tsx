@@ -6,7 +6,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useRadio } from './RadioContext';
 import { fetchRadioSettings, radioSettingsOf, type RadioSettings } from './radio';
-import { pendingRadioAlert, playAlertChime, radioAlertMessage, speakAlert, type RadioAlert } from './radioAlert';
+import { pendingRadioAlert, playAlarm, radioAlertMessage, stopAlarm, type RadioAlert } from './radioAlert';
 
 const STORE = 'kcc-radio-alertes';
 const CHECK_MS = 15_000;
@@ -27,7 +27,7 @@ const QUIET = ['/radio/studio', '/radio/plateau', '/admin/radio'];
 
 /**
  * Fenêtre « Paix, Reagan ! L'émission … commence » sur toutes les pages du site et de l'application,
- * avec sonnerie puis message dit à voix haute. « Écouter » ouvre la radio en plein écran.
+ * avec l'alarme de l'application radio (jingle d'annonce avec la voix). « Écouter » ouvre la radio en plein écran.
  */
 export function RadioLiveAlert() {
   const { locale } = useI18n();
@@ -74,17 +74,15 @@ export function RadioLiveAlert() {
   useEffect(() => { checkRef.current(); }, [radio]);
 
   const msg = alert ? radioAlertMessage(alert, profile?.firstName, lang) : null;
-  // Sonnerie d'abord, puis le message à voix haute.
+  // L'alarme de l'application radio (jingle d'annonce avec la voix).
   useEffect(() => {
-    if (!msg) return;
-    const wait = playAlertChime();
-    const t = window.setTimeout(() => speakAlert(`${msg.greeting} ${msg.text}`, lang), wait);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [alert?.key]);
+    if (!alert) return;
+    playAlarm();
+    return () => stopAlarm();
+  }, [alert]);
 
   if (!alert || !msg) return null;
-  const close = () => { try { window.speechSynthesis?.cancel(); } catch { /* */ } setAlert(null); };
+  const close = () => { stopAlarm(); setAlert(null); };
   const listen = () => {
     close();
     if (alert.kind === 'start' && !r.active) r.start('all');

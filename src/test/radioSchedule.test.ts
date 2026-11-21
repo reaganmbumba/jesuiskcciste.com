@@ -64,3 +64,15 @@ describe('antenne commune de la radio', () => {
     expect(stationSlot(at('2026-11-20T23:07:00Z'), 7 * 60_000)).toBe(1);
   });
 });
+
+describe('prédications seulement programmées', () => {
+  it('ne passent pas toutes seules entre les chants', () => {
+    const s = scheduleAt(catalog, 'all', new Date('2026-11-21T12:00:00Z').getTime(), 60);
+    expect(s.some((x) => x.item.kind === 'sermon')).toBe(false);
+    expect(s.some((x) => x.item.kind === 'song')).toBe(true);
+  });
+  it('restent disponibles si l’auditeur choisit « Prédications »', () => {
+    const s = scheduleAt(catalog, 'sermons', new Date('2026-11-21T12:00:00Z').getTime(), 3);
+    expect(s.every((x) => x.item.kind === 'sermon' || x.item.kind === 'news' || x.item.kind === 'vocal')).toBe(true);
+  });
+});

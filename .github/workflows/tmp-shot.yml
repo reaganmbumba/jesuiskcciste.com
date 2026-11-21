@@ -15,6 +15,6 @@ jobs:
       - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
       - run: (npx vite preview --port 4173 &) ; sleep 5; cp .github/tmp/shot.mjs ./shot.mjs && node shot.mjs
       - run: |
-          mkdir /tmp/o && cp shot-app.png /tmp/o/ && cd /tmp/o && git init -q && git checkout -q -b claude/tmp-shot-out
+          mkdir /tmp/o && cp shot-*.png /tmp/o/ && cd /tmp/o && git init -q && git checkout -q -b claude/tmp-shot-out
           git -c user.name=ci -c user.email=ci@x add . && git -c user.name=ci -c user.email=ci@x commit -qm shot
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" claude/tmp-shot-out

@@ -72,7 +72,7 @@ export default function PlateauPage() {
       if (e) throw new Error(e.message);
       const r = data as { id: string; siege: number };
       id.current = r.id;
-      const back = await watchTrack(hostRtc, `plateau${r.siege}` as 'plateau1');
+      const back = await watchTrack(hostRtc, `plateau${r.siege}`);
       pcs.current.push(back.pc);
       const addAll = () => back.stream.getTracks().forEach((t) => { if (!ms.getTracks().includes(t)) ms.addTrack(t); });
       addAll();

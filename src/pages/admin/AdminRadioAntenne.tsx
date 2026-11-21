@@ -15,6 +15,7 @@ import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type Voice
 import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
 import { DedicacesPanel } from '@/features/radio/DedicacesPanel';
 import { RadioStats } from '@/features/radio/RadioStats';
+import { JournalAntenne } from '@/features/radio/JournalAntenne';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -53,6 +54,9 @@ function PlacesLine({ places, className }: { places?: RadioPlace[]; className?: 
   const top = places.slice(0, 5), rest = places.slice(5).reduce((n, p) => n + p.n, 0);
   return <p className={className}>📍 {top.map((p) => `${p.name} ${p.n}`).join(' · ')}{rest ? ` · ${rest} ailleurs` : ''}</p>;
 }
+
+/** Places d'invités sur le plateau (comme dans radio_plateau_rejoindre). */
+const PLATEAU_PLACES = 10;
 
 /** Silence à l'antenne : seuil (crête, 1 = plein niveau) et durée avant le jingle automatique. */
 const SILENCE_LEVEL = 0.012;
@@ -250,7 +254,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const sum = ac.createGain(); sum.connect(analyser);
       // voix → effets (écho, réverbération, voix radio) → antenne
       // une sortie par place du plateau : chaque invité entend tout le monde sauf lui-même
-      const plateau = [0, 1, 2].map(() => ac.createMediaStreamDestination());
+      const plateau = Array.from({ length: PLATEAU_PLACES }, () => ac.createMediaStreamDestination());
       const chain = voiceChain(ac, micGain, [program, retour, sum, ...plateau]);
       (Object.keys(voiceFx) as VoiceFx[]).forEach((k) => chain.set(k, voiceFx[k]));
       const musicGain = ac.createGain();
@@ -291,6 +295,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           .then(async (p) => {
             if (!ctx.current) { p.pc.close(); return; }
             pub.current = p;
+            seatsOff();
             const { data: j } = await supabase!.rpc('radio_plateau_lien');
             if (j && ctx.current) { jetonRef.current = String(j); setPlateauLink(`${window.location.origin}/radio/plateau?c=${String(j)}&s=${encodeURIComponent(p.sessionId)}&b=1`); }
           })
@@ -302,6 +307,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       setState('Connexion au relais…');
       pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0],
         plateau.map((d, i) => ({ name: `plateau${i + 1}`, track: d.stream.getAudioTracks()[0] })));
+      seatsOff();
       pub.current.pc.onconnectionstatechange = () => {
         const s = pub.current?.pc.connectionState;
         setState(s === 'connected' ? 'À l’antenne' : s === 'failed' ? 'Connexion perdue : arrêtez puis relancez l’antenne.' : s ?? '');
@@ -438,6 +444,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           gain.connect(ac.destination); // dans le casque de l'animateur
           const pl = nodes.current.plateau ?? [];
           if (a.genre === 'plateau') {
+            seatSend(a.siege, true);
             // un invité du plateau : entendu des appelants et des autres invités, pas de lui-même
             if (nodes.current.retour) gain.connect(nodes.current.retour);
             pl.forEach((d, i) => { if (i + 1 !== a.siege) gain.connect(d); });
@@ -458,9 +465,22 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   takeRef.current = take;
 
+  /**
+   * Retour d'une place du plateau : envoyé seulement quand un invité l'occupe
+   * (10 places, mais pas 10 sons envoyés en permanence par la connexion de l'animateur).
+   */
+  function seatSend(siege: number | null | undefined, on: boolean) {
+    const p = pub.current, d = siege ? nodes.current.plateau?.[siege - 1] : undefined;
+    if (!p || !d || !siege) return;
+    const t = p.pc.getTransceivers()[1 + siege];
+    void t?.sender.replaceTrack(on ? d.stream.getAudioTracks()[0] : null).catch(() => {});
+  }
+  function seatsOff() { for (let i = 1; i <= PLATEAU_PLACES; i++) seatSend(i, false); }
+
   async function hang(a: Appel, statut: 'termine' | 'refuse') {
     const l = lines.current.get(a.id);
     if (l) { l.gain?.disconnect(); l.node?.disconnect(); l.pc.close(); l.el.srcObject = null; lines.current.delete(a.id); }
+    if (a.genre === 'plateau') seatSend(a.siege, false);
     setTaken((t) => t.filter((x) => x !== a.id));
     await supabase!.from('radio_appels').update({ statut, modifie_le: new Date().toISOString() }).eq('id', a.id);
     setQueue((q) => q.filter((x) => x.id !== a.id));
@@ -719,7 +739,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           {lockBox(true)}
           {onAir && plateauLink && (
             <section className={card}>
-              <p className={hd}>Invités plateau (3 places)</p>
+              <p className={hd}>Invités plateau (10 places)</p>
               <p className="text-sm text-white/65">{recMode ? 'Envoyez ce lien : l’invité est enregistré avec vous (rien n’est diffusé) et entend tout le plateau.' : 'Envoyez ce lien : l’invité passe directement à l’antenne et entend tout le plateau.'}</p>
               <p className="mt-2 truncate rounded-xl bg-white/[0.06] px-3 py-2 font-mono text-xs text-white/80">{plateauLink}</p>
               <div className="mt-2 flex gap-2">
@@ -772,6 +792,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <DedicacesPanel dark />
           <YouTubeChat dark />
           <RadioStats dark />
+          <JournalAntenne dark />
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
@@ -919,7 +940,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           </div>
           {onAir && plateauLink && (
             <div className="rounded border border-[#d3dae3] bg-white p-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Invités plateau (3 places)</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Invités plateau (10 places)</p>
               <p className="mt-1 text-xs text-ink/60">{recMode ? 'Envoyez ce lien : l’invité est enregistré avec vous (rien n’est diffusé).' : 'Envoyez ce lien : l’invité passe directement à l’antenne.'}</p>
               <p className="mt-2 truncate rounded bg-[#f3f6f9] px-2 py-1 font-mono text-[11px]">{plateauLink}</p>
               <div className="mt-2 flex gap-1.5">
@@ -1047,6 +1068,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               <DedicacesPanel />
               <YouTubeChat />
               <RadioStats />
+              <JournalAntenne />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

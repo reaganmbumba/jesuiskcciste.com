@@ -2,11 +2,21 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { watchTrack } from './rtc';
 import { useRadioPresence } from './listeners';
-import { availableModes, buildRound, effectiveLive, fetchRadioSettings, isLiveOn, upcomingProgrammes, type RadioProgramme, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
+import { effectiveLive, fetchRadioSettings, isLiveOn, upcomingProgrammes, type RadioProgramme, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
+import { scheduleAt, scheduleFingerprint, slotOffset, stationSlot, type RadioSlot } from './schedule';
 
-const MODE_KEY = 'kcc-radio-mode';
-/** Titres illisibles d'affilée avant d'arrêter la radio (fichier supprimé, réseau coupé…). */
-const MAX_ERRORS = 5;
+/** Une seule antenne pour tout le monde : tous les auditeurs entendent la même chose (chants, prédications, journal, vocaux). */
+const MODE: RadioMode = 'all';
+/** Échecs de lecture d'affilée avant d'arrêter la radio (réseau coupé…). */
+const MAX_ERRORS = 9;
+/** Après 3 échecs sur le même titre (fichier abîmé), on attend le titre suivant de la grille. */
+const ERRORS_PER_SLOT = 3;
+/** Écart toléré avec l'antenne commune avant de recaler l'auditeur (secondes). */
+const DRIFT_S = 4;
+/** On vérifie toutes les 5 secondes que l'auditeur est au même endroit que les autres. */
+const SYNC_MS = 5000;
+/** La liste des titres est relue toutes les 10 minutes (nouveau chant, vocal validé…). */
+const CATALOG_REFRESH_MS = 10 * 60_000;
 /** Après une coupure du flux en direct, on ne le retente qu'après ce délai (un chant passe entre-temps). */
 const LIVE_RETRY_MS = 3 * 60_000;
 /** Habillage de l'antenne : un jingle « Radio Je suis KCCiste » tous les quelques titres, comme une vraie radio. */
@@ -18,9 +28,8 @@ const FADE_OUT = 3.5;
 const SONG_LEVEL = 0.75;
 /** Pendant un jingle, la musique descend à 10 % de son volume (le jingle joue à 100 %). */
 const DUCK = 0.1;
-/** Le jingle de la station passe toutes les 7 minutes d'écoute (le premier, une minute après le début). */
+/** Le jingle de la station passe toutes les 7 minutes, à la même seconde pour tous les auditeurs. */
 const STATION_EVERY_MS = 7 * 60_000;
-const STATION_FIRST_MS = 60_000;
 
 /** Heure de Kinshasa (quel que soit le pays de l'auditeur). */
 export function kinshasaTime(d = new Date()): { h: number; m: number } {
@@ -64,9 +73,7 @@ interface RadioValue {
   programmes: RadioProgramme[];
   /** L'auditeur écoute l'émission en direct. */
   onLive: boolean;
-  mode: RadioMode;
-  modes: RadioMode[];
-  /** Ce que diffuse le mode choisi. */
+  /** Tout ce que diffuse l'antenne. */
   items: RadioItem[];
   current: RadioItem | null;
   upcoming: RadioItem[];
@@ -74,23 +81,13 @@ interface RadioValue {
   duration: number;
   /** Charge le catalogue à l'avance, pour que « Écouter » démarre sans attendre. */
   prepare: () => void;
+  /** Lance la radio là où en est l'antenne commune (l'argument est ignoré : une seule antenne). */
   start: (mode?: RadioMode) => void;
   toggle: () => void;
-  next: () => void;
   stop: () => void;
-  setMode: (m: RadioMode) => void;
 }
 
 const Ctx = createContext<RadioValue | null>(null);
-
-function savedMode(): RadioMode {
-  try {
-    const m = localStorage.getItem(MODE_KEY);
-    return m === 'songs' || m === 'sermons' ? m : 'all';
-  } catch {
-    return 'all';
-  }
-}
 
 /**
  * Lecteur de la radio, monté une seule fois autour de toutes les pages :
@@ -103,22 +100,23 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const [catalog, setCatalog] = useState<RadioItem[] | null>(null);
   const loadingRef = useRef<Promise<RadioItem[]> | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setModeState] = useState<RadioMode>(savedMode);
   const [active, setActive] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [queue, setQueue] = useState<{ list: RadioItem[]; index: number }>({ list: [], index: 0 });
+  /** La grille autour de ce qui passe : le passage en cours puis les suivants. */
+  const [slots, setSlots] = useState<RadioSlot[]>([]);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const queueRef = useRef(queue);
+  /** Le passage de la grille en cours de lecture, et l'empreinte de la liste dont il vient. */
+  const playingRef = useRef<{ slot: RadioSlot; fp: string } | null>(null);
   const errors = useRef(0);
+  const waitTimer = useRef(0);
   const [remote, setRemote] = useState<RadioSettings | null>(null);
   const [onLive, setOnLive] = useState(false);
   const onLiveRef = useRef(false);
   const liveFailedAt = useRef(0);
   /** Pendant un jingle : ce qui doit être joué juste après. */
   const afterJingle = useRef<(() => void) | null>(null);
-  const lastJingle = useRef(-1);
   /** Volume du titre en cours (les chants un peu plus bas). */
   const levelRef = useRef(1);
   /** Jingles joués PAR-DESSUS la musique, sur un second lecteur. */
@@ -127,7 +125,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const duck = useRef(1);
   const fadeV = useRef(1);
   const duckTimer = useRef(0);
-  const nextStationAt = useRef(0);
+  const lastStation = useRef(-1);
   const lastQuarter = useRef('');
   const applyVolume = () => {
     const a = audio.current;
@@ -257,81 +255,107 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, []);
   // Réglages enregistrés depuis cet onglet (administration) : ils priment sur la dernière lecture.
   useEffect(() => { setRemote(null); }, [settings]);
-  const allOnAir = useMemo(() => onAir(catalog ?? [], radio, 'all'), [catalog, radio]);
-  const modes = useMemo(() => availableModes(allOnAir), [allOnAir]);
-  const effectiveMode = modes.includes(mode) ? mode : modes[0] ?? 'all';
-  const items = useMemo(() => onAir(catalog ?? [], radio, effectiveMode), [catalog, radio, effectiveMode]);
+  const items = useMemo(() => onAir(catalog ?? [], radio, MODE), [catalog, radio]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  const fetchCatalog = useCallback(() => {
-    if (!loadingRef.current) {
-      setLoading(true);
-      loadingRef.current = loadRadioCatalog().then((c) => { setCatalog(c); return c; }).finally(() => setLoading(false));
+  const fetchCatalog = useCallback((fresh = false) => {
+    if (!loadingRef.current || fresh) {
+      if (!loadingRef.current) setLoading(true);
+      const p = loadRadioCatalog().then((c) => { setCatalog(c); return c; });
+      loadingRef.current = p.finally(() => setLoading(false));
     }
     return loadingRef.current;
   }, []);
 
-  /** Place la file et lance le titre. Appelé directement depuis le clic : les téléphones l'exigent. */
-  const playQueue = useCallback((list: RadioItem[], index: number) => {
+  /** Met l'auditeur à la seconde où en est l'antenne commune dans ce titre. */
+  const seekToSlot = (a: HTMLAudioElement) => {
+    const p = playingRef.current;
+    if (!p || onLiveRef.current || a.src !== new URL(p.slot.item.url, location.href).href) return;
+    const at = slotOffset(p.slot, Date.now());
+    if (Math.abs(a.currentTime - at) > DRIFT_S && at < (p.slot.endsAt - p.slot.startsAt) / 1000) {
+      try { a.currentTime = at; } catch { /* pas encore possible */ }
+    }
+  };
+
+  /** Lance un passage de la grille, à la seconde où en sont les autres. Appelé depuis le clic : les téléphones l'exigent. */
+  const playSlot = useCallback((list: RadioSlot[], fp: string) => {
     const a = audio.current;
     markLive(false);
     dropRtc();
-    queueRef.current = { list, index };
-    setQueue(queueRef.current);
-    const item = list[index];
-    if (!a || !item) { setActive(false); return; }
+    window.clearTimeout(waitTimer.current);
+    const slot = list[0];
+    setSlots(list);
+    if (!a || !slot) { playingRef.current = null; setActive(false); return; }
+    playingRef.current = { slot, fp };
+    const item = slot.item;
     levelRef.current = item.kind === 'song' ? SONG_LEVEL : 1;
-    setTime(0);
+    setTime(slotOffset(slot, Date.now()));
     setDuration(item.durationSeconds ?? 0);
     afterJingle.current = null;
     fadeV.current = 0.05;
     applyVolume();
     a.src = item.url;
+    if (slotOffset(slot, Date.now()) > 1) {
+      // On arrive en cours de titre : on saute à la même seconde que tout le monde.
+      const sync = () => seekToSlot(a);
+      a.addEventListener('loadedmetadata', sync, { once: true });
+      a.addEventListener('canplay', sync, { once: true });
+      a.addEventListener('playing', sync, { once: true });
+    }
     a.play().catch(() => setPlaying(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startWith = useCallback((all: RadioItem[], m: RadioMode) => {
-    const list = buildRound(onAir(all, radio, m), Math.random, queueRef.current.list[queueRef.current.index]?.key);
-    errors.current = 0;
-    setFailed(false);
-    if (canLive()) {
-      // L'émission passe d'abord ; la file des chants attend la fin du direct.
-      queueRef.current = { list, index: -1 };
-      setQueue(queueRef.current);
-      setActive(true);
-      playLive();
+  /**
+   * Rejoint l'antenne commune : ce qui passe en ce moment, à la bonne seconde.
+   * `ended` : le passage qui vient de finir (si son fichier finit un peu avant l'heure prévue,
+   * on enchaîne le suivant au lieu de le rejouer).
+   */
+  const playNow = useCallback((ended?: RadioSlot, fresh?: RadioItem[]) => {
+    const all = fresh ?? itemsRef.current;
+    const now = Date.now();
+    const fp = scheduleFingerprint(all, MODE);
+    const list = scheduleAt(all, MODE, now, 4);
+    if (!list.length) { playingRef.current = null; setSlots([]); audio.current?.pause(); setActive(false); return; }
+    if (ended && list[0].startsAt === ended.startsAt && list[1]) {
+      const early = list[0].endsAt - now;
+      if (early <= DRIFT_S * 1000) return playSlot(list.slice(1), fp);
+      // Le fichier est plus court que prévu : on attend que l'antenne passe au titre suivant.
+      window.clearTimeout(waitTimer.current);
+      waitTimer.current = window.setTimeout(() => playNowRef.current(), early);
       return;
     }
-    if (!list.length) { setActive(false); return; }
+    playSlot(list, fp);
+  }, [playSlot]);
+  const playNowRef = useRef(playNow);
+  playNowRef.current = playNow;
+
+  const startWith = useCallback((fresh?: RadioItem[]) => {
+    errors.current = 0;
+    setFailed(false);
     setActive(true);
-    playQueue(list, 0);
+    // L'émission (direct ou programmée) passe d'abord ; la grille reprend à sa fin.
+    if (canLive()) return playLive();
+    playNow(undefined, fresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playLive, playQueue, radio]);
+  }, [playLive, playNow]);
 
-  const setMode = useCallback((m: RadioMode) => {
-    setModeState(m);
-    try { localStorage.setItem(MODE_KEY, m); } catch { /* navigation privée */ }
-  }, []);
+  const radioRef = useRef(radio);
+  radioRef.current = radio;
+  const start = useCallback(() => {
+    if (catalog) startWith();
+    else void fetchCatalog().then((c) => startWith(onAir(c, radioRef.current, MODE)));
+  }, [catalog, fetchCatalog, startWith]);
 
-  const start = useCallback((m?: RadioMode) => {
-    const wanted = m ?? effectiveMode;
-    if (m) setMode(m);
-    if (catalog) startWith(catalog, wanted);
-    else void fetchCatalog().then((c) => startWith(c, wanted));
-  }, [catalog, effectiveMode, fetchCatalog, setMode, startWith]);
-
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-  const next = useCallback(() => {
-    // On ne saute pas l'émission en direct.
+  /** Fin d'un titre ou d'un direct : on suit l'antenne commune. */
+  const next = useCallback((ended?: RadioSlot) => {
+    // On ne quitte pas l'émission en direct.
     if (onLiveRef.current && liveRef.current.on && Date.now() - liveFailedAt.current > LIVE_RETRY_MS) return;
     if (!onLiveRef.current && canLive()) return playLive();
-    const { list, index } = queueRef.current;
-    const go = index + 1 < list.length
-      ? () => playQueue(list, index + 1)
-      : () => playQueue(buildRound(itemsRef.current, Math.random, list[index]?.key), 0);
-    go();
+    playNow(ended);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playLive, playQueue]);
+  }, [playLive, playNow]);
 
   /** Le flux du direct s'est coupé ou est terminé : retour aux chants. */
   const leaveLive = useCallback(() => {
@@ -344,6 +368,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   leaveLiveRef.current = leaveLive;
 
   const stop = useCallback(() => {
+    window.clearTimeout(waitTimer.current);
     audio.current?.pause();
     jingleEl.current?.pause();
     setActive(false);
@@ -353,14 +378,9 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const a = audio.current;
     if (!active || (!a?.src && !a?.srcObject)) return start();
     if (a.paused && onLiveRef.current) playLive(); // reprendre au direct, pas là où on s'était arrêté
-    else if (a.paused) a.play().catch(() => setPlaying(false));
+    else if (a.paused) next(); // reprendre là où en est l'antenne, comme une vraie radio
     else { a.pause(); jingleEl.current?.pause(); }
-  }, [active, playLive, start]);
-
-  const changeMode = useCallback((m: RadioMode) => {
-    setMode(m);
-    if (active && catalog) startWith(catalog, m);
-  }, [active, catalog, setMode, startWith]);
+  }, [active, next, playLive, start]);
 
   // Un autre lecteur du site démarre (chant, prédication, vidéo) : la radio s'arrête.
   useEffect(() => {
@@ -405,29 +425,63 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(t);
   }, [active, playing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Par-dessus la musique (baissée à 10 %) : l'heure exacte à h00, h15, h30 et h45,
-  // et le jingle de la station toutes les 7 minutes.
+  // Hors direct : toutes les 5 secondes, on vérifie que l'auditeur entend la même chose que
+  // les autres, au même endroit (téléphone en veille, réseau lent, minuit…).
   useEffect(() => {
     if (!active || !playing) return;
-    if (!nextStationAt.current || nextStationAt.current < Date.now() - STATION_EVERY_MS) nextStationAt.current = Date.now() + STATION_FIRST_MS;
+    const t = window.setInterval(() => {
+      const a = audio.current, p = playingRef.current;
+      if (!a || a.paused || onLiveRef.current || !p) return;
+      const all = itemsRef.current;
+      // La liste des titres a changé : on finit ce titre, puis on suit la nouvelle grille.
+      if (p.fp !== scheduleFingerprint(all, MODE)) return;
+      const now = Date.now();
+      const list = scheduleAt(all, MODE, now, 4);
+      const cur = list[0];
+      if (!cur) return;
+      if (cur.startsAt === p.slot.startsAt) {
+        if (!a.seeking && a.readyState >= 1) seekToSlot(a);
+        setSlots((s) => (s[0]?.startsAt === cur.startsAt && s.length >= list.length ? s : list));
+        return;
+      }
+      // Un peu en avance sur le titre suivant (fichier un peu plus court que prévu) : c'est bon.
+      if (p.slot.startsAt === cur.endsAt && cur.endsAt - now <= DRIFT_S * 1000) return;
+      playSlot(list, scheduleFingerprint(all, MODE));
+    }, SYNC_MS);
+    return () => window.clearInterval(t);
+  }, [active, playing, playSlot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pendant l'écoute, la liste des titres est relue de temps en temps : tout le monde garde la même grille.
+  useEffect(() => {
+    if (!active) return;
+    const t = window.setInterval(() => { void fetchCatalog(true); }, CATALOG_REFRESH_MS);
+    return () => window.clearInterval(t);
+  }, [active, fetchCatalog]);
+
+  // Par-dessus la musique (baissée à 10 %) : l'heure exacte à h00, h15, h30 et h45,
+  // et le jingle de la station toutes les 7 minutes (à la même seconde pour tous).
+  useEffect(() => {
+    if (!active || !playing) return;
+    // Le jingle en cours au moment où l'on arrive ne repart pas : on attend le prochain.
+    if (lastStation.current < 0) lastStation.current = stationSlot(Date.now(), STATION_EVERY_MS);
     const t = window.setInterval(() => {
       if (onLiveRef.current || jingleBusy.current) return;
-      const { h, m } = kinshasaTime();
+      const now = Date.now();
+      const { h, m } = kinshasaTime(new Date(now));
       const key = `${h}:${m}`;
+      const s = stationSlot(now, STATION_EVERY_MS);
       if (m % 15 === 0 && key !== lastQuarter.current) {
         lastQuarter.current = key;
-        nextStationAt.current = Math.max(nextStationAt.current, Date.now() + 2 * 60_000);
+        lastStation.current = s;
         playOverRef.current(timeAnnouncement());
         return;
       }
-      if (Date.now() >= nextStationAt.current) {
-        nextStationAt.current = Date.now() + STATION_EVERY_MS;
-        let j = Math.floor(Math.random() * JINGLES.length);
-        if (j === lastJingle.current) j = (j + 1) % JINGLES.length;
-        lastJingle.current = j;
-        playOverRef.current([JINGLES[j]]);
+      if (s !== lastStation.current) {
+        lastStation.current = s;
+        // Même jingle pour tous : il dépend du créneau de 7 minutes, pas du hasard.
+        playOverRef.current([JINGLES[s % JINGLES.length]]);
       }
-    }, 5000);
+    }, 2000);
     return () => window.clearInterval(t);
   }, [active, playing]);
 
@@ -439,9 +493,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   }, [active, live.rtc, playLive]);
 
   // Écran verrouillé et casque Bluetooth : titre affiché, pause et « suivant ».
-  const current = !active ? null : onLive ? liveItem(live) : queue.list[queue.index] ?? null;
-  const nextRef = useRef(next);
-  nextRef.current = next;
+  const current = !active ? null : onLive ? liveItem(live) : slots[0]?.item ?? null;
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
     const ms = navigator.mediaSession;
@@ -450,16 +502,16 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     const set = (action: MediaSessionAction, fn: (() => void) | null) => { try { ms.setActionHandler(action, fn); } catch { /* action non prise en charge */ } };
     set('play', current ? () => void audio.current?.play() : null);
     set('pause', current ? () => audio.current?.pause() : null);
-    set('nexttrack', current && current.kind !== 'live' ? () => nextRef.current() : null);
+    set('nexttrack', null); // on ne saute pas un titre : tout le monde entend la même chose
   }, [current?.key, current?.title]);
 
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), onLive, mode: effectiveMode, modes, items, current,
-    upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), onLive, items, current,
+    upcoming: active && !onLive ? slots.slice(1, 4).map((s) => s.item) : [],
     time, duration,
-    prepare, start, toggle, next, stop, setMode: changeMode,
+    prepare, start, toggle, stop,
   };
 
   return (
@@ -489,7 +541,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
         onEnded={() => {
           const k = afterJingle.current;
           if (k) { afterJingle.current = null; return k(); }
-          return onLiveRef.current ? leaveLive() : next();
+          return onLiveRef.current ? leaveLive() : next(playingRef.current?.slot);
         }}
         onError={() => {
           if (!active) return;
@@ -497,8 +549,13 @@ export function RadioProvider({ children }: { children: ReactNode }) {
           if (k) { afterJingle.current = null; return k(); }
           if (onLiveRef.current) return leaveLive();
           errors.current += 1;
-          if (errors.current >= Math.min(MAX_ERRORS, Math.max(1, queueRef.current.list.length))) { setFailed(true); stop(); return; }
-          next();
+          if (errors.current >= MAX_ERRORS) { setFailed(true); stop(); return; }
+          // Coupure réseau : on réessaie dans 3 secondes, à la bonne seconde. Fichier abîmé
+          // (3 échecs) : on attend que l'antenne passe au titre suivant.
+          const slot = playingRef.current?.slot;
+          const wait = errors.current % ERRORS_PER_SLOT === 0 && slot ? Math.max(1000, slot.endsAt - Date.now() + 200) : 3000;
+          window.clearTimeout(waitTimer.current);
+          waitTimer.current = window.setTimeout(() => playNowRef.current(), wait);
         }}
       />
       <audio ref={jingleEl} preload="auto" className="hidden" />

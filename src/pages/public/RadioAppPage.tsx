@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { CalendarClock, ChevronDown, Mic, Pause, Play } from 'lucide-react';
+import { ChevronDown, Mic, Pause, Play } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, RADIO_NAME, ShareRadioButton } from '@/features/radio/RadioUi';
+import { CallShowButton, RADIO_NAME, RadioProgrammeList, ShareRadioButton } from '@/features/radio/RadioUi';
 
 /** Texte WhatsApp (*gras*, _italique_) affiché proprement. */
 const plain = (t: string) => t.replace(/[*_~]/g, '').replace(/\n{3,}/g, '\n\n').trim();
@@ -34,7 +34,6 @@ export default function RadioAppPage() {
   const show = r.liveOn && r.onLive;
   const topic = r.liveOn && r.liveTopic ? plain(r.liveTopic) : '';
   const longTopic = topic.length > SUMMARY + 40;
-  const nextProg = r.programmes.find((p) => new Date(p.startsAt).getTime() > Date.now());
   const play = () => (r.active ? r.toggle() : r.start('all'));
 
   return (
@@ -93,6 +92,8 @@ export default function RadioAppPage() {
           {playing ? <Pause className="h-10 w-10" /> : <Play className="ml-1 h-10 w-10" />}
         </button>
         {r.loading && !r.ready && <p className="mt-3 text-sm text-white/55">{tx('Connexion au direct…', 'Connecting…', 'A ligar…')}</p>}
+        <RadioProgrammeList className="mt-6 w-full" />
+        <ShareRadioButton className="mt-3" />
         {r.failed && <p className="mt-3 text-sm text-red-200" role="alert">{tx('Le direct ne passe pas. Vérifiez votre connexion Internet puis réessayez.', 'Cannot reach the stream. Check your connection and try again.', 'O direto não passa. Verifique a ligação e tente de novo.')}</p>}
 
         {/* Les deux seules actions : appeler, envoyer un vocal */}
@@ -108,7 +109,6 @@ export default function RadioAppPage() {
             <Mic className="h-5 w-5" aria-hidden />{tx('Envoyer un vocal', 'Send a voice note', 'Enviar voz')}
           </button>
         </div>
-        <ShareRadioButton className="mt-3 w-full rounded-2xl" />
 
         {/* Sujet de l'émission, résumé puis en entier */}
         {topic && (
@@ -126,12 +126,6 @@ export default function RadioAppPage() {
           </section>
         )}
 
-        {nextProg && !r.liveOn && (
-          <p className="mt-6 inline-flex items-center gap-2 text-sm text-white/65">
-            <CalendarClock className="h-4 w-4 text-gold-300" aria-hidden />
-            {tx('Prochaine émission', 'Next show', 'Próxima emissão')} : {nextProg.title} · <span className="capitalize">{new Date(nextProg.startsAt).toLocaleString('fr-FR', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-          </p>
-        )}
       </main>
 
       <Modal open={vocal} onClose={() => setVocal(false)} title={tx('Envoyer un vocal', 'Send a voice note', 'Enviar voz')}>

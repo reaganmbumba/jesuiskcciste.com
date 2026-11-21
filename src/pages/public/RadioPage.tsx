@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, ShareRadioButton } from '@/features/radio/RadioUi';
+import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioProgrammeList, ShareRadioButton } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -61,7 +61,8 @@ export default function RadioPage() {
               </button>
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
-            <ShareRadioButton className="mt-4 max-w-md" />
+            <ShareRadioButton className="mt-3 justify-start" />
+            <RadioProgrammeList className="mt-5" />
 
             {r.liveTopic && (
               <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 sm:p-5">

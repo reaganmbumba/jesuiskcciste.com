@@ -9,6 +9,14 @@
 export type VoiceFx = 'pro' | 'echo' | 'reverb' | 'radio';
 export type Pad = 'jingle' | 'gong' | 'applause' | 'whoosh' | 'boom' | 'beep' | 'airhorn' | 'drumroll';
 
+/** Génériques d'émissions, prêts à lancer depuis le Studio. */
+export const GENERIQUES: { name: string; url: string }[] = [
+  { name: 'Journal KCC', url: '/radio/generiques/journal.mp3' },
+  { name: 'Tosungana', url: '/radio/generiques/tosungana.mp3' },
+  { name: 'Prière du matin', url: '/radio/generiques/priere.mp3' },
+  { name: 'Fin d’émission', url: '/radio/generiques/fin.mp3' },
+];
+
 export const PADS: { id: Pad; label: string; emoji: string }[] = [
   { id: 'jingle', label: 'Jingle', emoji: '🎵' },
   { id: 'applause', label: 'Applaudissements', emoji: '👏' },

@@ -11,7 +11,7 @@ import { currentProgramme, fetchRadioSettings, isLiveOn, radioSettingsOf, type R
 import { RADIO_NAME } from '@/features/radio/RadioUi';
 import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
-import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
+import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners } from '@/features/radio/listeners';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
@@ -487,6 +487,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     }
     playBuffer(ac, bus, buf);
   }
+  const genBufs = useRef(new Map<string, AudioBuffer>());
+  async function fireGenerique(url: string) {
+    const ac = ctx.current, bus = fx.current.bus;
+    if (!ac || !bus) return;
+    let buf = genBufs.current.get(url);
+    if (!buf) {
+      try { buf = await ac.decodeAudioData(await (await fetch(url)).arrayBuffer()); genBufs.current.set(url, buf); }
+      catch { notify('Le générique ne peut pas être lu.', 'error'); return; }
+    }
+    playBuffer(ac, bus, buf);
+  }
   useEffect(() => { if (fx.current.bus) fx.current.bus.gain.value = fxVol; }, [fxVol]);
 
   async function publishTopic() {
@@ -767,6 +778,11 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   <span className="block text-xl" aria-hidden>{p.emoji}</span>{p.label}
                 </button>
               ))}
+              {GENERIQUES.map((g) => (
+                <button key={g.url} type="button" disabled={!onAir} onClick={() => void fireGenerique(g.url)} className="truncate rounded-2xl bg-gold/25 px-1 py-3 text-center text-[11px] font-semibold text-white active:scale-95 disabled:opacity-40" title={`Générique : ${g.name}`}>
+                  <span className="block text-xl" aria-hidden>🎬</span>{g.name}
+                </button>
+              ))}
               {myPads.map((p, i) => (
                 <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
                   <span className="block text-xl" aria-hidden>🔊</span>{p.name}
@@ -962,6 +978,11 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   {PADS.map((p) => (
                     <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="bg-white px-2 py-3 text-center text-xs font-semibold text-night hover:bg-[#eef2f6] active:bg-[#dfe5ec] disabled:opacity-50">
                       <span className="block text-xl" aria-hidden>{p.emoji}</span>{p.label}
+                    </button>
+                  ))}
+                  {GENERIQUES.map((g) => (
+                    <button key={g.url} type="button" disabled={!onAir} onClick={() => void fireGenerique(g.url)} className="truncate bg-gold/30 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/40 disabled:opacity-50" title={`Générique : ${g.name}`}>
+                      <span className="block text-xl" aria-hidden>🎬</span>{g.name}
                     </button>
                   ))}
                   {myPads.map((p, i) => (

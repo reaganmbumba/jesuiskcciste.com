@@ -1,0 +1,7 @@
+name: tmp-etat
+on: { push: { branches: [claude/tmp-etat] } }
+jobs:
+  e:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -s https://jesuiskcciste.com/api/notifications/etat; echo

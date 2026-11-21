@@ -45,6 +45,10 @@ function Section({ title: t, action, children }: { title: string; action?: React
  * envoyés au relais du site (pas besoin de Caster.fm ni de Jitsi). Les auditeurs qui appellent
  * depuis /radio arrivent dans la file ; « Prendre à l'antenne » mélange leur voix à l'émission.
  */
+/** Silence à l'antenne : seuil (crête, 1 = plein niveau) et durée avant le jingle automatique. */
+const SILENCE_LEVEL = 0.012;
+const SILENCE_S = 30;
+
 export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?: 'colmatage' | 'studio' }) {
   const { settings, setSettings } = useSiteSettings();
   const { profile } = useAuth();
@@ -156,19 +160,47 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     });
   }, [queue, onAir]);
 
-  // Vu-mètre de l'antenne
+  // Vu-mètre de l'antenne, et détection du silence : au bout de SILENCE_S secondes sans aucun son
+  // à l'antenne (micro coupé, ligne tombée, chanson finie…), un jingle part tout seul, puis la musique.
+  const [silentFor, setSilentFor] = useState(0);
+  const [silenceAlert, setSilenceAlert] = useState<string | null>(null);
+  const silenceRef = useRef({ rec: false, paused: false, rescue: () => {} });
+  silenceRef.current = { rec: recMode, paused: recPaused, rescue: () => void rescueSilence() };
   useEffect(() => {
-    if (!onAir) return;
-    let raf = 0;
-    const buf = new Uint8Array(256);
+    if (!onAir) { setSilentFor(0); return; }
+    let raf = 0, loud = performance.now(), shown = 0;
+    const buf = new Uint8Array(1024);
     const tick = () => {
       const a = nodes.current.analyser;
-      if (a) { a.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); setLevel(m / 128); }
+      const now = performance.now();
+      if (a) {
+        a.getByteTimeDomainData(buf);
+        let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128));
+        setLevel(m / 128);
+        // en dessous d'environ -40 dB : silence (souffle du micro compris)
+        if (m / 128 > SILENCE_LEVEL || silenceRef.current.paused) loud = now;
+      }
+      const sec = Math.floor((now - loud) / 1000);
+      if (sec !== shown) { shown = sec; setSilentFor(sec); }
+      if (sec >= SILENCE_S) { loud = now; if (!silenceRef.current.rec) silenceRef.current.rescue(); }
       raf = requestAnimationFrame(tick);
     };
     tick();
     return () => cancelAnimationFrame(raf);
   }, [onAir]);
+
+  /** Silence à l'antenne : un jingle de la station tout de suite, puis la musique si elle est arrêtée. */
+  async function rescueSilence() {
+    const url = `/radio/jingles/kcc-${String(1 + Math.floor(Math.random() * 9)).padStart(2, '0')}.mp3`;
+    await fireGenerique(url);
+    const el = nodes.current.musicEl;
+    const musicStopped = !!el && (el.paused || el.ended);
+    if (musicStopped && tracksRef.current.length) window.setTimeout(() => playTrack(idxRef.current + 1), 6000);
+    const at = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const what = musicStopped && tracksRef.current.length ? 'un jingle, puis la musique' : 'un jingle';
+    setSilenceAlert(`${at} : ${SILENCE_S} secondes de silence à l’antenne. La radio a lancé ${what} toute seule. Vérifiez le micro et la ligne.`);
+    notify(`Silence à l’antenne : ${what} lancé automatiquement.`, 'error');
+  }
 
   /** Seul l'état du direct est écrit (fonction radio_live_set) : les animateurs radio n'ont aucun autre droit sur les réglages. */
   async function saveLive(live: Partial<RadioSettings['live']>) {
@@ -393,6 +425,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           const gain = ac.createGain();
           node.connect(gain);
           gain.connect(nodes.current.program!); // à l'antenne
+          if (nodes.current.analyser) gain.connect(nodes.current.analyser); // vu-mètre et détection du silence
           gain.connect(ac.destination); // dans le casque de l'animateur
           const pl = nodes.current.plateau ?? [];
           if (a.genre === 'plateau') {
@@ -658,6 +691,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 </button>
               </div>
             )}
+            {onAir && !recMode && silentFor >= 10 && <p className="mt-3 rounded-2xl bg-amber-500/20 px-3 py-2 text-sm font-semibold text-amber-200" role="status">🔇 Silence à l’antenne depuis {silentFor} s : jingle automatique à {SILENCE_S} s.</p>}
+            {silenceAlert && <p className="mt-3 flex items-start gap-2 rounded-2xl bg-red-600/25 px-3 py-2 text-left text-sm text-red-100" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}
             <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, la radio continue ses programmes. Tout le studio marche : micro, chansons qui s’enchaînent, jingles, effets, invités du plateau.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule.'}</p>
             <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {liveOn ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((liveOn ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {liveOn ? 'sur votre direct' : 'à l’écoute de la radio'}{liveOn && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
             {onAir && (
@@ -841,6 +876,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{listenerCounts?.total ?? '…'}</p>
             <p className="text-xs text-ink/55">{onAir && !recMode ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
+            {onAir && !recMode && silentFor >= 10 && <p className="mt-2 rounded bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900" role="status">🔇 Silence à l’antenne depuis {silentFor} s : jingle automatique à {SILENCE_S} s.</p>}
+            {silenceAlert && <p className="mt-2 flex items-start gap-2 rounded bg-red-100 px-3 py-2 text-sm text-red-900" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}
           </div>
           <div className="rounded border border-[#d3dae3] bg-white">
             <p className="flex items-center gap-2 border-b border-[#d3dae3] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#2b3648]"><Phone className="h-3.5 w-3.5 text-red-600" />Appels ({queue.length})</p>

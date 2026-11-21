@@ -62,6 +62,8 @@ export interface RadioLive {
   topic: string;
   /** Dernier signe de vie du Studio (toutes les 30 s pendant un direct du site). */
   beat?: string;
+  /** Où vont les appels des auditeurs : la régie du Studio, ou le WhatsApp de la radio (callUrl). */
+  callMode?: 'regie' | 'whatsapp';
   /** Nom de l'animateur à l'antenne (pour ne pas lancer deux directs en même temps). */
   host?: string;
 }
@@ -200,6 +202,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
       ...(typeof l.host === 'string' && l.host ? { host: l.host.slice(0, 80) } : {}),
       ...(typeof l.beat === 'string' && l.beat ? { beat: l.beat } : {}),
+      ...(l.callMode === 'whatsapp' || l.callMode === 'regie' ? { callMode: l.callMode } : {}),
     },
     programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
     semaine: parseSemaine((r as { semaine?: unknown } | undefined)?.semaine),

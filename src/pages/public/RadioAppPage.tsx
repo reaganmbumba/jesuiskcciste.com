@@ -99,7 +99,7 @@ export default function RadioAppPage() {
 
         {/* Les deux seules actions : appeler, envoyer un vocal */}
         <div className="grid w-full shrink-0 grid-cols-2 gap-3">
-          {(r.siteCalls || r.callUrl)
+          {(r.siteCalls || r.callUrl || r.whatsappCall)
             ? <CallShowButton className="w-full justify-center rounded-2xl py-[min(0.875rem,1.6dvh)] text-base" />
             : (
               <span className="flex flex-col items-center justify-center rounded-2xl border border-white/10 px-2 py-2.5 text-xs text-white/45">

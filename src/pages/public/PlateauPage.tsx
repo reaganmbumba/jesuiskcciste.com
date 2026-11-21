@@ -13,7 +13,12 @@ type Step = 'form' | 'connecting' | 'onair' | 'ended' | 'error';
  */
 export default function PlateauPage() {
   const { liveRtc, liveOn, liveTitle, prepare, stop } = useRadio();
-  const jeton = new URLSearchParams(window.location.search).get('c') ?? '';
+  const params = new URLSearchParams(window.location.search);
+  const jeton = params.get('c') ?? '';
+  // Brouillon : l'animateur enregistre sans diffuser ; sa console est désignée dans le lien.
+  const brouillonRtc = /^[A-Za-z0-9_-]{8,128}$/.test(params.get('s') ?? '') ? params.get('s')! : '';
+  const hostRtc = brouillonRtc || liveRtc;
+  const ready = !!brouillonRtc || liveOn;
   const [step, setStep] = useState<Step>('form');
   const [nom, setNom] = useState('');
   const [error, setError] = useState('');
@@ -50,7 +55,7 @@ export default function PlateauPage() {
 
   async function join() {
     if (!nom.trim()) { setError('Écrivez votre nom.'); return; }
-    if (!liveRtc || !supabase) { setError('L’émission n’a pas encore commencé. Réessayez dans un instant.'); return; }
+    if (!hostRtc || !supabase) { setError('L’émission n’a pas encore commencé. Réessayez dans un instant.'); return; }
     setError('');
     setStep('connecting');
     stop(); // la radio du site se coupe : sinon on s'entend avec du retard
@@ -67,7 +72,7 @@ export default function PlateauPage() {
       if (e) throw new Error(e.message);
       const r = data as { id: string; siege: number };
       id.current = r.id;
-      const back = await watchTrack(liveRtc, `plateau${r.siege}` as 'plateau1');
+      const back = await watchTrack(hostRtc, `plateau${r.siege}` as 'plateau1');
       pcs.current.push(back.pc);
       const addAll = () => back.stream.getTracks().forEach((t) => { if (!ms.getTracks().includes(t)) ms.addTrack(t); });
       addAll();
@@ -95,15 +100,15 @@ export default function PlateauPage() {
       <audio ref={ear} autoPlay className="hidden" />
       <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-gold font-display text-lg font-bold tracking-wider text-gold">KCC</span>
       <p className="mt-3 font-display text-2xl font-semibold">Plateau · Radio Je suis KCCiste</p>
-      <p className="mt-1 text-sm text-white/55">{liveOn ? liveTitle : 'En attente du début de l’émission…'}</p>
+      <p className="mt-1 text-sm text-white/55">{brouillonRtc ? 'Enregistrement d’une émission (pas encore diffusée)' : liveOn ? liveTitle : 'En attente du début de l’émission…'}</p>
       <div className="mt-6 w-full max-w-sm">
         {!jeton && <p className="rounded-xl bg-red-500/15 px-3 py-2 text-center text-sm text-red-200">Lien incomplet : demandez le lien du plateau à l’animateur.</p>}
         {jeton && (step === 'form' || step === 'error') && (
           <div className="space-y-3">
-            <p className="text-center text-sm text-white/65">Vous êtes invité sur le plateau : vous passez directement à l’antenne et tous les auditeurs vous entendent. Mettez des écouteurs.</p>
+            <p className="text-center text-sm text-white/65">{brouillonRtc ? 'Vous êtes invité à enregistrer une émission : vous êtes enregistré avec l’animateur, elle passera plus tard à la radio. Mettez des écouteurs.' : 'Vous êtes invité sur le plateau : vous passez directement à l’antenne et tous les auditeurs vous entendent. Mettez des écouteurs.'}</p>
             <input className={field} maxLength={60} placeholder="Votre nom" aria-label="Votre nom" value={nom} onChange={(e) => setNom(e.target.value)} autoComplete="name" />
             {error && <p className="rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-200" role="alert">{error}</p>}
-            <button type="button" onClick={join} disabled={!liveOn} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold py-3 font-semibold text-night disabled:opacity-50"><Mic className="h-5 w-5" />Rejoindre le plateau</button>
+            <button type="button" onClick={join} disabled={!ready} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gold py-3 font-semibold text-night disabled:opacity-50"><Mic className="h-5 w-5" />Rejoindre le plateau</button>
           </div>
         )}
         {step === 'connecting' && <p className="flex items-center justify-center gap-2 text-white/70"><Loader2 className="h-5 w-5 animate-spin" />Connexion au plateau…</p>}

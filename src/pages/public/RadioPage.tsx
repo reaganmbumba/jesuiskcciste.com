@@ -9,6 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
+import { DedicaceForm } from '@/features/radio/DedicaceForm';
 import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioProgrammeList, ShareRadioButton } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
@@ -81,6 +82,7 @@ export default function RadioPage() {
             <a href="#vocal" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold"><Mic className="h-4 w-4" aria-hidden />{tx('Envoyer un vocal à l’antenne', 'Send a voice message on air', 'Enviar uma mensagem de voz para o ar')}</a>
           </div>
           <SendVocalCard className="mt-8" />
+          <div className="mt-6 rounded-3xl border border-night/[0.06] bg-white p-5 shadow-soft"><DedicaceForm /></div>
         </div>
 
         <aside className="space-y-6 lg:col-span-2">

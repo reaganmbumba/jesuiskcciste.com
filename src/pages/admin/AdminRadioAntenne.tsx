@@ -13,6 +13,7 @@ import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
 import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
+import { DedicacesPanel } from '@/features/radio/DedicacesPanel';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -767,6 +768,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </ul>
           </section>
 
+          <DedicacesPanel dark />
           <YouTubeChat dark />
 
           <section className={card}>
@@ -1040,6 +1042,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <label className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#2b3648]">Volume des bruitages<input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="flex-1" /></label>
               </Section>
 
+              <DedicacesPanel />
               <YouTubeChat />
 
               <Section title="YouTube et Facebook">

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { watchTrack } from './rtc';
 import { useRadioPresence } from './listeners';
+import { worldHourFile } from './heureMonde';
 import { effectiveLive, fetchRadioSettings, isLiveOn, upcomingProgrammes, type RadioProgramme, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
 import { scheduleAt, scheduleFingerprint, slotOffset, stationSlot, type RadioSlot } from './schedule';
 
@@ -44,6 +45,9 @@ export function kinshasaTime(d = new Date()): { h: number; m: number } {
  */
 export function timeAnnouncement(d = new Date()): string[] {
   const { h, m } = kinshasaTime(d);
+  // À l'heure pile : la voix de femme qui donne l'heure en RDC et dans une ville du monde.
+  const world = m === 0 ? worldHourFile(d) : null;
+  if (world) return [world];
   const pad = (x: number) => String(x).padStart(2, '0');
   return ['/radio/heure/intro.mp3', `/radio/heure/h${pad(h)}.mp3`, ...(m ? [`/radio/heure/m${pad(m)}.mp3`] : []), '/radio/heure/outro.mp3'];
 }

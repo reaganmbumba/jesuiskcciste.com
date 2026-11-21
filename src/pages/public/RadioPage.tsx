@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
+import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, ShareRadioButton } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -60,6 +60,7 @@ export default function RadioPage() {
                 {r.active && r.playing ? tx('Pause', 'Pause', 'Pausa') : r.loading && !r.ready ? tx('Chargement…', 'Loading…', 'A carregar…') : tx('Écouter', 'Listen', 'Ouvir')}
               </button>
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
+              <ShareRadioButton />
             </div>
 
             {r.liveTopic && (

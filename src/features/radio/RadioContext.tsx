@@ -20,7 +20,8 @@ const CATALOG_REFRESH_MS = 10 * 60_000;
 /** Après une coupure du flux en direct, on ne le retente qu'après ce délai (un chant passe entre-temps). */
 const LIVE_RETRY_MS = 3 * 60_000;
 /** Habillage de l'antenne : un jingle « Radio Je suis KCCiste » tous les quelques titres, comme une vraie radio. */
-const JINGLES = Array.from({ length: 9 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
+// kcc-01 à 09 : jingles de la station ; kcc-10 à 15 : messages courts (partage, application, appels, recensement…)
+const JINGLES = Array.from({ length: 15 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
 /** Fondus d'entrée et de sortie de chaque titre (secondes) : les titres s'enchaînent sans coupure nette. */
 const FADE_IN = 1.5;
 const FADE_OUT = 3.5;

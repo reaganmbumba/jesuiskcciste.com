@@ -1,10 +1,12 @@
 /**
  * Effets de l'antenne radio, fabriqués dans le navigateur (Web Audio) :
+ * - traitement « voix pro » (actif par défaut) : coupe les graves parasites, chaleur, présence,
+ *   adoucit les « s », compresse et limite, pour une voix régulière et nette comme en studio ;
  * - effets sur la voix de l'animateur : écho, réverbération, voix « radio » ;
  * - bruitages à déclencher d'un clic pendant la musique (jingle, gong, applaudissements…).
  */
 
-export type VoiceFx = 'echo' | 'reverb' | 'radio';
+export type VoiceFx = 'pro' | 'echo' | 'reverb' | 'radio';
 export type Pad = 'jingle' | 'gong' | 'applause' | 'whoosh' | 'boom' | 'beep' | 'airhorn' | 'drumroll';
 
 export const PADS: { id: Pad; label: string; emoji: string }[] = [
@@ -43,20 +45,38 @@ export function voiceChain(ac: AudioContext, input: AudioNode, output: AudioNode
   const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 20;
   const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 20000;
   const pres = ac.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2500; pres.Q.value = 1; pres.gain.value = 0;
-  input.connect(hp); hp.connect(lp); lp.connect(pres); pres.connect(dry);
+  input.connect(hp); hp.connect(lp); lp.connect(pres);
+  // « voix pro » : passe-haut 80 Hz, chaleur, présence, dé-esseur, compresseur, limiteur
+  const proHp = ac.createBiquadFilter(); proHp.type = 'highpass'; proHp.frequency.value = 80; proHp.Q.value = 0.7;
+  const warm = ac.createBiquadFilter(); warm.type = 'lowshelf'; warm.frequency.value = 160; warm.gain.value = 2;
+  const presence = ac.createBiquadFilter(); presence.type = 'peaking'; presence.frequency.value = 3200; presence.Q.value = 0.9; presence.gain.value = 3;
+  const deEss = ac.createBiquadFilter(); deEss.type = 'peaking'; deEss.frequency.value = 7000; deEss.Q.value = 2; deEss.gain.value = -4;
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -24; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.18;
+  const makeup = ac.createGain(); makeup.gain.value = 1.9;
+  const limit = ac.createDynamicsCompressor();
+  limit.threshold.value = -3; limit.knee.value = 0; limit.ratio.value = 20; limit.attack.value = 0.001; limit.release.value = 0.08;
+  const proOn = ac.createGain(); proOn.gain.value = 1;
+  const proOff = ac.createGain(); proOff.gain.value = 0;
+  const voice = ac.createGain();
+  pres.connect(proHp); proHp.connect(warm); warm.connect(presence); presence.connect(deEss); deEss.connect(comp);
+  comp.connect(makeup); makeup.connect(limit); limit.connect(proOn); proOn.connect(voice);
+  pres.connect(proOff); proOff.connect(voice);
+  voice.connect(dry);
   // écho
   const delay = ac.createDelay(1); delay.delayTime.value = 0.32;
   const fb = ac.createGain(); fb.gain.value = 0.38;
   const echoWet = ac.createGain(); echoWet.gain.value = 0;
-  pres.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(echoWet);
+  voice.connect(delay); delay.connect(fb); fb.connect(delay); delay.connect(echoWet);
   // réverbération
   const conv = ac.createConvolver(); conv.buffer = impulse(ac);
   const revWet = ac.createGain(); revWet.gain.value = 0;
-  pres.connect(conv); conv.connect(revWet);
+  voice.connect(conv); conv.connect(revWet);
   for (const o of output) { dry.connect(o); echoWet.connect(o); revWet.connect(o); }
   const now = () => ac.currentTime;
   return {
     set(fx: VoiceFx, on: boolean) {
+      if (fx === 'pro') { proOn.gain.setTargetAtTime(on ? 1 : 0, now(), 0.05); proOff.gain.setTargetAtTime(on ? 0 : 1, now(), 0.05); }
       if (fx === 'echo') echoWet.gain.setTargetAtTime(on ? 0.55 : 0, now(), 0.05);
       if (fx === 'reverb') revWet.gain.setTargetAtTime(on ? 0.6 : 0, now(), 0.05);
       if (fx === 'radio') {

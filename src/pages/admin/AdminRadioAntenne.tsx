@@ -83,7 +83,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [micMuted, setMicMuted] = useState(false);
   const [level, setLevel] = useState(0);
   // Effets : sur la voix (écho, réverbération, voix radio) et bruitages d'un clic
-  const [voiceFx, setVoiceFx] = useState<Record<VoiceFx, boolean>>({ echo: false, reverb: false, radio: false });
+  const [voiceFx, setVoiceFx] = useState<Record<VoiceFx, boolean>>({ pro: true, echo: false, reverb: false, radio: false });
   const [fxVol, setFxVol] = useState(0.8);
   const [myPads, setMyPads] = useState<{ name: string; buf: AudioBuffer | null; file: File }[]>([]);
   const fx = useRef<{ chain?: ReturnType<typeof voiceChain>; bus?: GainNode }>({});
@@ -755,8 +755,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className={hd}>Effets
               <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ bruitage<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} /></label>
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              {([['echo', 'Écho'], ['reverb', 'Réverb'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+            <div className="grid grid-cols-4 gap-2">
+              {([['pro', 'Voix pro'], ['echo', 'Écho'], ['reverb', 'Réverb'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
                 <button key={k} type="button" disabled={!onAir} onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]}
                   className={`rounded-xl px-2 py-2.5 text-sm font-semibold disabled:opacity-40 ${voiceFx[k] ? 'bg-gold text-night' : 'bg-white/[0.08] text-white'}`}>{l}</button>
               ))}
@@ -948,7 +948,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               <Section title="Effets sur la voix">
                 <table className="w-full"><thead><tr><th className={th}>Effet</th><th className={th}>État</th></tr></thead>
                   <tbody>
-                    {([['echo', 'Écho'], ['reverb', 'Réverbération'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+                    {([['pro', 'Voix pro (studio)'], ['echo', 'Écho'], ['reverb', 'Réverbération'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
                       <tr key={k}><td className={td}>{l}</td><td className={td + ' text-center'}>
                         <button type="button" onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]} disabled={!onAir}
                           className={`rounded px-3 py-0.5 text-xs font-semibold ${voiceFx[k] ? 'bg-emerald-600 text-white' : 'border border-[#d3dae3] text-night'} disabled:opacity-40`}>{voiceFx[k] ? 'Activé' : 'Désactivé'}</button>

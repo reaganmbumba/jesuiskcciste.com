@@ -9,7 +9,7 @@
  *   GET  /api/notifications/etat                                           → { pret } : les clés secrètes sont-elles en place ?
  *
  * Toutes les minutes (déclencheur « crons » de wrangler.jsonc), le Worker :
- *   1. ajoute à la file les directs qui commencent, les nouveaux communiqués et
+ *   1. ajoute à la file les directs qui commencent (cultes et radio), les nouveaux communiqués et
  *      les nouvelles prédications (base Supabase + contenu livré avec le site,
  *      lu dans /notifications-nouveautes.json, écrit au build) ;
  *   2. envoie la file par lots.
@@ -111,9 +111,9 @@ function readTopics(t: unknown): Topic[] {
 const readLang = (l: unknown): Lang => (LANGS.includes(l as Lang) ? (l as Lang) : 'fr');
 
 const WELCOME: Record<Lang, [string, string]> = {
-  fr: ['Notifications activées 🔔', 'Vous serez prévenu ici des cultes en direct, des communiqués et des nouvelles prédications. Paix à vous !'],
-  en: ['Notifications turned on 🔔', 'You will be told here about live services, announcements and new sermons. Peace be with you!'],
-  pt: ['Notificações ativadas 🔔', 'Será avisado aqui dos cultos em direto, dos comunicados e das novas pregações. Paz a si!'],
+  fr: ['Notifications activées 🔔', 'Vous serez prévenu ici des cultes et de la radio en direct, des communiqués et des nouvelles prédications. Paix à vous !'],
+  en: ['Notifications turned on 🔔', 'You will be told here about live services and radio, announcements and new sermons. Peace be with you!'],
+  pt: ['Notificações ativadas 🔔', 'Será avisado aqui dos cultos e da rádio em direto, dos comunicados e das novas pregações. Paz a si!'],
 };
 const TEST: Record<Lang, [string, string]> = {
   fr: ['Essai réussi ✅', 'Les notifications de JE SUIS KCCiste arrivent bien sur cet appareil.'],
@@ -250,6 +250,7 @@ export async function flushQueue(env: PushEnv, budget: Budget, server?: ServerKe
 
 
 const LIVE_TITLE: Texts = { fr: '🔴 Culte en direct maintenant', en: '🔴 Live service now', pt: '🔴 Culto em direto agora' };
+const RADIO_TITLE: Texts = { fr: '📻 Radio en direct maintenant', en: '📻 Radio live now', pt: '📻 Rádio em direto agora' };
 const SERMON_TITLE: Texts = { fr: '🎙️ Nouvelle prédication', en: '🎙️ New sermon', pt: '🎙️ Nova pregação' };
 
 const all = (s: string): Texts => ({ fr: s, en: s, pt: s });
@@ -283,6 +284,40 @@ export function candidatesFrom(feed: Feed, db: { lives: Feed['lives']; announcem
   return out;
 }
 
+/**
+ * Radio : alerte quand un animateur passe à l'antenne (/admin/radio, /admin/radio/antenne)
+ * ou quand une émission programmée commence (lue par le robot radio). Même sujet que les
+ * cultes (« direct ») : les abonnés aux directs sont prévenus. radio = valeur « radio »
+ * du réglage public (snake_case, telle qu'en base). Exporté pour les tests.
+ */
+export function radioCandidates(radio: unknown, now = Date.now()): NewMessage[] {
+  if (!radio || typeof radio !== 'object') return [];
+  const r = radio as { live?: Record<string, unknown>; programmes?: unknown };
+  const within = (iso: unknown) => { const t = typeof iso === 'string' ? Date.parse(iso) : NaN; return !Number.isNaN(t) && t <= now + 60000 && t >= now - 30 * 60000; };
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  const l = r.live ?? {};
+  const started = l.started_at ?? l.startedAt;
+  if (l.on_air === true || l.onAir === true) {
+    if ((str(l.url) || str(l.rtc)) && within(started)) {
+      const title = str(l.title) || 'Émission en direct';
+      return [{ key: `radio:${str(started)}`, topic: 'direct', title: RADIO_TITLE, body: all(cut(`${title} — Radio Je suis KCCiste`, 300)), url: '/radio', image: null }];
+    }
+    // Un direct déjà en cours garde l'antenne : pas d'alerte pour une émission programmée.
+    if (str(l.url) || str(l.rtc)) return [];
+  }
+  const out: NewMessage[] = [];
+  for (const p of Array.isArray(r.programmes) ? r.programmes : []) {
+    if (!p || typeof p !== 'object') continue;
+    const o = p as Record<string, unknown>;
+    const startsAt = o.starts_at ?? o.startsAt;
+    if (!within(startsAt) || !/^https:\/\//.test(str(o.url))) continue;
+    const title = str(o.title) || 'Émission programmée';
+    out.push({ key: `radio-prog:${str(o.id) || str(startsAt)}`, topic: 'direct', title: RADIO_TITLE, body: all(cut(`${title} — Radio Je suis KCCiste`, 300)), url: '/radio', image: null });
+    break;
+  }
+  return out;
+}
+
 async function rows<T>(res: Response): Promise<T[]> {
   return res.ok ? ((await res.json()) as T[]) : [];
 }
@@ -295,15 +330,20 @@ async function enqueueNew(env: PushEnv, budget: Budget, now = Date.now()) {
   } catch { /* fichier absent : seulement la base */ }
 
   const iso = (ms: number) => encodeURIComponent(new Date(ms).toISOString());
-  const [lives, announcements, sermons] = await Promise.all([
+  const [lives, announcements, sermons, radio] = await Promise.all([
     sb(env, budget, `livestreams?select=id,title,starts_at,duration_minutes&is_cancelled=eq.false&ended_at=is.null&starts_at=gte.${iso(now - 30 * 60000)}&starts_at=lte.${iso(now + 60000)}&limit=5`)
       .then((r) => rows<{ id: string; title: string; starts_at: string; duration_minutes: number }>(r)).catch(() => []),
     sb(env, budget, `announcements?select=id,title,summary,image_url,published_at&status=eq.published&audience=eq.public&published_at=gte.${iso(now - 6 * 3600000)}&published_at=lte.${iso(now + 5 * 60000)}&limit=5`)
       .then((r) => rows<{ id: string; title: string; summary: string; image_url: string | null; published_at: string }>(r)).catch(() => []),
     sb(env, budget, `audio_sermons?select=id,title,preacher_title,preacher_name,created_at&published=eq.true&created_at=gte.${iso(now - 6 * 3600000)}&limit=5`)
       .then((r) => rows<{ id: string; title: string; preacher_title: string | null; preacher_name: string; created_at: string }>(r)).catch(() => []),
+    sb(env, budget, 'site_settings?select=value&key=eq.public&limit=1')
+      .then((r) => rows<{ value: { radio?: unknown } | null }>(r)).then((x) => x[0]?.value?.radio ?? null).catch(() => null),
   ]);
-  const list = candidatesFrom(feed, { lives: lives.map((l) => ({ id: l.id, title: l.title, startsAt: l.starts_at, durationMinutes: l.duration_minutes })), announcements, sermons }, now);
+  const list = [
+    ...candidatesFrom(feed, { lives: lives.map((l) => ({ id: l.id, title: l.title, startsAt: l.starts_at, durationMinutes: l.duration_minutes })), announcements, sermons }, now),
+    ...radioCandidates(radio, now),
+  ];
   if (!list.length) return;
   await sb(env, budget, 'push_messages?on_conflict=key', { method: 'POST', prefer: 'resolution=ignore-duplicates,return=minimal', body: JSON.stringify(list) });
 }

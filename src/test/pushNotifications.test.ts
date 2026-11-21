@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { b64urlDecode, b64urlEncode, encryptPayload, isPushEndpoint, newServerKey } from '../../worker/webpush';
-import { candidatesFrom, flushQueue, handleNotifications, runScheduled } from '../../worker/notifications';
+import { candidatesFrom, flushQueue, handleNotifications, radioCandidates, runScheduled } from '../../worker/notifications';
 import { buildNotificationFeed } from '@/features/notifications/feed';
 import { VAPID_PUBLIC_KEY } from '@/features/notifications/config';
 
@@ -196,5 +196,22 @@ describe('envoi de la file', () => {
     const r = await handleNotifications(new Request('https://x/api/notifications/abonnement', { method: 'POST', body: '{}' }), { ...env, VAPID_PRIVATE_KEY: undefined }, 'abonnement');
     expect(r.status).toBe(503);
     expect(await handleNotifications(new Request('https://x/api/notifications/etat'), env, 'etat').then((x) => x.json())).toEqual({ pret: false });
+  });
+});
+
+describe('alertes radio', () => {
+  const at = (min: number) => new Date(NOW + min * 60000).toISOString();
+  it('animateur qui passe à l’antenne : une alerte, sujet « direct », vers /radio', () => {
+    const radio = { live: { on_air: true, url: '', rtc: 'session-abc123', title: 'Matinale KCC', started_at: at(-2) } };
+    expect(radioCandidates(radio, NOW)).toMatchObject([{ key: `radio:${at(-2)}`, topic: 'direct', url: '/radio', body: { fr: 'Matinale KCC — Radio Je suis KCCiste' } }]);
+    expect(radioCandidates({ live: { ...radio.live, started_at: at(-31) } }, NOW)).toHaveLength(0);
+    expect(radioCandidates({ live: { ...radio.live, on_air: false } }, NOW)).toHaveLength(0);
+  });
+  it('émission programmée qui commence, sauf si un direct garde l’antenne', () => {
+    const prog = { id: 'p1', title: 'Écho du Ciel', url: 'https://jesuiskcciste.com/radio/emissions/a.mp3', starts_at: at(0), duration_seconds: 1800 };
+    expect(radioCandidates({ live: { on_air: false }, programmes: [prog] }, NOW)).toMatchObject([{ key: 'radio-prog:p1', topic: 'direct' }]);
+    expect(radioCandidates({ programmes: [{ ...prog, starts_at: at(10) }] }, NOW)).toHaveLength(0);
+    expect(radioCandidates({ live: { on_air: true, url: 'https://stream.zeno.fm/x', started_at: at(-90) }, programmes: [prog] }, NOW)).toHaveLength(0);
+    expect(radioCandidates(null, NOW)).toHaveLength(0);
   });
 });

@@ -1,9 +1,10 @@
-// Radio Je suis KCCiste : l'antenne de la radio (jesuiskcciste.com/admin/radio/antenne)
+// Radio Je suis KCCiste : le Studio de la radio (jesuiskcciste.com/radio/studio, une seule page)
 // dans sa propre fenêtre Windows, avec le micro autorisé et la musique qui continue
 // même quand la fenêtre est réduite.
 const { app, BrowserWindow, Menu, session, shell, dialog } = require('electron');
 
-const HOME = 'https://jesuiskcciste.com/admin/radio/antenne?app=1';
+const HOME = 'https://jesuiskcciste.com/radio/studio';
+const COLMATAGE = 'https://jesuiskcciste.com/admin/radio/antenne?app=1';
 const OK_HOSTS = new Set(['jesuiskcciste.com', 'www.jesuiskcciste.com']);
 const ours = (u) => { try { return OK_HOSTS.has(new URL(u).hostname); } catch { return false; } };
 
@@ -60,7 +61,8 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, perm, origin) => ours(origin || (wc && wc.getURL()) || '') && allowed.has(perm));
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'Radio', submenu: [
-      { label: 'Antenne en direct', accelerator: 'CmdOrCtrl+H', click: () => win && win.loadURL(HOME) },
+      { label: 'Studio', accelerator: 'CmdOrCtrl+H', click: () => win && win.loadURL(HOME) },
+      { label: 'Antenne (ancienne présentation)', click: () => win && win.loadURL(COLMATAGE) },
       { label: 'Page publique de la radio', click: () => win && win.loadURL('https://jesuiskcciste.com/radio') },
       { type: 'separator' }, { role: 'reload', label: 'Recharger' }, { role: 'togglefullscreen', label: 'Plein écran' },
       { role: 'zoomIn', label: 'Agrandir' }, { role: 'zoomOut', label: 'Réduire' }, { role: 'resetZoom', label: 'Taille normale' },

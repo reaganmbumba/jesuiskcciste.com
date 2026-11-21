@@ -17,13 +17,28 @@ export const RADIO_URL = `${PUBLIC_SITE_URL}/radio`;
  * pour que la radio continue de jouer (feuille de partage du téléphone, ou WhatsApp /
  * Facebook dans une nouvelle fenêtre, ou lien copié).
  */
+type Tx = (fr: string, en: string, pt: string) => string;
+const at = (iso: string) => new Date(iso).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Kinshasa', hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+
+/** Le message partagé nomme ce qu'on écoute en ce moment, et l'émission suivante. */
+export function shareRadioText(tx: Tx, current: Pick<RadioItem, 'kind' | 'title' | 'subtitle'> | null, onLive: boolean, programmes: { title: string; startsAt: string }[] = [], now = Date.now()): string {
+  const by = current?.subtitle ? ` (${current.subtitle})` : '';
+  const now1 = !current ? tx(`J’écoute ${RADIO_NAME}.`, `I’m listening to ${RADIO_NAME}.`, `Estou a ouvir a ${RADIO_NAME}.`)
+    : onLive ? tx(`J’écoute l’émission « ${current.title} » en ce moment sur ${RADIO_NAME}.`, `I’m listening to “${current.title}” right now on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}» agora na ${RADIO_NAME}.`)
+    : current.kind === 'sermon' ? tx(`J’écoute la prédication « ${current.title} »${by} sur ${RADIO_NAME}.`, `I’m listening to the sermon “${current.title}”${by} on ${RADIO_NAME}.`, `Estou a ouvir a pregação «${current.title}»${by} na ${RADIO_NAME}.`)
+    : current.kind === 'song' ? tx(`J’écoute le chant « ${current.title} »${by} sur ${RADIO_NAME}.`, `I’m listening to “${current.title}”${by} on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}»${by} na ${RADIO_NAME}.`)
+    : tx(`J’écoute « ${current.title} » sur ${RADIO_NAME}.`, `I’m listening to “${current.title}” on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}» na ${RADIO_NAME}.`);
+  const next = programmes.filter((p) => new Date(p.startsAt).getTime() > now && (!onLive || p.title !== current?.title)).sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  const then = next ? ' ' + tx(`Prochaine émission : « ${next.title} » à ${at(next.startsAt)}.`, `Next show: “${next.title}” at ${at(next.startsAt)}.`, `Próxima emissão: «${next.title}» às ${at(next.startsAt)}.`) : '';
+  return `${now1}${then} ${tx('Écoutez avec moi, c’est gratuit :', 'Listen with me, it’s free:', 'Ouça comigo, é grátis:')}`;
+}
+
 export function ShareRadioButton({ className, compact }: { className?: string; compact?: boolean }) {
   const { tx } = useI18n();
-  const { current, onLive } = useRadio();
+  const { current, onLive, active, programmes } = useRadio();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const what = onLive && current ? tx(`en direct : « ${current.title} »`, `live: “${current.title}”`, `em direto: «${current.title}»`) : '';
-  const text = tx(`J’écoute ${RADIO_NAME}${what ? ` ${what}` : ''}. Écoutez avec moi, c’est gratuit :`, `I’m listening to ${RADIO_NAME}${what ? ` ${what}` : ''}. Listen with me, it’s free:`, `Estou a ouvir a ${RADIO_NAME}${what ? ` ${what}` : ''}. Ouça comigo, é grátis:`);
+  const text = shareRadioText(tx, active ? current : null, onLive, programmes);
   const full = `${text} ${RADIO_URL}`;
 
   async function share() {

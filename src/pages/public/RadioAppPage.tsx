@@ -5,7 +5,7 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, RADIO_NAME } from '@/features/radio/RadioUi';
+import { CallShowButton, RADIO_NAME, ShareRadioButton } from '@/features/radio/RadioUi';
 
 /** Texte WhatsApp (*gras*, _italique_) affiché proprement. */
 const plain = (t: string) => t.replace(/[*_~]/g, '').replace(/\n{3,}/g, '\n\n').trim();
@@ -108,6 +108,7 @@ export default function RadioAppPage() {
             <Mic className="h-5 w-5" aria-hidden />{tx('Envoyer un vocal', 'Send a voice note', 'Enviar voz')}
           </button>
         </div>
+        <ShareRadioButton className="mt-3 w-full justify-center rounded-2xl py-3.5 text-base" />
 
         {/* Sujet de l'émission, résumé puis en entier */}
         {topic && (

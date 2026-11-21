@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, X } from 'lucide-react';
+import { Check, Link2, MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, Share2, X } from 'lucide-react';
+import { PUBLIC_SITE_URL } from '@/config/site';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
@@ -9,6 +10,58 @@ import { useRadioListeners } from './listeners';
 import type { RadioItem } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
+export const RADIO_URL = `${PUBLIC_SITE_URL}/radio`;
+
+/**
+ * « Inviter quelqu'un à écouter » : partage du lien de la radio sans jamais quitter la page,
+ * pour que la radio continue de jouer (feuille de partage du téléphone, ou WhatsApp /
+ * Facebook dans une nouvelle fenêtre, ou lien copié).
+ */
+export function ShareRadioButton({ className, compact }: { className?: string; compact?: boolean }) {
+  const { tx } = useI18n();
+  const { current, onLive } = useRadio();
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const what = onLive && current ? tx(`en direct : « ${current.title} »`, `live: “${current.title}”`, `em direto: «${current.title}»`) : '';
+  const text = tx(`J’écoute ${RADIO_NAME}${what ? ` ${what}` : ''}. Écoutez avec moi, c’est gratuit :`, `I’m listening to ${RADIO_NAME}${what ? ` ${what}` : ''}. Listen with me, it’s free:`, `Estou a ouvir a ${RADIO_NAME}${what ? ` ${what}` : ''}. Ouça comigo, é grátis:`);
+  const full = `${text} ${RADIO_URL}`;
+
+  async function share() {
+    // Feuille de partage du téléphone : la page (et la radio) restent ouvertes derrière.
+    if (typeof navigator !== 'undefined' && navigator.share && window.matchMedia?.('(pointer: coarse)').matches) {
+      try { await navigator.share({ title: RADIO_NAME, text, url: RADIO_URL }); return; } catch (e) { if ((e as Error)?.name === 'AbortError') return; }
+    }
+    setOpen((v) => !v);
+  }
+  async function copy() {
+    try { await navigator.clipboard.writeText(full); } catch {
+      const t = document.createElement('textarea'); t.value = full; document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); } catch { /* rien */ }
+      t.remove();
+    }
+    setCopied(true); window.setTimeout(() => setCopied(false), 2500);
+  }
+  const ext = 'flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-night hover:bg-night/5';
+  return (
+    <span className={cn('relative inline-flex', className?.includes('w-full') && 'w-full')}>
+      <button type="button" onClick={() => void share()} aria-expanded={open} aria-label={tx('Partager la radio', 'Share the radio', 'Partilhar a rádio')}
+        className={cn(compact ? 'grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white' : 'inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10', className)}>
+        <Share2 className={compact ? 'h-4 w-4' : 'h-4 w-4'} aria-hidden />{!compact && tx('Inviter à écouter', 'Invite to listen', 'Convidar a ouvir')}
+      </button>
+      {open && (
+        <>
+          <button type="button" className="fixed inset-0 z-40 cursor-default" aria-label={tx('Fermer', 'Close', 'Fechar')} onClick={() => setOpen(false)} />
+          <span role="menu" className={cn('absolute z-50 w-60 rounded-2xl bg-white p-1.5 shadow-lift', compact ? 'bottom-full right-0 mb-2' : 'left-0 top-full mt-2')}>
+            <span className="block px-3 pb-1 pt-2 text-xs text-ink/55">{tx('La radio continue de jouer pendant le partage.', 'The radio keeps playing while you share.', 'A rádio continua a tocar durante a partilha.')}</span>
+            <a role="menuitem" href={`https://wa.me/?text=${encodeURIComponent(full)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={ext}><MessageCircle className="h-4 w-4 text-emerald-600" />WhatsApp</a>
+            <a role="menuitem" href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(RADIO_URL)}`} target="_blank" rel="noopener noreferrer" onClick={() => setOpen(false)} className={ext}><Share2 className="h-4 w-4 text-blue-600" />Facebook</a>
+            <button role="menuitem" type="button" onClick={() => void copy()} className={cn(ext, 'w-full')}>{copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Link2 className="h-4 w-4" />}{copied ? tx('Lien copié !', 'Link copied!', 'Link copiado!') : tx('Copier le lien', 'Copy the link', 'Copiar o link')}</button>
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
 
 export function KindIcon({ item, className }: { item: Pick<RadioItem, 'kind'>; className?: string }) {
   const Icon = item.kind === 'live' ? Radio : item.kind === 'sermon' ? Mic : item.kind === 'news' ? Newspaper : item.kind === 'vocal' ? MessageCircle : Music2;
@@ -100,6 +153,7 @@ export function MiniRadioPlayer() {
         <button type="button" onClick={toggle} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold text-night hover:bg-gold-300" aria-label={playing ? tx('Pause', 'Pause', 'Pausa') : tx('Écouter', 'Play', 'Ouvir')}>
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
+        <ShareRadioButton compact />
         <button type="button" onClick={stop} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white" aria-label={tx('Fermer la radio', 'Close the radio', 'Fechar a rádio')}><X className="h-4 w-4" /></button>
       </div>
       {!onLive && <div className="h-0.5 bg-white/10" aria-hidden><div className="h-full bg-gold transition-[width] duration-500" style={{ width: `${pct}%` }} /></div>}

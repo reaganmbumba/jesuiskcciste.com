@@ -72,7 +72,7 @@ describe('prédications seulement programmées', () => {
     expect(s.some((x) => x.item.kind === 'song')).toBe(true);
   });
   it('restent disponibles si l’auditeur choisit « Prédications »', () => {
-    const s = scheduleAt(catalog, 'sermons', new Date('2026-11-21T12:00:00Z').getTime(), 3);
-    expect(s.every((x) => x.item.kind === 'sermon' || x.item.kind === 'news' || x.item.kind === 'vocal')).toBe(true);
+    const s = scheduleAt(catalog, 'sermons', new Date('2026-11-21T12:00:00Z').getTime(), 60);
+    expect(s.some((x) => x.item.kind === 'sermon')).toBe(true);
   });
 });

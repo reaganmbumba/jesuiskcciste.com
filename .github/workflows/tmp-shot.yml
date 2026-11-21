@@ -1,0 +1,16 @@
+name: tmp-shot
+on: { push: { branches: [claude/radio-app-suivant] } }
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsc -b && npx vitest run
+      - run: npm run build
+      - run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: (npx vite preview --port 4173 &) ; sleep 5; cp .github/tmp/shot.mjs ./shot.mjs && node shot.mjs
+      - uses: actions/upload-artifact@v4
+        with: { name: shot, path: shot-app.png }

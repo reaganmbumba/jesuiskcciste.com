@@ -1,8 +1,8 @@
 /**
  * Alerte de la radio dans le site et l'application : quand une émission commence (animateur
  * à l'antenne ou émission programmée) ou va commencer (rappel 15 min avant), une fenêtre
- * s'ouvre sur n'importe quelle page avec une petite sonnerie, puis le message est dit à voix
- * haute (« Paix, Reagan ! … »). Un toucher ouvre la radio en plein écran (/radio/app).
+ * s'ouvre sur n'importe quelle page avec l'alarme de l'application radio (jingle
+ * d'annonce avec la voix) et le message écrit « Paix, Reagan ! … ». Un toucher ouvre la radio en plein écran (/radio/app).
  *
  * Les clés sont les mêmes que celles des notifications du téléphone (worker/notifications.ts),
  * et une alerte déjà montrée ne revient pas.
@@ -61,49 +61,30 @@ export function radioAlertMessage(a: RadioAlert, firstName: string | null | unde
   return { greeting, text };
 }
 
-/* ---------- Son et voix ---------- */
+/* ---------- Alarme ---------- */
 
-let ac: AudioContext | null = null;
-/** Petite sonnerie (trois notes, deux fois), fabriquée dans le navigateur. */
-export function playAlertChime(): number {
+/**
+ * L'alarme d'émission de l'application Radio Je suis KCCiste (jingle d'annonce avec la voix),
+ * la même que radio/android/app/src/main/res/raw/alarme_emission.mp3.
+ */
+export const ALARM_URL = '/radio/alarme-emission.mp3';
+/** L'alarme sonne deux fois (environ 20 s), puis s'arrête seule. */
+export const ALARM_PLAYS = 2;
+
+let alarm: HTMLAudioElement | null = null;
+export function playAlarm() {
   try {
-    const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return 0;
-    ac ??= new AC();
-    void ac.resume();
-    const t0 = ac.currentTime + 0.05;
-    const notes = [784, 988, 1175];
-    for (let r = 0; r < 2; r++) {
-      notes.forEach((f, i) => {
-        const t = t0 + r * 0.9 + i * 0.18;
-        const o = ac!.createOscillator();
-        const g = ac!.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(f, t);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-        o.connect(g).connect(ac!.destination);
-        o.start(t);
-        o.stop(t + 0.55);
-      });
-    }
-    return 1900;
-  } catch { return 0; }
+    stopAlarm();
+    const a = new Audio(ALARM_URL);
+    let left = ALARM_PLAYS;
+    a.onended = () => { left -= 1; if (left > 0) { a.currentTime = 0; void a.play().catch(() => undefined); } };
+    alarm = a;
+    void a.play().catch(() => undefined);
+  } catch { /* pas de son sur cet appareil */ }
 }
-
-/** Dit le message avec la voix du téléphone (si l'appareil en a une). « KCC » se dit « Kasésé ». */
-export function speakAlert(text: string, lang: Lang = 'fr') {
-  try {
-    const synth = window.speechSynthesis;
-    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(text.replace(/KCCiste/g, 'Kasésiste').replace(/KCC/g, 'Kasésé').replace(/[«»“”]/g, ''));
-    const code = { fr: 'fr-FR', en: 'en-US', pt: 'pt-PT' }[lang];
-    u.lang = code;
-    u.rate = 0.98;
-    const v = synth.getVoices().find((x) => x.lang.toLowerCase().startsWith(lang));
-    if (v) u.voice = v;
-    synth.speak(u);
-  } catch { /* pas de voix */ }
+export function stopAlarm() {
+  if (!alarm) return;
+  alarm.onended = null;
+  alarm.pause();
+  alarm = null;
 }

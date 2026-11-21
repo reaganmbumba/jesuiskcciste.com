@@ -88,6 +88,7 @@ function publish() {
 }
 
 let stopTimer: ReturnType<typeof setTimeout> | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
 function update() {
   const needed = me.listening || viewers > 0;
   if (needed) {
@@ -97,7 +98,15 @@ function update() {
       channel = ch;
       ch.on('presence', { event: 'sync' }, () => sync(ch)).subscribe((status) => {
         if (status === 'SUBSCRIBED') { subscribed = true; publish(); }
-        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') { subscribed = false; emit(null); }
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          // Coupure (réseau faible, téléphone en veille) : on ferme ce canal et on se reconnecte un peu plus tard.
+          subscribed = false;
+          if (channel !== ch) return;
+          channel = null;
+          void supabase?.removeChannel(ch);
+          clearTimeout(retryTimer);
+          retryTimer = setTimeout(update, 5000);
+        }
       });
     } else publish();
   } else if (channel) {
@@ -138,6 +147,8 @@ export function useRadioPresence(listening: boolean, live: boolean) {
   }, [listening, live]);
   useEffect(() => () => { me = { listening: false, live: false }; pinging(false); update(); }, []);
 }
+
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !subscribed) { clearTimeout(retryTimer); update(); } });
 
 function subscribe(l: () => void) {
   listeners.add(l);

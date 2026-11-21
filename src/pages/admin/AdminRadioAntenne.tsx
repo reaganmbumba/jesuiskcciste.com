@@ -143,7 +143,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [recMode, setRecMode] = useState(false);
   const [recPaused, setRecPaused] = useState(false);
   const ctx = useRef<AudioContext | null>(null);
-  const listenerCounts = useRadioListeners();
+  const liveCounts = useRadioListeners();
+  // Compteur de secours (écoutes signalées ces 6 dernières minutes) quand le temps réel ne répond pas
+  const [secours, setSecours] = useState<{ total: number; live: number } | null>(null);
+  useEffect(() => {
+    if (liveCounts || !supabase) return;
+    const get = () => void supabase!.rpc('radio_auditeurs_maintenant').then(({ data }) => { if (data) setSecours(data as { total: number; live: number }); });
+    get();
+    const t = window.setInterval(get, 60_000);
+    return () => window.clearInterval(t);
+  }, [!!liveCounts]); // eslint-disable-line react-hooks/exhaustive-deps
+  const listenerCounts = liveCounts ?? (secours ? { ...secours, places: [] as RadioPlace[], livePlaces: [] as RadioPlace[] } : null);
   const liveOn = onAir && !recMode;
   const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[]; micAn?: AnalyserNode; duckM?: GainNode; duckP?: GainNode; decks?: { el: HTMLAudioElement; g: GainNode }[] }>({});

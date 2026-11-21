@@ -18,6 +18,7 @@ import { RadioStats } from '@/features/radio/RadioStats';
 import { JournalAntenne } from '@/features/radio/JournalAntenne';
 import { Conduite } from '@/features/radio/Conduite';
 import { Charte } from '@/features/radio/Charte';
+import { Secours } from '@/features/radio/Secours';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -813,6 +814,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <RadioStats dark />
           <JournalAntenne dark />
           <Charte dark />
+          <Secours dark />
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
@@ -1091,6 +1093,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               <RadioStats />
               <JournalAntenne />
               <Charte />
+              <Secours />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarClock, Download, Loader2, Plus, RefreshCw, Search, Trash2, Upload, Wand2, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CalendarRange, Download, Loader2, Plus, RefreshCw, Search, Trash2, Upload, Wand2, X } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/lib/supabase';
 import { uploadSiteAudio } from '@/features/content/siteContent';
 import { useRadio } from './RadioContext';
 import { radioSettingsOf, type RadioProgramme } from './radio';
 import { drawProgrammePoster } from './programmePoster';
+import { WeekTemplate } from './WeekTemplate';
 
 /** Kinshasa : UTC+1 toute l'année. */
 const TZ = 'Africa/Kinshasa';
@@ -52,10 +53,14 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [now, setNow] = useState(Date.now);
+  const [week, setWeek] = useState(false);
   useEffect(() => { prepare(); }, [prepare]);
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 20_000); return () => window.clearInterval(t); }, []);
 
-  const all = radioSettingsOf(settings).programmes;
+  const { programmes: all, semaine } = radioSettingsOf(settings);
+  // Alerte : demain n'a encore aucune émission programmée
+  const tomorrow = new Date(new Date(`${todayKin()}T12:00:00+01:00`).getTime() + 86_400_000).toLocaleDateString('fr-CA', { timeZone: TZ });
+  const tomorrowEmpty = !all.some((p) => dayOf(p.startsAt) === tomorrow);
   const list = all.filter((p) => dayOf(p.startsAt) === day).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   // Bibliothèque : émissions déjà diffusées, prédications et chants de la radio
@@ -228,6 +233,14 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       </div>
       <p className={`mt-1 text-xs ${c.sub}`}>Heure de Kinshasa. Touchez une heure libre, cherchez l’audio, enregistrez : à l’heure dite, tous les auditeurs l’entendent en même temps, et ceux qui arrivent en retard le prennent là où il en est. Entre les émissions, la radio joue seule ses chants, ses jingles et l’heure.</p>
 
+      {tomorrowEmpty && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/15 px-3 py-2 text-sm text-amber-600">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">Rien n’est encore programmé pour demain : seuls les chants passeront.{semaine.length ? ' La grille type le remplira cette nuit à 00h10, ou tout de suite :' : ' Préparez une grille type de la semaine pour que la radio se remplisse seule.'}</span>
+          <button type="button" onClick={() => { setWeek(true); if (day !== tomorrow) setDay(tomorrow); }} className="shrink-0 font-semibold underline">{semaine.length ? 'Remplir' : 'Préparer'}</button>
+        </div>
+      )}
+
       <ol className="mt-3 space-y-1.5">
         {rows.map((r, i) => r.p ? (
           <li key={r.p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${c.show} ${r.from <= now && now < r.to ? 'ring-2 ring-red-500' : ''} ${r.to <= now ? 'opacity-50' : ''}`}>
@@ -261,7 +274,10 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
         <button type="button" onClick={() => openAt(time)} className={small + ' bg-gold text-night'}><Plus className="h-4 w-4" />Autre heure</button>
         <button type="button" onClick={generate} className={small + ' ' + c.btn}><Wand2 className="h-4 w-4" />Générer un programme</button>
         <button type="button" onClick={() => void poster()} disabled={!list.length} className={small + ' ' + c.btn}><Download className="h-4 w-4" />Affiche du programme (JPG)</button>
+        <button type="button" onClick={() => setWeek((w) => !w)} aria-expanded={week} className={small + ' ' + (week ? 'bg-gold text-night' : c.btn)}><CalendarRange className="h-4 w-4" />Grille de la semaine{semaine.length ? ` (${semaine.length})` : ''}</button>
       </div>
+
+      {week && <WeekTemplate library={library} dark={dark} />}
 
       {draft && (
         <div className="mt-4 space-y-2 border-t border-current/10 pt-4">

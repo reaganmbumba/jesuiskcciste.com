@@ -19,6 +19,7 @@ import { JournalAntenne } from '@/features/radio/JournalAntenne';
 import { Conduite } from '@/features/radio/Conduite';
 import { Charte } from '@/features/radio/Charte';
 import { Secours } from '@/features/radio/Secours';
+import { SiteSongsPicker } from '@/features/radio/SiteSongsPicker';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -58,6 +59,10 @@ function PlacesLine({ places, className }: { places?: RadioPlace[]; className?: 
   return <p className={className}>📍 {top.map((p) => `${p.name} ${p.n}`).join(' · ')}{rest ? ` · ${rest} ailleurs` : ''}</p>;
 }
 
+/** Fondu enchaîné : durée en fin de chant, et quand l'animateur passe au chant suivant. */
+const FONDU_S = 5;
+const FONDU_MANUEL_S = 1.5;
+
 /** Baisse automatique : seuil de voix (RMS du micro), niveau de la musique pendant la parole, durée de maintien. */
 const DUCK_VOICE_RMS = 0.035;
 const DUCK_LEVEL = 0.22;
@@ -93,6 +98,21 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
   const idxRef = useRef(0);
+  // Fondu enchaîné entre les chants (réglable, gardé sur l'appareil)
+  const [fondu, setFondu] = useState(() => { try { return localStorage.getItem('kcc-fondu') !== '0'; } catch { return true; } });
+  const fonduRef = useRef(fondu); fonduRef.current = fondu;
+  const fadingRef = useRef(false);
+  // Pré-écoute au casque : joué sur cet appareil seulement, jamais à l'antenne
+  const [cueUrl, setCueUrl] = useState('');
+  const [cueMode, setCueMode] = useState(false);
+  const cueEl = useRef<HTMLAudioElement | null>(null);
+  function cue(url: string) {
+    if (!cueEl.current) { cueEl.current = new Audio(); cueEl.current.onended = () => setCueUrl(''); }
+    const el = cueEl.current;
+    if (cueUrl === url) { el.pause(); setCueUrl(''); return; }
+    el.src = url; el.currentTime = 0; void el.play().catch(() => {}); setCueUrl(url);
+  }
+  useEffect(() => () => { cueEl.current?.pause(); }, []);
   const [musicVol, setMusicVol] = useState(0.25);
   // Baisse automatique (« ducking ») : la musique et l'émission sous la voix descendent quand l'animateur parle
   const [autoDuck, setAutoDuck] = useState(() => { try { return localStorage.getItem('kcc-duck') !== '0'; } catch { return true; } });
@@ -125,7 +145,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const listenerCounts = useRadioListeners();
   const liveOn = onAir && !recMode;
   const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
-  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[]; micAn?: AnalyserNode; duckM?: GainNode; duckP?: GainNode }>({});
+  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[]; micAn?: AnalyserNode; duckM?: GainNode; duckP?: GainNode; decks?: { el: HTMLAudioElement; g: GainNode }[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const jetonRef = useRef('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
@@ -254,6 +274,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     }, 40);
     return () => window.clearInterval(t);
   }, [onAir]);
+  function toggleFondu() {
+    setFondu((v) => { try { localStorage.setItem('kcc-fondu', v ? '0' : '1'); } catch { /* rien */ } return !v; });
+  }
   function toggleDuck() {
     setAutoDuck((v) => { try { localStorage.setItem('kcc-duck', v ? '0' : '1'); } catch { /* rien */ } return !v; });
   }
@@ -334,11 +357,24 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
       plateau.forEach((d) => bus.connect(d));
       fx.current = { chain, bus };
-      const musicEl = new Audio();
-      musicEl.onended = () => playTrack(idxRef.current + 1);
-      musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
-      ac.createMediaElementSource(musicEl).connect(duckM); duckM.connect(musicGain);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain, micAn, duckM, duckP };
+      // Deux platines pour le fondu enchaîné : le chant suivant monte pendant que le précédent descend.
+      const decks = [0, 1].map((k) => {
+        const el = new Audio();
+        el.crossOrigin = 'anonymous';
+        const g = ac.createGain(); g.gain.value = k === 0 ? 1 : 0;
+        ac.createMediaElementSource(el).connect(g); g.connect(duckM);
+        el.ontimeupdate = () => {
+          if (nodes.current.musicEl !== el || fadingRef.current || !fonduRef.current) return;
+          const left = el.duration - el.currentTime;
+          if (Number.isFinite(left) && left > 0 && left <= FONDU_S && tracksRef.current.length > 1) playTrack(idxRef.current + 1, FONDU_S);
+        };
+        el.onended = () => { if (nodes.current.musicEl === el && !fadingRef.current) playTrack(idxRef.current + 1, 0); };
+        el.onerror = () => { if (nodes.current.musicEl === el && tracksRef.current.length > 1) playTrack(idxRef.current + 1, 0); };
+        return { el, g };
+      });
+      duckM.connect(musicGain);
+      const musicEl = decks[0].el;
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain, micAn, duckM, duckP, decks };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
       if (rehearsal) {
@@ -425,6 +461,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     pub.current?.pc.close();
     pub.current = null;
     nodes.current.mic?.getTracks().forEach((t) => t.stop());
+    nodes.current.decks?.forEach((d) => { d.el.pause(); d.el.ontimeupdate = null; d.el.onended = null; d.el.onerror = null; });
     nodes.current.musicEl?.pause();
     if (nodes.current.progEl) { nodes.current.progEl.pause(); nodes.current.progEl.removeAttribute('src'); }
     setProgNow(null);
@@ -547,15 +584,30 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   }
 
   /** Joue le morceau n° i de la liste (on revient au premier après le dernier). */
-  function playTrack(i: number) {
+  function playTrack(i: number, fade = FONDU_MANUEL_S) {
     const list = tracksRef.current;
-    const el = nodes.current.musicEl;
-    if (!el || !list.length) return;
+    const decks = nodes.current.decks, ac = ctx.current;
+    if (!decks || !ac || !list.length) return;
     const n = ((i % list.length) + list.length) % list.length;
     idxRef.current = n;
     setTrackIdx(n);
-    el.src = list[n].url;
-    void el.play().catch(() => {});
+    const cur = decks.find((d) => d.el === nodes.current.musicEl) ?? decks[0];
+    const nxt = decks.find((d) => d !== cur)!;
+    const busy = !!cur.el.src && !cur.el.paused && !cur.el.ended;
+    const f = fonduRef.current && busy ? Math.max(0, fade) : 0;
+    const t = ac.currentTime;
+    nxt.el.src = list[n].url;
+    nxt.g.gain.cancelScheduledValues(t); cur.g.gain.cancelScheduledValues(t);
+    if (f > 0) {
+      fadingRef.current = true;
+      nxt.g.gain.setValueAtTime(0, t); nxt.g.gain.linearRampToValueAtTime(1, t + f);
+      cur.g.gain.setValueAtTime(cur.g.gain.value, t); cur.g.gain.linearRampToValueAtTime(0, t + f);
+      window.setTimeout(() => { cur.el.pause(); fadingRef.current = false; }, f * 1000 + 100);
+    } else {
+      cur.el.pause(); cur.g.gain.setValueAtTime(0, t); nxt.g.gain.setValueAtTime(1, t);
+    }
+    nodes.current.musicEl = nxt.el;
+    void nxt.el.play().catch(() => {});
   }
 
   function addMusic(files: FileList | null) {
@@ -569,15 +621,25 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     if (wasEmpty && onAir && musicOn) playTrack(0);
   }
 
+  function addSiteSongs(list: { name: string; url: string }[]) {
+    const fresh = list.filter((x) => !tracksRef.current.some((t) => t.url === x.url));
+    if (!fresh.length) return;
+    const wasEmpty = !tracksRef.current.length;
+    const next = [...tracksRef.current, ...fresh];
+    tracksRef.current = next;
+    setTracks(next);
+    if (wasEmpty && onAir && musicOn) playTrack(0, 0);
+  }
+
   function removeTrack(i: number) {
     const list = tracksRef.current;
-    URL.revokeObjectURL(list[i].url);
+    if (list[i].url.startsWith('blob:')) URL.revokeObjectURL(list[i].url);
     const next = list.filter((_, k) => k !== i);
     tracksRef.current = next;
     setTracks(next);
     if (!onAir) return;
     if (!next.length) { nodes.current.musicEl?.pause(); return; }
-    if (i === idxRef.current) playTrack(i);
+    if (i === idxRef.current) playTrack(i, 0);
     else if (i < idxRef.current) { idxRef.current -= 1; setTrackIdx(idxRef.current); }
   }
 
@@ -608,6 +670,13 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       setMyPads((l) => l.map((x, k) => (k === i ? { ...x, buf } : x)));
     }
     playBuffer(ac, bus, buf);
+  }
+  const padUrls = useRef(new Map<File, string>());
+  function padUrl(i: number) {
+    const f = myPads[i].file;
+    let u = padUrls.current.get(f);
+    if (!u) { u = URL.createObjectURL(f); padUrls.current.set(f, u); }
+    return u;
   }
   const genBufs = useRef(new Map<string, AudioBuffer>());
   async function fireGenerique(url: string) {
@@ -869,7 +938,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Music2 className="h-3.5 w-3.5" />Musique de fond</span>
-              <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>
+              <span className="flex flex-wrap justify-end gap-1.5">
+                <SiteSongsPicker dark onAdd={addSiteSongs} have={tracks.map((t) => t.url)} />
+                <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ fichiers<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>
+              </span>
             </p>
             {!tracks.length && <p className="text-sm text-white/50">Ajoutez des morceaux : ils passent à tour de rôle sous votre voix.</p>}
             <ol className="max-h-56 space-y-1 overflow-y-auto">
@@ -879,6 +951,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   <li key={t.url} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${now ? 'bg-gold/20 text-white' : 'text-white/75'}`}>
                     <span className="w-6 text-right text-xs text-white/40">{now ? '▶' : i + 1}</span>
                     <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }}>{t.name}</button>
+                    <button type="button" onClick={() => cue(t.url)} className={`p-1 ${cueUrl === t.url ? 'text-gold-300' : 'text-white/40'}`} aria-label={`Pré-écouter ${t.name} au casque`} title="Pré-écoute au casque (pas à l’antenne)"><Headphones className="h-3.5 w-3.5" /></button>
                     <button type="button" onClick={() => removeTrack(i)} className="p-1 text-white/40" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
                   </li>
                 );
@@ -891,6 +964,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </>}
               <label className="flex flex-1 items-center gap-2 text-xs text-white/60">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" /></label>
             </div>
+            <button type="button" onClick={toggleFondu} aria-pressed={fondu} className={small + ' mt-2 w-full justify-center ' + (fondu ? 'bg-gold/25 text-white' : 'bg-white/[0.06] text-white/60')}>
+              〰️ Fondu enchaîné entre les chants : {fondu ? 'oui' : 'non'}
+            </button>
             <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={small + ' mt-2 w-full justify-center ' + (autoDuck ? 'bg-gold/25 text-white' : 'bg-white/[0.06] text-white/60')}>
               🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
             </button>
@@ -906,6 +982,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   className={`rounded-xl px-2 py-2.5 text-sm font-semibold disabled:opacity-40 ${voiceFx[k] ? 'bg-gold text-night' : 'bg-white/[0.08] text-white'}`}>{l}</button>
               ))}
             </div>
+            <button type="button" onClick={() => { setCueMode((v) => !v); cueEl.current?.pause(); setCueUrl(''); }} aria-pressed={cueMode} className={small + ' mt-3 w-full justify-center ' + (cueMode ? 'bg-sky-600 text-white' : 'bg-white/[0.06] text-white/70')}>
+              <Headphones className="h-4 w-4" />{cueMode ? 'Pré-écoute au casque : touchez un générique (rien ne part à l’antenne)' : 'Pré-écouter les génériques au casque'}
+            </button>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {PADS.map((p) => (
                 <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="rounded-2xl bg-white/[0.06] px-1 py-3 text-center text-[11px] font-semibold text-white/85 active:scale-95 active:bg-gold/30 disabled:opacity-40">
@@ -913,12 +992,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 </button>
               ))}
               {GENERIQUES.map((g) => (
-                <button key={g.url} type="button" disabled={!onAir} onClick={() => void fireGenerique(g.url)} className="truncate rounded-2xl bg-gold/25 px-1 py-3 text-center text-[11px] font-semibold text-white active:scale-95 disabled:opacity-40" title={`Générique : ${g.name}`}>
+                <button key={g.url} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(g.url) : void fireGenerique(g.url))} className="truncate rounded-2xl bg-gold/25 px-1 py-3 text-center text-[11px] font-semibold text-white active:scale-95 disabled:opacity-40" title={`Générique : ${g.name}`}>
                   <span className="block text-xl" aria-hidden>🎬</span>{g.name}
                 </button>
               ))}
               {myPads.map((p, i) => (
-                <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
+                <button key={i} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(padUrl(i)) : void fireMyPad(i))} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
                   <span className="block text-xl" aria-hidden>🔊</span>{p.name}
                 </button>
               ))}
@@ -1071,7 +1150,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
 
               {progBox(true)}
-              <Section title="Musique de fond" action={<label className={fileBtn}><Music2 className="mr-1 inline h-3 w-3" />+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>}>
+              <Section title="Musique de fond" action={<span className="flex gap-1.5"><SiteSongsPicker onAdd={addSiteSongs} have={tracks.map((t) => t.url)} /><label className={fileBtn}><Music2 className="mr-1 inline h-3 w-3" />+ fichiers<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label></span>}>
                 <table className="w-full"><thead><tr><th className={th + ' w-10'}>N°</th><th className={th}>Morceau</th><th className={th + ' w-24'}>État</th><th className={th + ' w-8'} /></tr></thead>
                   <tbody>
                     {!tracks.length && <tr><td colSpan={4} className={td + ' text-center text-ink/55'}>Aucun morceau. Cliquez sur « + morceaux » (plusieurs à la fois) : ils passent à tour de rôle.</td></tr>}
@@ -1082,7 +1161,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                           <td className={td + ' text-center text-ink/60'}>{i + 1}</td>
                           <td className={td}><button type="button" className="w-full truncate text-left hover:underline" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }} title={onAir ? 'Jouer ce morceau' : t.name}>{t.name}</button></td>
                           <td className={td + ` text-center text-xs font-semibold ${playing ? 'text-emerald-700' : 'text-ink/45'}`}>{playing ? '▶ En cours' : 'En attente'}</td>
-                          <td className={td + ' text-center'}><button type="button" onClick={() => removeTrack(i)} className="text-ink/40 hover:text-red-600" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button></td>
+                          <td className={td + ' whitespace-nowrap text-center'}>
+                            <button type="button" onClick={() => cue(t.url)} className={`mr-1 ${cueUrl === t.url ? 'text-gold-700' : 'text-ink/40 hover:text-night'}`} aria-label={`Pré-écouter ${t.name} au casque`} title="Pré-écoute au casque (pas à l’antenne)"><Headphones className="h-3.5 w-3.5" /></button>
+                            <button type="button" onClick={() => removeTrack(i)} className="text-ink/40 hover:text-red-600" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -1094,6 +1176,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   </>}
                   <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-[#2b3648]">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} /></label>
                 </div>
+                <button type="button" onClick={toggleFondu} aria-pressed={fondu} className={'mt-2 mr-2 rounded px-3 py-1.5 text-xs font-semibold ' + (fondu ? 'bg-gold/30 text-night' : 'border border-[#d3dae3] text-ink/60')}>
+                  〰️ Fondu enchaîné : {fondu ? 'oui' : 'non'}
+                </button>
                 <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={'mt-2 rounded px-3 py-1.5 text-xs font-semibold ' + (autoDuck ? 'bg-gold/30 text-night' : 'border border-[#d3dae3] text-ink/60')}>
                   🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
                 </button>
@@ -1114,6 +1199,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
 
               <Section title="Bruitages" action={<label className={fileBtn}>+ bruitage<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} /></label>}>
+                <button type="button" onClick={() => { setCueMode((v) => !v); cueEl.current?.pause(); setCueUrl(''); }} aria-pressed={cueMode} className={'m-2 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold ' + (cueMode ? 'bg-sky-600 text-white' : 'border border-[#d3dae3] text-night')}>
+                  <Headphones className="h-3.5 w-3.5" />{cueMode ? 'Pré-écoute au casque active : rien ne part à l’antenne' : 'Pré-écouter les génériques et bruitages au casque'}
+                </button>
                 <div className="grid grid-cols-2 gap-px bg-[#d3dae3] sm:grid-cols-4">
                   {PADS.map((p) => (
                     <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="bg-white px-2 py-3 text-center text-xs font-semibold text-night hover:bg-[#eef2f6] active:bg-[#dfe5ec] disabled:opacity-50">
@@ -1121,12 +1209,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                     </button>
                   ))}
                   {GENERIQUES.map((g) => (
-                    <button key={g.url} type="button" disabled={!onAir} onClick={() => void fireGenerique(g.url)} className="truncate bg-gold/30 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/40 disabled:opacity-50" title={`Générique : ${g.name}`}>
+                    <button key={g.url} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(g.url) : void fireGenerique(g.url))} className="truncate bg-gold/30 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/40 disabled:opacity-50" title={`Générique : ${g.name}`}>
                       <span className="block text-xl" aria-hidden>🎬</span>{g.name}
                     </button>
                   ))}
                   {myPads.map((p, i) => (
-                    <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate bg-gold/20 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/30 disabled:opacity-50" title={p.name}>
+                    <button key={i} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(padUrl(i)) : void fireMyPad(i))} className="truncate bg-gold/20 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/30 disabled:opacity-50" title={p.name}>
                       <span className="block text-xl" aria-hidden>🔊</span>{p.name}
                     </button>
                   ))}

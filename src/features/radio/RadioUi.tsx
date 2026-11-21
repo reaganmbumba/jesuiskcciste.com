@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, SkipForward, X } from 'lucide-react';
-import { useI18n, type Tri } from '@/i18n';
+import { MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, X } from 'lucide-react';
+import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
 import { RadioCallDialog } from './RadioCall';
 import { useRadioListeners } from './listeners';
-import type { RadioItem, RadioMode } from './radio';
+import type { RadioItem } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
-
-export const MODE_LABELS: Record<RadioMode, Tri> = {
-  all: { fr: 'Tout', en: 'Everything', pt: 'Tudo' },
-  songs: { fr: 'Chants', en: 'Songs', pt: 'Cânticos' },
-  sermons: { fr: 'Prédications', en: 'Sermons', pt: 'Pregações' },
-};
 
 export function KindIcon({ item, className }: { item: Pick<RadioItem, 'kind'>; className?: string }) {
   const Icon = item.kind === 'live' ? Radio : item.kind === 'sermon' ? Mic : item.kind === 'news' ? Newspaper : item.kind === 'vocal' ? MessageCircle : Music2;
@@ -81,28 +75,11 @@ export function CallShowButton({ className }: { className?: string }) {
   );
 }
 
-/** Choix « Tout / Chants / Prédications ». */
-export function RadioModeChooser({ light, className }: { light?: boolean; className?: string }) {
-  const { tx, pick } = useI18n();
-  const { mode, modes, setMode } = useRadio();
-  if (modes.length < 2) return null;
-  return (
-    <div role="radiogroup" aria-label={tx('Que voulez-vous écouter ?', 'What do you want to listen to?', 'O que quer ouvir?')} className={cn('inline-flex rounded-full p-1', light ? 'bg-white/10' : 'bg-night/[0.06]', className)}>
-      {modes.map((m) => (
-        <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}
-          className={cn('rounded-full px-4 py-1.5 text-sm font-semibold transition', mode === m ? 'bg-gold text-night shadow' : light ? 'text-white/75 hover:text-white' : 'text-ink/70 hover:text-night')}>
-          {pick(MODE_LABELS[m])}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 /** Mini-lecteur flottant : visible sur toutes les pages une fois la radio lancée (sauf sur /radio). */
 export function MiniRadioPlayer() {
   const { tx } = useI18n();
   const { pathname } = useLocation();
-  const { active, playing, current, toggle, next, stop, time, duration, onLive } = useRadio();
+  const { active, playing, current, toggle, stop, time, duration, onLive } = useRadio();
   if (!active || !current || pathname.startsWith('/radio')) return null;
   const pct = duration > 0 ? Math.min(100, (time / duration) * 100) : 0;
   return (
@@ -123,7 +100,6 @@ export function MiniRadioPlayer() {
         <button type="button" onClick={toggle} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold text-night hover:bg-gold-300" aria-label={playing ? tx('Pause', 'Pause', 'Pausa') : tx('Écouter', 'Play', 'Ouvir')}>
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
-        {!onLive && <button type="button" onClick={next} className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-white/10" aria-label={tx('Titre suivant', 'Next track', 'Faixa seguinte')}><SkipForward className="h-4 w-4" /></button>}
         <button type="button" onClick={stop} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white" aria-label={tx('Fermer la radio', 'Close the radio', 'Fechar a rádio')}><X className="h-4 w-4" /></button>
       </div>
       {!onLive && <div className="h-0.5 bg-white/10" aria-hidden><div className="h-full bg-gold transition-[width] duration-500" style={{ width: `${pct}%` }} /></div>}

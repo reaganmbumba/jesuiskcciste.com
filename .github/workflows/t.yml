@@ -1,0 +1,40 @@
+name: transcription-sermon19
+on: { push: { branches: [claude/transcription-sermon19] } }
+permissions: { contents: write }
+jobs:
+  t:
+    if: "!contains(github.event.head_commit.message, 'skip')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -q faster-whisper && sudo apt-get install -y -qq ffmpeg >/dev/null
+      - name: Exchange keys
+        run: |
+          set -e; umask 077
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 -out /tmp/runner.key 2>/dev/null
+          openssl pkey -in /tmp/runner.key -pubout -out runner.pub
+          git config user.name ci; git config user.email ci@example.com
+          git add runner.pub; git commit -qm "runner key skip"; git push -q
+          for i in $(seq 1 120); do git pull -q --rebase || true; [ -f key.rsa ] && break; sleep 10; done
+          [ -f key.rsa ]
+          openssl pkeyutl -decrypt -inkey /tmp/runner.key -in key.rsa -out /tmp/k
+          openssl enc -d -aes-256-cbc -pbkdf2 -in audio.enc -out /tmp/a.mp3 -pass file:/tmp/k
+      - name: Transcribe
+        run: |
+          python - <<'PY'
+          from faster_whisper import WhisperModel
+          m = WhisperModel('medium', device='cpu', compute_type='int8')
+          segs, info = m.transcribe('/tmp/a.mp3', beam_size=5, vad_filter=True)
+          with open('/tmp/t.txt', 'w') as f:
+              f.write(f'# langue {info.language} {info.language_probability:.2f}\n')
+              for s in segs:
+                  f.write(f'[{int(s.start//60):02d}:{int(s.start%60):02d}] {s.text.strip()}\n')
+          PY
+      - name: Return encrypted
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/t.txt -out t.enc -pass file:/tmp/k
+          git pull -q --rebase || true
+          git add t.enc; git commit -qm "result skip"; git push -q

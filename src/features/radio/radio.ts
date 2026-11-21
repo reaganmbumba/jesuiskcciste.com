@@ -36,7 +36,13 @@ export interface RadioItem {
   url: string;
   durationSeconds: number | null;
   imageUrl: string | null;
+  /** Date d'ajout dans le système : les audios récents passent plus souvent. */
+  addedAt?: string;
 }
+
+/** Ajouté depuis moins de `RECENT_DAYS` jours (par rapport à `now`). */
+export const RECENT_DAYS = 14;
+export const isRecent = (i: RadioItem, now: number) => !!i.addedAt && now - new Date(i.addedAt).getTime() < RECENT_DAYS * 86_400_000 && new Date(i.addedAt).getTime() <= now;
 
 export interface RadioLive {
   /** Adresse https du flux audio (ex. https://stream.zeno.fm/abc123). */
@@ -265,13 +271,13 @@ export function currentNews(list: Journal[] = JOURNAUX, now = new Date()): Radio
 
 export function songItem(t: Track, artistName?: string): RadioItem | null {
   if (!t.audioUrl || t.broadcastRights !== 'authorized') return null;
-  return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null };
+  return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null, ...(t.createdAt ? { addedAt: t.createdAt } : {}) };
 }
 
 export function sermonItem(s: AudioSermon): RadioItem | null {
   if (!s.audioUrl || !s.published) return null;
   const who = [s.preacherTitle, s.preacherName].filter(Boolean).join(' ');
-  return { key: sermonKey(s.id), kind: 'sermon', title: s.title, subtitle: [who, s.parish].filter(Boolean).join(' · '), url: s.audioUrl, durationSeconds: s.durationSeconds ?? null, imageUrl: s.preacherPhotoUrl ?? null };
+  return { key: sermonKey(s.id), kind: 'sermon', title: s.title, subtitle: [who, s.parish].filter(Boolean).join(' · '), url: s.audioUrl, durationSeconds: s.durationSeconds ?? null, imageUrl: s.preacherPhotoUrl ?? null, ...(s.createdAt ? { addedAt: s.createdAt } : {}) };
 }
 
 export function vocalItem(v: RadioVocal): RadioItem | null {
@@ -341,9 +347,21 @@ export function shuffle<T>(list: T[], random: () => number = Math.random): T[] {
  * Les vocaux des auditeurs passent un par un, après chaque série.
  * `avoidFirst` : le dernier titre joué, pour ne pas l'entendre deux fois de suite.
  */
-export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null): RadioItem[] {
-  const songs = shuffle(items.filter((i) => i.kind === 'song'), random);
-  const talks = shuffle(items.filter((i) => i.kind === 'sermon'), random);
+/** Les audios récents passent deux fois par tour : la seconde fois, environ un demi-tour plus tard. */
+function twice(list: RadioItem[], recent?: (i: RadioItem) => boolean): RadioItem[] {
+  if (!recent || list.length < 2) return list;
+  const out = [...list];
+  list.forEach((x) => {
+    if (!recent(x)) return;
+    const at = Math.min(out.length, out.indexOf(x) + Math.max(2, Math.floor(list.length / 2)));
+    out.splice(at, 0, x);
+  });
+  return out;
+}
+
+export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null, recent?: (i: RadioItem) => boolean): RadioItem[] {
+  const songs = twice(shuffle(items.filter((i) => i.kind === 'song'), random), recent);
+  const talks = twice(shuffle(items.filter((i) => i.kind === 'sermon'), random), recent);
   const news = items.filter((i) => i.kind === 'news');
   const voices = shuffle(items.filter((i) => i.kind === 'vocal'), random);
   const out: RadioItem[] = [...news];

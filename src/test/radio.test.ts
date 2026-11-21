@@ -162,3 +162,18 @@ describe('grille type de la semaine', () => {
     expect(joursLabel([6, 7])).toBe('Sam, Dim');
   });
 });
+
+describe('audios récents', () => {
+  const song = (id: string, addedAt?: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/audio/${id}.mp3`, durationSeconds: 200, imageUrl: null, ...(addedAt ? { addedAt } : {}) });
+  it('un chant ajouté récemment passe deux fois par tour, jamais deux fois de suite', async () => {
+    const { isRecent } = await import('@/features/radio/radio');
+    const now = new Date('2026-11-21T10:00:00Z').getTime();
+    const list = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => song(id, id === 'c' ? '2026-11-20T02:00:00Z' : '2026-09-01T00:00:00Z'));
+    const round = buildRound(list, () => 0.3, null, (i) => isRecent(i, now));
+    const keys = round.filter((i) => i.kind === 'song').map((i) => i.key);
+    expect(keys.filter((k) => k === 'song:c')).toHaveLength(2);
+    expect(keys.filter((k) => k === 'song:a')).toHaveLength(1);
+    keys.forEach((k, i) => { if (i) expect(k).not.toBe(keys[i - 1]); });
+    expect(buildRound(list, () => 0.3).filter((i) => i.key === 'song:c')).toHaveLength(1);
+  });
+});

@@ -1,4 +1,4 @@
-import { buildRound, type RadioItem, type RadioMode } from './radio';
+import { buildRound, isRecent, type RadioItem, type RadioMode } from './radio';
 
 /**
  * Antenne commune : comme une vraie radio, tous les auditeurs entendent le même titre
@@ -71,7 +71,7 @@ export function scheduleAt(items: RadioItem[], mode: RadioMode, now: number, aft
   let t = day;
   let last: string | null = null;
   for (let r = 0; r < MAX_ROUNDS; r++) {
-    const round = buildRound(list, seededRandom(`${day}|${mode}|${r}`), last);
+    const round = buildRound(list, seededRandom(`${day}|${mode}|${r}`), last, (i) => isRecent(i, day));
     if (!round.length) return out;
     for (const item of round) {
       const end = t + Math.round((item.durationSeconds ?? 0) * 1000);

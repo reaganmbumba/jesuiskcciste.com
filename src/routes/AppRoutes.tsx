@@ -40,6 +40,7 @@ const ApostleBiographiesPage = lazy(() => import('@/pages/public/ApostleBiograph
 const VideosPage = lazy(() => import('@/pages/public/VideosPage'));
 const LivePage = lazy(() => import('@/pages/public/LivePage'));
 const RadioPage = lazy(() => import('@/pages/public/RadioPage'));
+const RadioRediffusionsPage = lazy(() => import('@/pages/public/RadioRediffusionsPage'));
 const JobsPage = lazy(() => import('@/pages/public/JobsPage'));
 const PushNotificationsPage = lazy(() => import('@/pages/public/PushNotificationsPage'));
 const PrivacyPage = lazy(() => import('@/pages/public/PrivacyPage'));
@@ -217,6 +218,7 @@ export function AppRoutes() {
         <Route path="videos" element={<VideosPage />} />
         <Route path="direct" element={<LivePage />} />
         <Route path="radio" element={<RadioPage />} />
+        <Route path="radio/rediffusions" element={<RadioRediffusionsPage />} />
         <Route path="emplois" element={<JobsPage />} />
         <Route path="communaute" element={<CommunityPage />} />
         <Route path="communaute/annuaire" element={<DirectoryPage />} />

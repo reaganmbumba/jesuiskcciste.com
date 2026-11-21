@@ -74,6 +74,23 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const list = all.filter((p) => dayOf(p.startsAt) === day).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 
   // Bibliothèque : émissions déjà diffusées, prédications et chants de la radio
+  // Dossier des émissions (prêtes, même jamais diffusées) et catalogue des rediffusions
+  const [dossier, setDossier] = useState<{ url: string; title: string; seconds: number; added: number; aired: boolean }[]>([]);
+  const loadDossier = () => {
+    if (!supabase) return;
+    void Promise.all([
+      supabase.from('radio_emissions').select('url,title,duration_seconds,created_at').eq('hidden', false),
+      supabase.from('radio_rediffusions').select('url,title,duration_seconds,first_aired').eq('hidden', false),
+    ]).then(([e, r]) => {
+      type E = { url: string; title: string; duration_seconds: number; created_at?: string; first_aired?: string };
+      setDossier([
+        ...((e.data ?? []) as E[]).map((x) => ({ url: x.url, title: x.title, seconds: x.duration_seconds, added: new Date(x.created_at ?? 0).getTime(), aired: false })),
+        ...((r.data ?? []) as E[]).filter((x) => !/\/predications\//.test(x.url)).map((x) => ({ url: x.url, title: x.title, seconds: x.duration_seconds, added: new Date(x.first_aired ?? 0).getTime(), aired: true })),
+      ]);
+    });
+  };
+  useEffect(loadDossier, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const library = useMemo<Source[]>(() => {
     const seen = new Set<string>();
     const out: Source[] = [];
@@ -86,11 +103,13 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
     const first = new Map<string, number>();
     all.forEach((p) => { const t = new Date(p.startsAt).getTime(); if (!first.has(p.url) || t < first.get(p.url)!) first.set(p.url, t); });
     const at = (d?: string) => (d ? new Date(d).getTime() || 0 : 0);
+    dossier.filter((d) => !d.aired).forEach((d) => add({ url: d.url, title: d.title, subtitle: 'Émission · dossier des émissions', seconds: d.seconds, kind: 'emission', added: d.added }));
     [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds, kind: 'emission', added: first.get(p.url) ?? 0 }));
+    dossier.filter((d) => d.aired).forEach((d) => add({ url: d.url, title: d.title, subtitle: 'Émission déjà diffusée', seconds: d.seconds, kind: 'emission', added: d.added }));
     items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'sermon', added: at(i.addedAt) }));
     items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'song', added: at(i.addedAt) }));
     return out;
-  }, [all, items]);
+  }, [all, items, dossier]);
   const q = query.trim().toLowerCase();
   const shown = (q ? library.filter((s) => `${s.title} ${s.subtitle}`.toLowerCase().includes(q)) : library).slice(0, 40);
 
@@ -203,6 +222,8 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       if (file) {
         const up = await uploadSiteAudio(file, title.trim() || file.name.replace(/\.[^.]+$/, ''));
         url = up.url; seconds = up.duration;
+        // nouvelle émission : rangée dans le dossier des émissions (pas dans les chants)
+        if (seconds) void supabase!.from('radio_emissions').upsert({ url, title: (title.trim() || file.name.replace(/\.[^.]+$/, '')).slice(0, 160), duration_seconds: Math.round(seconds) }).then(() => loadDossier());
       }
       if (!seconds) seconds = await probe(url);
       if (!seconds) throw new Error('La durée du fichier est illisible.');

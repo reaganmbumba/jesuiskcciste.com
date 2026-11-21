@@ -10,7 +10,8 @@ import { useRadioListeners } from './listeners';
 import type { RadioItem } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
-export const RADIO_URL = `${PUBLIC_SITE_URL}/radio`;
+// « ?ecouter » : nouvelle adresse pour WhatsApp, qui garde longtemps l’ancien aperçu de /radio
+export const RADIO_URL = `${PUBLIC_SITE_URL}/radio?ecouter`;
 
 /**
  * « Inviter quelqu'un à écouter » : partage du lien de la radio sans jamais quitter la page,

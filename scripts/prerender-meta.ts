@@ -134,7 +134,7 @@ let count = 0;
 const PAGE_IMAGES: Record<string, string> = {
   '/liturgie': '/images/actualites/actes-alliance-en-ligne.jpg',
   // Aperçu du lien de la radio (WhatsApp, Facebook) : l'image de la Radio Je suis KCCiste.
-  '/radio': '/images/radio/partage-radio.jpg',
+  '/radio': '/images/radio/partage-radio-kcc.jpg',
   // La biographie la plus récente illustre la rubrique.
   '/apotres/biographies': APOSTLE_BIOGRAPHIES.find((b) => b.image)?.image ?? '',
   '/memorial': SHIPPED_MEMORIALS[0]?.photoUrl ?? '',

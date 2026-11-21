@@ -14,6 +14,7 @@ import { microphone, publishShow, watchTrack, type Publish } from '@/features/ra
 import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
 import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
 import { DedicacesPanel } from '@/features/radio/DedicacesPanel';
+import { RadioStats } from '@/features/radio/RadioStats';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -770,6 +771,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
           <DedicacesPanel dark />
           <YouTubeChat dark />
+          <RadioStats dark />
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
@@ -1044,6 +1046,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
               <DedicacesPanel />
               <YouTubeChat />
+              <RadioStats />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

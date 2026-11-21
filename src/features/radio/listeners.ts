@@ -113,14 +113,30 @@ function update() {
   }
 }
 
+/** Statistiques : « j'écoute » toutes les 5 minutes (une ligne par auditeur et par tranche de 5 min). */
+let pingTimer: ReturnType<typeof setInterval> | undefined;
+function ping() {
+  if (!supabase || !me.listening) return;
+  void supabase.rpc('radio_ecoute_ping', { p_visitor: listenerId(), p_city: place?.city ?? null, p_country: place?.country ?? null, p_live: !!me.live }).then(() => {}, () => {});
+}
+function pinging(on: boolean) {
+  clearInterval(pingTimer);
+  pingTimer = undefined;
+  if (!on) return;
+  window.setTimeout(ping, 4000); // le temps de connaître la ville
+  pingTimer = setInterval(ping, 4.5 * 60_000);
+}
+
 /** Appelé par la radio : cet onglet écoute (et écoute-t-il le direct de l'antenne ?). */
 export function useRadioPresence(listening: boolean, live: boolean) {
   useEffect(() => {
+    const was = me.listening;
     me = { listening, live: listening && live };
     if (listening) askPlace();
+    if (listening !== was || listening) pinging(listening);
     update();
   }, [listening, live]);
-  useEffect(() => () => { me = { listening: false, live: false }; update(); }, []);
+  useEffect(() => () => { me = { listening: false, live: false }; pinging(false); update(); }, []);
 }
 
 function subscribe(l: () => void) {

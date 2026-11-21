@@ -8,6 +8,7 @@ import { AppRoutes } from '@/routes/AppRoutes';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { RadioProvider } from '@/features/radio/RadioContext';
 import { MiniRadioPlayer } from '@/features/radio/RadioUi';
+import { RadioLiveAlert } from '@/features/radio/RadioLiveAlert';
 import { MatriculeWelcome } from '@/features/news/MatriculeWelcome';
 import { RequiredPhotoGate } from '@/features/auth/RequiredPhotoGate';
 
@@ -23,6 +24,7 @@ export default function App() {
                   <ScrollToTop />
                   <AppRoutes />
                   <MiniRadioPlayer />
+                  <RadioLiveAlert />
                   <MemberOverlays />
                 </RadioProvider>
               </BrowserRouter>

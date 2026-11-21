@@ -115,6 +115,11 @@ export default {
   async fetch(request: Request, env: Env, ctx?: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/api/emplois') return handleJobs(request, env, ctx);
+    // Ville et pays approximatifs de l'auditeur (d'après le réseau), pour le compteur du Studio.
+    if (url.pathname === '/api/ou') {
+      const cf = (request as Request & { cf?: { city?: string; country?: string } }).cf;
+      return new Response(JSON.stringify({ city: cf?.city ?? '', country: cf?.country ?? '' }), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
     const push = /^\/api\/notifications\/([a-z]+)$/.exec(url.pathname);
     if (push) return handleNotifications(request, env, push[1]);
     // Émissions de la radio : lecture par morceaux, pour rejoindre le direct en cours de route

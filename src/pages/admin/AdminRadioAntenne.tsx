@@ -12,7 +12,7 @@ import { RADIO_NAME } from '@/features/radio/RadioUi';
 import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
 import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
-import { useRadioListeners } from '@/features/radio/listeners';
+import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -45,6 +45,13 @@ function Section({ title: t, action, children }: { title: string; action?: React
  * envoyés au relais du site (pas besoin de Caster.fm ni de Jitsi). Les auditeurs qui appellent
  * depuis /radio arrivent dans la file ; « Prendre à l'antenne » mélange leur voix à l'émission.
  */
+/** « Kinshasa 7 · Muanda 3 · Luanda (Angola) 2 · 4 autres » : d'où l'on écoute en ce moment. */
+function PlacesLine({ places, className }: { places?: RadioPlace[]; className?: string }) {
+  if (!places?.length) return null;
+  const top = places.slice(0, 5), rest = places.slice(5).reduce((n, p) => n + p.n, 0);
+  return <p className={className}>📍 {top.map((p) => `${p.name} ${p.n}`).join(' · ')}{rest ? ` · ${rest} ailleurs` : ''}</p>;
+}
+
 /** Silence à l'antenne : seuil (crête, 1 = plein niveau) et durée avant le jingle automatique. */
 const SILENCE_LEVEL = 0.012;
 const SILENCE_S = 30;
@@ -695,6 +702,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             {silenceAlert && <p className="mt-3 flex items-start gap-2 rounded-2xl bg-red-600/25 px-3 py-2 text-left text-sm text-red-100" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}
             <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, la radio continue ses programmes. Tout le studio marche : micro, chansons qui s’enchaînent, jingles, effets, invités du plateau.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule.'}</p>
             <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {liveOn ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((liveOn ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {liveOn ? 'sur votre direct' : 'à l’écoute de la radio'}{liveOn && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
+            <PlacesLine places={liveOn ? listenerCounts?.livePlaces : listenerCounts?.places} className="mt-1 text-xs text-white/60" />
             {onAir && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" onClick={() => setMicMuted((m) => !m)} className={small + (micMuted ? ' bg-red-600 text-white' : ' bg-white/[0.08] text-white')}><Mic className="h-4 w-4" />{micMuted ? 'Micro coupé' : 'Micro actif'}</button>
@@ -875,6 +883,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Auditeurs connectés</p>
             <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{listenerCounts?.total ?? '…'}</p>
             <p className="text-xs text-ink/55">{onAir && !recMode ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
+            <PlacesLine places={listenerCounts?.places} className="mt-1 text-xs text-ink/70" />
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
             {onAir && !recMode && silentFor >= 10 && <p className="mt-2 rounded bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900" role="status">🔇 Silence à l’antenne depuis {silentFor} s : jingle automatique à {SILENCE_S} s.</p>}
             {silenceAlert && <p className="mt-2 flex items-start gap-2 rounded bg-red-100 px-3 py-2 text-sm text-red-900" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}

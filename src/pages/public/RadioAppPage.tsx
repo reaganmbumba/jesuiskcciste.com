@@ -108,7 +108,7 @@ export default function RadioAppPage() {
             <Mic className="h-5 w-5" aria-hidden />{tx('Envoyer un vocal', 'Send a voice note', 'Enviar voz')}
           </button>
         </div>
-        <ShareRadioButton className="mt-3 w-full justify-center rounded-2xl py-3.5 text-base" />
+        <ShareRadioButton className="mt-3 w-full rounded-2xl" />
 
         {/* Sujet de l'émission, résumé puis en entier */}
         {topic && (

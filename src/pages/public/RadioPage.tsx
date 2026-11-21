@@ -60,8 +60,8 @@ export default function RadioPage() {
                 {r.active && r.playing ? tx('Pause', 'Pause', 'Pausa') : r.loading && !r.ready ? tx('Chargement…', 'Loading…', 'A carregar…') : tx('Écouter', 'Listen', 'Ouvir')}
               </button>
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
-              <ShareRadioButton />
             </div>
+            <ShareRadioButton className="mt-4 max-w-md" />
 
             {r.liveTopic && (
               <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 sm:p-5">

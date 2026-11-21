@@ -111,10 +111,33 @@ function withMeta(page: Response, meta: Meta, url: URL): Response {
   return new Response(res.body, { status: 200, headers });
 }
 
+/** Redirige vers le fichier de la dernière version GitHub dont l'étiquette commence par `prefix` (gardé 10 min en cache). */
+async function latestApp(prefix: string, file: string): Promise<Response> {
+  const fallback = 'https://github.com/reaganmbumba/jesuiskcciste.com/releases';
+  const key = new Request(`https://jesuiskcciste.com/__appli/${prefix}${file}`);
+  const cache = (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
+  const hit = cache ? await cache.match(key) : undefined;
+  let target = hit ? await hit.text() : '';
+  if (!target) {
+    try {
+      const r = await fetch('https://api.github.com/repos/reaganmbumba/jesuiskcciste.com/releases?per_page=40', { headers: { 'User-Agent': 'jesuiskcciste.com', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(5000) });
+      const list = r.ok ? ((await r.json()) as { tag_name: string; published_at: string; assets: { name: string; browser_download_url: string }[] }[]) : [];
+      const rel = list.filter((x) => x.tag_name.startsWith(prefix) && /^\d+$/.test(x.tag_name.slice(prefix.length)) && x.assets.some((a) => a.name === file))
+        .sort((a, b) => b.published_at.localeCompare(a.published_at))[0];
+      target = rel?.assets.find((a) => a.name === file)?.browser_download_url ?? '';
+      if (target && cache) await cache.put(key, new Response(target, { headers: { 'Cache-Control': 'max-age=600' } }));
+    } catch { /* GitHub injoignable : page des versions */ }
+  }
+  return Response.redirect(target || fallback, 302);
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx?: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/api/emplois') return handleJobs(request, env, ctx);
+    // Dernières versions des applications de la radio (versions GitHub « radio-apk-N », « studio-apk-N », « radio-N »).
+    const appli = ({ '/radio/android.apk': ['radio-apk-', 'KCC-Radio.apk'], '/radio/studio.apk': ['studio-apk-', 'KCC-Studio-Radio.apk'], '/radio/windows.exe': ['radio-', 'KCC-Radio-Setup.exe'] } as Record<string, [string, string]>)[url.pathname];
+    if (appli) return latestApp(appli[0], appli[1]);
     // Ville et pays approximatifs de l'auditeur (d'après le réseau), pour le compteur du Studio.
     if (url.pathname === '/api/ou') {
       const cf = (request as Request & { cf?: { city?: string; country?: string } }).cf;

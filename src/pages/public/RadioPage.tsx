@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Mic, Pause, Play, Radio, Settings2, SkipForward, StopCircle } from 'lucide-react';
+import { Mic, Pause, Play, Radio, Settings2, StopCircle } from 'lucide-react';
 import { PageHeader } from '@/components/ui/Misc';
 import { Skeleton } from '@/components/ui/Spinner';
 import { useI18n } from '@/i18n';
@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, KindIcon, ListenerCount, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
+import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -24,7 +24,7 @@ export default function RadioPage() {
   return (
     <div>
       <PageHeader eyebrow={tx('Médias', 'Media', 'Média')} title={RADIO_NAME}
-        description={tx('Les chants et les prédications de la communauté en continu et dans un ordre aléatoire, comme à la radio. L’écoute continue pendant que vous visitez le site.', 'The community’s songs and sermons non-stop and in random order, just like the radio. Listening goes on while you browse the site.', 'Os cânticos e as pregações da comunidade sem parar e em ordem aleatória, como na rádio. A escuta continua enquanto navega no site.')}>
+        description={tx('Les chants et les prédications de la communauté en continu, comme à la radio : tous les auditeurs entendent la même chose au même moment, toute la journée. L’écoute continue pendant que vous visitez le site.', 'The community’s songs and sermons non-stop, just like the radio: every listener hears the same thing at the same moment, all day long. Listening goes on while you browse the site.', 'Os cânticos e as pregações da comunidade sem parar, como na rádio: todos os ouvintes ouvem a mesma coisa ao mesmo tempo, o dia todo. A escuta continua enquanto navega no site.')}>
         {can(profile, 'settings.manage') && <Link to="/admin/radio" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Settings2 className="h-4 w-4" />{tx('Régler la radio', 'Radio settings', 'Configurar a rádio')}</Link>}
       </PageHeader>
 
@@ -40,7 +40,6 @@ export default function RadioPage() {
                   {r.onLive && <LiveBadge />}
                   {r.playing && !r.onLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
                   {r.active ? (r.playing ? tx('À l’antenne', 'On air', 'No ar') : tx('En pause', 'Paused', 'Em pausa')) : tx('Prête à démarrer', 'Ready to start', 'Pronta a começar')}
-                  <ListenerCount />
                 </p>
                 <h2 className="mt-1 font-display text-2xl font-semibold leading-tight sm:text-3xl">{r.current?.title ?? RADIO_NAME}</h2>
                 <p className="mt-1 truncate text-sm text-white/65">{r.current?.subtitle ?? (r.liveOn ? `${tx('Émission en direct', 'Live show', 'Emissão em direto')} : ${r.liveTitle}` : null) ?? tx('Appuyez sur « Écouter » pour lancer la radio.', 'Press “Listen” to start the radio.', 'Carregue em «Ouvir» para iniciar a rádio.')}</p>
@@ -60,7 +59,6 @@ export default function RadioPage() {
                 {r.active && r.playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
                 {r.active && r.playing ? tx('Pause', 'Pause', 'Pausa') : r.loading && !r.ready ? tx('Chargement…', 'Loading…', 'A carregar…') : tx('Écouter', 'Listen', 'Ouvir')}
               </button>
-              {r.active && !r.onLive && <button type="button" onClick={r.next} className="inline-flex items-center gap-2 rounded-full border border-white/25 px-4 py-3 text-sm font-semibold hover:bg-white/10"><SkipForward className="h-4 w-4" />{tx('Suivant', 'Next', 'Seguinte')}</button>}
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
 
@@ -77,7 +75,6 @@ export default function RadioPage() {
                 <CallShowButton className="mt-3" />
               </div>
             )}
-            {!r.onLive && <RadioModeChooser light className="mt-6" />}
             {r.failed && <p className="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-100" role="alert">{tx('Les titres ne se chargent pas. Vérifiez votre connexion Internet puis appuyez de nouveau sur « Écouter ».', 'Tracks are not loading. Check your Internet connection and press “Listen” again.', 'As faixas não carregam. Verifique a ligação à Internet e carregue de novo em «Ouvir».')}</p>}
             <a href="#vocal" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold"><Mic className="h-4 w-4" aria-hidden />{tx('Envoyer un vocal à l’antenne', 'Send a voice message on air', 'Enviar uma mensagem de voz para o ar')}</a>
           </div>
@@ -89,8 +86,8 @@ export default function RadioPage() {
             <h2 className="font-display text-lg font-semibold text-night">{tx('À suivre', 'Up next', 'A seguir')}</h2>
             {r.upcoming.length ? (
               <ol className="mt-3 space-y-3">
-                {r.upcoming.map((i) => (
-                  <li key={i.key} className="flex items-center gap-3">
+                {r.upcoming.map((i, n) => (
+                  <li key={`${n}-${i.key}`} className="flex items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-night/[0.06] text-night"><KindIcon item={i} className="h-4 w-4" /></span>
                     <span className="min-w-0"><span className="block truncate text-sm font-medium text-night">{i.title}</span><span className="block truncate text-xs text-ink/55">{i.subtitle}</span></span>
                   </li>
@@ -105,7 +102,7 @@ export default function RadioPage() {
                 ? `${songs} ${songs === 1 ? tx('chant', 'song', 'cântico') : tx('chants', 'songs', 'cânticos')} · ${sermons} ${sermons === 1 ? tx('prédication', 'sermon', 'pregação') : tx('prédications', 'sermons', 'pregações')}`
                 : tx('Rien à diffuser pour le moment.', 'Nothing to broadcast for now.', 'Nada para emitir de momento.')}</p>
             )}
-            <p className="mt-3">{tx('Une prédication passe après quelques chants. Vous pouvez changer de page : un petit lecteur reste en bas de l’écran.', 'A sermon plays after a few songs. You can change pages: a small player stays at the bottom of the screen.', 'Uma pregação passa depois de alguns cânticos. Pode mudar de página: um pequeno leitor fica no fundo do ecrã.')}</p>
+            <p className="mt-3">{tx('Une prédication passe après quelques chants. Comme à la radio, vous arrivez là où en est l’antenne : la personne à côté de vous entend le même titre, à la même seconde. Vous pouvez changer de page : un petit lecteur reste en bas de l’écran.', 'A sermon plays after a few songs. Just like the radio, you join wherever the broadcast is: the person next to you hears the same track at the same second. You can change pages: a small player stays at the bottom of the screen.', 'Uma pregação passa depois de alguns cânticos. Como na rádio, entra onde a emissão estiver: a pessoa ao seu lado ouve a mesma faixa no mesmo segundo. Pode mudar de página: um pequeno leitor fica no fundo do ecrã.')}</p>
             <p className="mt-3"><Link to="/musique" className="font-semibold text-gold-700 hover:underline">KCC Music</Link> · <Link to="/predications#audio" className="font-semibold text-gold-700 hover:underline">{tx('Prédications audio', 'Audio sermons', 'Pregações em áudio')}</Link></p>
           </div>
         </aside>

@@ -18,7 +18,7 @@ import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUr
 import { AdminVocals } from '@/features/radio/AdminVocals';
 import { AdminProgrammes } from '@/features/radio/AdminProgrammes';
 import { AdminRadioCodes } from '@/features/radio/AdminRadioCodes';
-import { LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
+import { ListenerCount, LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { JITSI_DOMAIN } from '@/features/meetings/meetings';
 
 /** Ce que la radio diffuse : chants, prédications, et titres retirés de l'antenne. */
@@ -86,7 +86,7 @@ export default function AdminRadio() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-night">{RADIO_NAME}</h1>
+        <h1 className="flex flex-wrap items-center gap-3 font-display text-2xl font-semibold text-night">{RADIO_NAME}<ListenerCount light={false} className="text-sm" /></h1>
         <p className="mt-1 text-sm text-ink/65">La radio enchaîne en aléatoire les chants à diffusion autorisée (l’extrait public pour les chants en vente) et les prédications audio publiées. Choisissez ce qui passe à l’antenne. <Link to="/radio" className="font-semibold text-gold-700 hover:underline">Ouvrir la radio</Link></p>
       </div>
       <DemoInline />

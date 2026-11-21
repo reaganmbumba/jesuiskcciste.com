@@ -94,7 +94,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [recPaused, setRecPaused] = useState(false);
   const ctx = useRef<AudioContext | null>(null);
   const listenerCounts = useRadioListeners();
-  const auditeurs = onAir && !recMode ? listenerCounts?.live ?? null : null;
+  const liveOn = onAir && !recMode;
+  const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
@@ -620,7 +621,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </button>
             )}
             <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, l’émission est gardée pour plus tard.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule. « Enregistrer sans diffuser » : préparez une émission à programmer plus tard.'}</p>
-            {onAir && !recMode && <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {auditeurs ?? '…'} auditeur{(auditeurs ?? 0) > 1 ? 's' : ''}{taken.length ? ` · ${taken.length} au téléphone` : ''}</p>}
+            <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {liveOn ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((liveOn ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {liveOn ? 'sur votre direct' : 'à l’écoute de la radio'}{liveOn && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
             {onAir && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" onClick={() => setMicMuted((m) => !m)} className={small + (micMuted ? ' bg-red-600 text-white' : ' bg-white/[0.08] text-white')}><Mic className="h-4 w-4" />{micMuted ? 'Micro coupé' : 'Micro actif'}</button>
@@ -793,8 +794,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className="text-xs text-ink/55">Animateur radio</p>
           </div>
           <div className="rounded border border-[#d3dae3] bg-white p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Auditeurs en direct</p>
-            <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{onAir ? auditeurs ?? '…' : '—'}</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Auditeurs connectés</p>
+            <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{listenerCounts?.total ?? '…'}</p>
+            <p className="text-xs text-ink/55">{onAir && !recMode ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
           </div>
           <div className="rounded border border-[#d3dae3] bg-white">

@@ -18,6 +18,7 @@ import { isLiveOn, loadRadioCatalog, newCallRoomUrl, parseCallUrl, parseStreamUr
 import { AdminVocals } from '@/features/radio/AdminVocals';
 import { AdminProgrammes } from '@/features/radio/AdminProgrammes';
 import { AdminRadioCodes } from '@/features/radio/AdminRadioCodes';
+import { AdminRadioEquipe } from '@/features/radio/AdminRadioEquipe';
 import { ListenerCount, LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
 import { JITSI_DOMAIN } from '@/features/meetings/meetings';
 
@@ -111,6 +112,7 @@ export default function AdminRadio() {
       </CardBody></Card>
       <AdminProgrammes />
       <AdminRadioCodes />
+      <AdminRadioEquipe />
       <AdminVocals />
       <Card><CardBody className="space-y-4">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-night"><MessageCircle className="h-5 w-5 text-gold-600" />Réglages des vocaux</h2>

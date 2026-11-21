@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Circle, Headphones, Mic, Youtube, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
+import { Circle, Headphones, Maximize2, Mic, Minimize2, Youtube, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -18,6 +18,7 @@ import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
 import { RadioGrid } from '@/features/radio/RadioGrid';
 import { YouTubeChat } from '@/features/radio/YouTubeChat';
+import { CoAnimateur, type CoAnimInfo } from '@/features/radio/CoAnimateur';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
 type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null };
@@ -114,6 +115,11 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const screenInfo = useRef<ScreenInfo>({ title: '', topic: '', listeners: null, callsOpen: false });
   const lines = useRef<Map<string, Line>>(new Map());
   const [taken, setTaken] = useState<string[]>([]);
+  // Appels souples : un appelant peut être mis en attente (sa voix coupée, il reste en ligne) et avoir son propre volume.
+  const [held, setHeld] = useState<string[]>([]);
+  const [lineVol, setLineVol] = useState<Record<string, number>>({});
+  // Plein écran : l'antenne prend tout l'écran, le menu de l'administration est replié.
+  const [full, setFull] = useState(() => { try { return localStorage.getItem('kcc-antenne-plein') !== '0'; } catch { return true; } });
 
   // Micros disponibles
   useEffect(() => {
@@ -297,6 +303,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     lines.current.forEach((l) => { l.pc.close(); l.el.srcObject = null; });
     lines.current.clear();
     setTaken([]);
+    setHeld([]);
+    setLineVol({});
     pub.current?.pc.close();
     pub.current = null;
     nodes.current.mic?.getTracks().forEach((t) => t.stop());
@@ -402,8 +410,32 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     const l = lines.current.get(a.id);
     if (l) { l.gain?.disconnect(); l.node?.disconnect(); l.pc.close(); l.el.srcObject = null; lines.current.delete(a.id); }
     setTaken((t) => t.filter((x) => x !== a.id));
+    setHeld((h) => h.filter((x) => x !== a.id));
     await supabase!.from('radio_appels').update({ statut, modifie_le: new Date().toISOString() }).eq('id', a.id);
     setQueue((q) => q.filter((x) => x.id !== a.id));
+  }
+
+  // Volume de chaque appelant (0 quand il est mis en attente)
+  useEffect(() => {
+    lines.current.forEach((l, id) => { if (l.gain) l.gain.gain.value = held.includes(id) ? 0 : lineVol[id] ?? 1; });
+  }, [held, lineVol, taken]);
+  const toggleHold = (id: string) => setHeld((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]));
+
+  /** Appel suivant : raccroche les appelants à l'antenne (pas les invités du plateau) et prend le premier en attente. */
+  async function nextCall() {
+    for (const a of queue.filter((x) => x.statut === 'antenne' && x.genre !== 'plateau')) await hang(a, 'termine');
+    const first = queue.find((x) => x.statut === 'attente');
+    if (first) await take(first);
+  }
+
+  function toggleFull() {
+    const v = !full;
+    setFull(v);
+    try { localStorage.setItem('kcc-antenne-plein', v ? '1' : '0'); } catch { /* navigation privée */ }
+    try {
+      if (v && !document.fullscreenElement) void document.documentElement.requestFullscreen?.().catch(() => undefined);
+      if (!v && document.fullscreenElement) void document.exitFullscreen?.().catch(() => undefined);
+    } catch { /* plein écran refusé : le menu est quand même replié */ }
   }
 
   /** Joue le morceau n° i de la liste (on revient au premier après le dernier). */
@@ -551,6 +583,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   screenInfo.current = { title: title.trim() || 'Émission en direct', topic: topicSaved, listeners: auditeurs ?? null, callsOpen: calls };
   const waiting = queue.filter((a) => a.statut === 'attente');
   const live = queue.filter((a) => a.statut === 'antenne');
+  const coInfo: CoAnimInfo = {
+    titre: title.trim() || 'Émission en direct', sujet: topic.trim(), sujetAffiche: topicSaved, animateur: profile ? `${profile.firstName} ${profile.lastName}`.trim() : '',
+    onAir, recMode, startedAt: radioSettingsOf(settings).live.startedAt, auditeurs: auditeurs ?? null,
+    programme: progNow?.title ?? '', musique: onAir && musicOn && tracks[trackIdx] && !(progNow && !progCut) ? tracks[trackIdx].name : '',
+    antenne: live.filter((a) => !held.includes(a.id)), attente: waiting,
+  };
 
   useEffect(() => {
     if (!onAir || (variant !== 'studio' && !recMode)) return;
@@ -665,15 +703,18 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <RadioGrid dark />
 
           <section className={card}>
-            <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>
+            <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span>
+              {onAir && waiting.length > 0 && <button type="button" onClick={() => void nextCall()} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white"><SkipForward className="h-3 w-3" />Appel suivant</button>}</p>
             {!onAir && <p className="text-sm text-white/50">Les appels arrivent ici pendant le direct.</p>}
             {recMode && <p className="text-sm text-white/50">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
             {onAir && !queue.length && <p className="text-sm text-white/50">Aucun appel pour le moment.</p>}
             <ul className="space-y-2">
               {live.map((a) => (
                 <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-red-500/60 bg-red-500/15 p-3">
-                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">🔴 {seat(a)}{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-red-200">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion…'}</p></div>
-                  <button type="button" onClick={() => hang(a, 'termine')} className={small + ' bg-red-600 text-white'}><PhoneOff className="h-4 w-4" /></button>
+                  <div className="min-w-0 flex-1"><p className="truncate font-semibold">🔴 {seat(a)}{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p><p className="text-xs text-red-200">{held.includes(a.id) ? '⏸ En attente' : taken.includes(a.id) ? 'À l’antenne' : 'Connexion…'}</p>
+                    {taken.includes(a.id) && <input type="range" min={0} max={2} step={0.05} value={lineVol[a.id] ?? 1} disabled={held.includes(a.id)} onChange={(e) => { const v = Number(e.target.value); setLineVol((m) => ({ ...m, [a.id]: v })); }} className="mt-1 w-full accent-[#e8b84a] disabled:opacity-40" aria-label={`Volume de ${a.nom}`} />}</div>
+                  {taken.includes(a.id) && <button type="button" onClick={() => toggleHold(a.id)} className={small + ' bg-white/[0.08] text-white'} aria-label={held.includes(a.id) ? `Remettre ${a.nom} à l’antenne` : `Mettre ${a.nom} en attente`}>{held.includes(a.id) ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}</button>}
+                  <button type="button" onClick={() => hang(a, 'termine')} className={small + ' bg-red-600 text-white'} aria-label={`Raccrocher ${a.nom}`}><PhoneOff className="h-4 w-4" /></button>
                 </li>
               ))}
               {waiting.map((a) => (
@@ -689,11 +730,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <YouTubeChat dark />
 
           <section className={card}>
-            <p className={hd}>Sujet de l’émission
+            <p className={hd}>Sujet · co-animateur Claude
               {onAir && !recMode && <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className="rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-night disabled:opacity-40"><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher'}</button>}
             </p>
             <textarea rows={4} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className={field + ' resize-y'} placeholder="Thème du jour, question, histoire… lu par les auditeurs." />
             {onAir && topic.trim() === topicSaved && topicSaved && <p className="mt-1 text-xs text-emerald-300">✓ Affiché aux auditeurs</p>}
+            <CoAnimateur info={coInfo} dark />
           </section>
 
           {progBox(false)}
@@ -765,7 +807,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   }
 
   return (
-    <div className={`${appMode ? 'min-h-screen' : '-m-4 sm:-m-6 lg:-m-8 min-h-[calc(100vh-68px)]'} flex flex-col bg-[#e9edf2]`}>
+    <div className={`${appMode ? 'min-h-screen' : full ? 'fixed inset-0 z-40 overflow-y-auto' : '-m-4 sm:-m-6 lg:-m-8 min-h-[calc(100vh-68px)]'} flex flex-col bg-[#e9edf2]`}>
       {/* Barre du haut, comme le logiciel Colmatage */}
       <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 bg-[#2b3648] px-4 py-2.5 text-white shadow">
         <span className="grid h-10 w-[84px] place-items-center rounded bg-white"><img src="/images/logo-kcc.svg" alt="KCC" className="h-8" /></span>
@@ -773,14 +815,15 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <p className="font-display text-lg font-semibold leading-tight">{RADIO_NAME} · Antenne</p>
           <p className="text-xs text-white/65">Émission en direct · jesuiskcciste.com/radio</p>
         </div>
-        {onAir && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Mic className="h-4 w-4" />} onClick={() => setMicMuted((m) => !m)}>{micMuted ? 'Rallumer le micro' : 'Couper le micro'}</Button>}
+        {!appMode && <Button type="button" size="sm" variant="outline" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" icon={full ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />} onClick={toggleFull} title={full ? 'Afficher le menu de l’administration' : 'Studio en plein écran, menu replié'}>{full ? 'Afficher le menu' : 'Plein écran'}</Button>}
+        {onAir && <Button type="button" size="sm" variant="outline" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" icon={<Mic className="h-4 w-4" />} onClick={() => setMicMuted((m) => !m)}>{micMuted ? 'Rallumer le micro' : 'Couper le micro'}</Button>}
         {onAir && !recMode && (diffOn
-          ? <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
-          : outputsOf(dest).length > 0 && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Youtube className="h-4 w-4" />} onClick={startDiff}>YouTube/Facebook</Button>)}
-        {recMode && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={recPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={togglePause}>{recPaused ? 'Reprendre' : 'Pause'}</Button>}
-        {!onAir && <Button type="button" size="sm" variant="outline" className="border-orange-300/70 bg-transparent text-orange-100 hover:bg-white/10" icon={<Circle className="h-4 w-4 fill-orange-500 text-orange-500" />} disabled={busy} onClick={() => void goLive(false, true)}>Enregistrer sans diffuser</Button>}
+          ? <Button type="button" size="sm" variant="outline" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
+          : outputsOf(dest).length > 0 && <Button type="button" size="sm" variant="outline" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" icon={<Youtube className="h-4 w-4" />} onClick={startDiff}>YouTube/Facebook</Button>)}
+        {recMode && <Button type="button" size="sm" variant="outline" className="!border-white/40 !bg-transparent !text-white hover:!bg-white/10" icon={recPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={togglePause}>{recPaused ? 'Reprendre' : 'Pause'}</Button>}
+        {!onAir && <Button type="button" size="sm" variant="outline" className="!border-orange-300/70 !bg-transparent !text-orange-100 hover:!bg-white/10" icon={<Circle className="h-4 w-4 fill-orange-500 text-orange-500" />} disabled={busy} onClick={() => void goLive(false, true)}>Enregistrer sans diffuser</Button>}
         {!onAir
-          ? <Button type="button" size="sm" className="bg-white text-[#2b3648] hover:bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
+          ? <Button type="button" size="sm" className="!bg-white !text-[#2b3648] hover:!bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
           : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>{recMode ? 'Terminer l’enregistrement' : 'Terminer l’émission'}</Button>}
         <span className={`text-xs font-semibold ${recMode ? 'text-orange-300' : onAir ? 'text-emerald-300' : 'text-white/60'}`}>{recMode ? `⏺ ${state} · ${mmss(recorder.current?.seconds() ?? 0)}` : onAir ? `● ${state || 'À l’antenne'}` : 'Hors antenne'}</span>
       </header>
@@ -800,7 +843,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
           </div>
           <div className="rounded border border-[#d3dae3] bg-white">
-            <p className="flex items-center gap-2 border-b border-[#d3dae3] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#2b3648]"><Phone className="h-3.5 w-3.5 text-red-600" />Appels ({queue.length})</p>
+            <p className="flex items-center gap-2 border-b border-[#d3dae3] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#2b3648]"><Phone className="h-3.5 w-3.5 text-red-600" /><span className="flex-1">Appels ({queue.length})</span>
+              {onAir && waiting.length > 0 && <button type="button" onClick={() => void nextCall()} className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-semibold normal-case tracking-normal text-white hover:bg-emerald-700" title="Raccroche l’appelant à l’antenne et prend le premier en attente"><SkipForward className="h-3 w-3" />Appel suivant</button>}</p>
             {!onAir && <p className="px-3 py-3 text-xs text-ink/55">Les appels arrivent ici pendant l’émission.</p>}
             {recMode && <p className="px-3 py-3 text-xs text-ink/55">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
             {onAir && !recMode && !queue.length && <p className="px-3 py-3 text-xs text-ink/55">Aucun appel pour le moment.</p>}
@@ -808,8 +852,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               {live.map((a) => (
                 <li key={a.id} className="border-b border-[#e3e8ee] border-l-4 border-l-red-600 bg-red-50 px-3 py-2">
                   <p className="text-sm font-semibold text-night">🔴 {seat(a)}{a.nom}{a.ville ? ` · ${a.ville}` : ''}</p>
-                  <p className="text-[11px] text-red-700">{taken.includes(a.id) ? 'À l’antenne' : 'Connexion de sa voix…'}</p>
-                  <button type="button" onClick={() => hang(a, 'termine')} className="mt-1 inline-flex items-center gap-1 rounded border border-red-300 px-2 py-0.5 text-xs font-semibold text-red-700 hover:bg-red-100"><PhoneOff className="h-3 w-3" />Raccrocher</button>
+                  <p className="text-[11px] text-red-700">{held.includes(a.id) ? '⏸ En attente : il vous entend, les auditeurs ne l’entendent pas' : taken.includes(a.id) ? 'À l’antenne' : 'Connexion de sa voix…'}</p>
+                  {taken.includes(a.id) && (
+                    <label className={`mt-1 flex items-center gap-1.5 text-[11px] text-ink/60 ${held.includes(a.id) ? 'opacity-40' : ''}`}>Volume
+                      <input type="range" min={0} max={2} step={0.05} value={lineVol[a.id] ?? 1} disabled={held.includes(a.id)} onChange={(e) => { const v = Number(e.target.value); setLineVol((m) => ({ ...m, [a.id]: v })); }} className="flex-1 accent-[#2b3648]" aria-label={`Volume de ${a.nom}`} />
+                      <span className="w-8 text-right tabular-nums">{Math.round((lineVol[a.id] ?? 1) * 100)}%</span>
+                    </label>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {taken.includes(a.id) && <button type="button" onClick={() => toggleHold(a.id)} className="inline-flex items-center gap-1 rounded border border-[#d3dae3] bg-white px-2 py-0.5 text-xs font-semibold text-night hover:bg-night/5">{held.includes(a.id) ? <><Play className="h-3 w-3" />Remettre à l’antenne</> : <><Pause className="h-3 w-3" />Mettre en attente</>}</button>}
+                    <button type="button" onClick={() => hang(a, 'termine')} className="inline-flex items-center gap-1 rounded border border-red-300 px-2 py-0.5 text-xs font-semibold text-red-700 hover:bg-red-100"><PhoneOff className="h-3 w-3" />Raccrocher</button>
+                  </div>
                 </li>
               ))}
               {waiting.map((a) => (
@@ -873,9 +926,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <p className="px-3 py-2 text-[11px] text-ink/55">Utilisez un casque pour éviter l’écho.</p>
               </Section>
 
-              <Section title="Sujet de l’émission" action={onAir && !recMode ? <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className={fileBtn + ' disabled:opacity-40'}><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher aux auditeurs'}</button> : undefined}>
+              <Section title="Sujet · co-animateur Claude" action={onAir && !recMode ? <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className={fileBtn + ' disabled:opacity-40'}><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher aux auditeurs'}</button> : undefined}>
                 <textarea rows={5} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className="block w-full resize-y border-0 p-3 text-[13px] outline-none" placeholder="Thème du jour, question, histoire… Il s’affiche sur la page des auditeurs pendant le direct." />
                 <p className="border-t border-[#e3e8ee] px-3 py-1.5 text-[11px] text-ink/55">{recMode ? 'Gardé avec l’enregistrement : il sera affiché quand l’émission passera.' : onAir ? (topic.trim() === topicSaved && topicSaved ? '✓ Affiché aux auditeurs' : 'Cliquez sur « Afficher aux auditeurs » en haut à droite.') : 'Il sera affiché dès que vous passez à l’antenne.'}</p>
+                <CoAnimateur info={coInfo} />
               </Section>
 
               {progBox(true)}

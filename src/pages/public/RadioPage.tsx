@@ -64,7 +64,10 @@ export default function RadioPage() {
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
             <ShareRadioButton className="mt-3 justify-start" />
-            <Link to="/radio/rediffusions" className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">⟲ Réécouter les émissions passées</Link>
+            <span className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              <Link to="/radio/rediffusions" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">⟲ Réécouter les émissions passées</Link>
+              <Link to="/notifications" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">🔔 Être prévenu quand une émission commence</Link>
+            </span>
             <RadioProgrammeList className="mt-5" />
 
             {r.liveTopic && (

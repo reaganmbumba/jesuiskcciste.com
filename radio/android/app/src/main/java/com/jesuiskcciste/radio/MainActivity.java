@@ -88,6 +88,8 @@ public class MainActivity extends Activity {
     }
 
     private String urlFrom(Intent i) {
+        // ouverte par l'alarme d'une émission : la radio démarre toute seule
+        if (i != null && i.getBooleanExtra("play", false)) { i.removeExtra("play"); return HOME + "?play=1"; }
         if (i != null && i.getData() != null && "https".equals(i.getData().getScheme())) {
             String path = i.getData().getPath();
             return path != null && path.startsWith("/radio/app") ? i.getData().toString() : HOME;

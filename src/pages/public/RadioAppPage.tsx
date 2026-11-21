@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CalendarClock, ChevronDown, History, Mic, Pause, Play } from 'lucide-react';
+import { Bell, CalendarClock, ChevronDown, History, Mic, Pause, Play } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
@@ -29,6 +29,13 @@ export default function RadioAppPage() {
     const t = setInterval(prepare, 60_000);
     return () => clearInterval(t);
   }, [prepare]);
+  // Ouverte par l'alarme d'une émission (application Android) : la radio démarre toute seule
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('play') !== '1') return;
+    window.history.replaceState(null, '', window.location.pathname);
+    const t = window.setTimeout(() => { if (!r.active) r.start('all'); }, 600);
+    return () => window.clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { document.title = RADIO_NAME; }, []);
 
   const playing = r.active && r.playing;
@@ -53,6 +60,7 @@ export default function RadioAppPage() {
       <header className="relative flex shrink-0 items-center gap-3 px-5 pb-1 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-gold font-display text-[11px] font-bold tracking-wider text-gold">KCC</span>
         <p className="min-w-0 flex-1 truncate font-display text-lg font-semibold">{RADIO_NAME}</p>
+        <a href="/notifications" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-gold-300" aria-label="Être prévenu quand une émission commence" title="Être prévenu quand une émission commence"><Bell className="h-4 w-4" /></a>
         <a href="/radio/rediffusions" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10 text-gold-300" aria-label="Réécouter les émissions" title="Réécouter les émissions"><History className="h-4 w-4" /></a>
         <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider', playing || r.liveOn ? 'bg-red-600 text-white' : 'bg-white/10 text-white/70')}>
           <span className={cn('h-2 w-2 rounded-full bg-white', (playing || r.liveOn) && 'kcc-fx animate-pulse')} aria-hidden />{tx('En direct', 'Live', 'Em direto')}

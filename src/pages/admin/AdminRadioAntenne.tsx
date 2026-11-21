@@ -20,6 +20,7 @@ import { Conduite } from '@/features/radio/Conduite';
 import { Charte } from '@/features/radio/Charte';
 import { Secours } from '@/features/radio/Secours';
 import { SiteSongsPicker } from '@/features/radio/SiteSongsPicker';
+import { Souffleur } from '@/features/radio/Souffleur';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -919,6 +920,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           </section>
 
           {onAir && <Conduite title={title} dark />}
+          <Souffleur title={title} topic={topic} dark />
           <DedicacesPanel dark />
           <YouTubeChat dark />
           <RadioStats dark />
@@ -1223,6 +1225,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
 
               {onAir && <Conduite title={title} />}
+              <Souffleur title={title} topic={topic} />
               <DedicacesPanel />
               <YouTubeChat />
               <RadioStats />

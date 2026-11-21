@@ -141,7 +141,8 @@ public class AlertService extends Service {
     }
 
     private PendingIntent openApp() {
-        Intent i = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // « play » : l'application s'ouvre et la radio démarre toute seule (réveil radio)
+        Intent i = new Intent(this, MainActivity.class).putExtra("play", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         return PendingIntent.getActivity(this, 1, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 

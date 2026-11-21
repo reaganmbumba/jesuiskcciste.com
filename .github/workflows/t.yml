@@ -27,7 +27,7 @@ jobs:
           python - <<'PY'
           from faster_whisper import WhisperModel
           m = WhisperModel('medium', device='cpu', compute_type='int8')
-          segs, info = m.transcribe('/tmp/a.mp3', beam_size=5, vad_filter=True)
+          segs, info = m.transcribe('/tmp/a.mp3', language='ln', beam_size=5, vad_filter=True, initial_prompt='Mbote na bino. Paix à vous. Nkolo Yawe, Mosakoli Dizolele, Kimbanguisme, KCC, Alliance.')
           with open('/tmp/t.txt', 'w') as f:
               f.write(f'# langue {info.language} {info.language_probability:.2f}\n')
               for s in segs:

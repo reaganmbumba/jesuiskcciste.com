@@ -175,6 +175,22 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     });
   }, [queue, onAir]);
 
+  // Signe de vie du direct toutes les 30 s : sans lui pendant 3 minutes (coupure, téléphone éteint),
+  // l'antenne est rendue toute seule à la radio automatique.
+  useEffect(() => {
+    if (!onAir || recMode || !supabase) return;
+    let warned = false;
+    const beat = () => void supabase!.rpc('radio_live_beat').then(({ data, error }) => {
+      if (!error && data === false && !warned) {
+        warned = true;
+        notify('Votre direct a été coupé plus de 3 minutes : la radio a repris toute seule. Terminez puis relancez le direct.', 'error');
+      }
+    });
+    beat();
+    const t = window.setInterval(beat, 30_000);
+    return () => window.clearInterval(t);
+  }, [onAir, recMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Vu-mètre de l'antenne, et détection du silence : au bout de SILENCE_S secondes sans aucun son
   // à l'antenne (micro coupé, ligne tombée, chanson finie…), un jingle part tout seul, puis la musique.
   const [silentFor, setSilentFor] = useState(0);

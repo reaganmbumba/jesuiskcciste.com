@@ -60,6 +60,8 @@ export interface RadioLive {
   calls: boolean;
   /** Sujet de l'émission écrit par l'animateur, affiché aux auditeurs pendant le direct. */
   topic: string;
+  /** Dernier signe de vie du Studio (toutes les 30 s pendant un direct du site). */
+  beat?: string;
   /** Nom de l'animateur à l'antenne (pour ne pas lancer deux directs en même temps). */
   host?: string;
 }
@@ -160,8 +162,13 @@ export function newCallRoomUrl(domain = 'meet.jit.si', random: () => number = Ma
 }
 
 /** Le direct est-il à l'antenne en ce moment ? */
+/** Délai sans « battement » du Studio après lequel un direct est considéré comme tombé. */
+export const LIVE_BEAT_TIMEOUT_MS = 150_000;
+
 export function isLiveOn(live: RadioLive, now = new Date()): boolean {
   if (!live.onAir || !(live.url || live.rtc)) return false;
+  // Direct du Studio sans signe de vie depuis 2 min 30 : l'animateur a été coupé, la radio reprend.
+  if (live.rtc && live.beat) { const b = new Date(live.beat).getTime(); if (!Number.isNaN(b) && now.getTime() - b > LIVE_BEAT_TIMEOUT_MS) return false; }
   if (!live.startedAt) return true;
   const started = new Date(live.startedAt).getTime();
   return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
@@ -192,6 +199,7 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       calls: l.calls === true,
       topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
       ...(typeof l.host === 'string' && l.host ? { host: l.host.slice(0, 80) } : {}),
+      ...(typeof l.beat === 'string' && l.beat ? { beat: l.beat } : {}),
     },
     programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
     semaine: parseSemaine((r as { semaine?: unknown } | undefined)?.semaine),

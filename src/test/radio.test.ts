@@ -190,3 +190,13 @@ describe('message de partage de la radio', () => {
     expect(shareRadioText(tx, null, false, [], now)).toBe('J’écoute Radio Je suis KCCiste. Écoutez avec moi, c’est gratuit :');
   });
 });
+
+describe('direct du Studio coupé', () => {
+  it('un direct sans signe de vie depuis plus de 2 min 30 n’est plus à l’antenne', () => {
+    const now = new Date('2026-11-21T12:00:00Z');
+    const base = { url: '', title: 'Direct', onAir: true, startedAt: '2026-11-21T11:00:00Z', callUrl: '', rtc: 'session-abcdef12', calls: false, topic: '' };
+    expect(isLiveOn({ ...base, beat: '2026-11-21T11:59:30Z' }, now)).toBe(true);
+    expect(isLiveOn({ ...base, beat: '2026-11-21T11:55:00Z' }, now)).toBe(false);
+    expect(isLiveOn(base, now)).toBe(true); // ancien Studio sans battement
+  });
+});

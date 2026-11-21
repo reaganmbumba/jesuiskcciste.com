@@ -10,6 +10,7 @@ import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
 import { DedicaceForm } from '@/features/radio/DedicaceForm';
+import { RadioAPropos } from '@/features/radio/RadioAPropos';
 import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioProgrammeList, ShareRadioButton } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
@@ -112,6 +113,7 @@ export default function RadioPage() {
           </div>
         </aside>
       </section>
+      <RadioAPropos />
     </div>
   );
 }

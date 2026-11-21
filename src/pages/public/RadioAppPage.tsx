@@ -128,10 +128,10 @@ export default function RadioAppPage() {
 
         {/* Ce qui suit : une seule ligne discrète, en bas */}
         {nextProg && !r.liveOn && (
-          <p className="mt-6 inline-flex max-w-full items-center gap-2 rounded-full border border-gold/20 bg-white/[0.04] px-4 py-2 text-sm text-white/70">
+          <p className="mt-6 inline-flex max-w-full items-center gap-2 rounded-2xl border border-gold/20 bg-white/[0.04] px-4 py-2 text-left text-sm text-white/70">
             <CalendarClock className="h-4 w-4 shrink-0 text-gold-300" aria-hidden />
             <span className="shrink-0 font-semibold text-gold-300">{tx('À suivre', 'Up next', 'A seguir')} · {new Date(nextProg.startsAt).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Kinshasa', hour: '2-digit', minute: '2-digit' }).replace(':', 'h')}</span>
-            <span className="truncate">{nextProg.title}</span>
+            <span className="line-clamp-2">{nextProg.title}</span>
           </p>
         )}
       </main>

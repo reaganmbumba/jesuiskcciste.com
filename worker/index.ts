@@ -15,13 +15,14 @@
  */
 
 import { serveMedia } from './media';
+import { handleSouffleur } from './souffleur';
 import { findApostleBiography } from '../src/content/apotres-biographies';
 import { handleLive } from './live';
 import { handleJobs } from './jobs';
 import { handleNotifications, runScheduled } from './notifications';
 
 interface Fetcher { fetch(input: Request | string | URL, init?: RequestInit): Promise<Response> }
-interface Env { ASSETS: Fetcher; SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string; RELIEFWEB_APPNAME?: string; SUPABASE_SERVICE_KEY?: string; VAPID_PRIVATE_KEY?: string; PUSH_BATCH?: string; PUSH_SUBREQUESTS?: string }
+interface Env { ASSETS: Fetcher; SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string; RELIEFWEB_APPNAME?: string; SUPABASE_SERVICE_KEY?: string; VAPID_PRIVATE_KEY?: string; PUSH_BATCH?: string; PUSH_SUBREQUESTS?: string; ANTHROPIC_API_KEY?: string }
 
 /* Types minimaux de l'API HTMLRewriter du runtime Workers. */
 interface ElementLike { setAttribute(name: string, value: string): void; setInnerContent(content: string): void; remove(): void }
@@ -135,6 +136,7 @@ export default {
   async fetch(request: Request, env: Env, ctx?: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === '/api/emplois') return handleJobs(request, env, ctx);
+    if (url.pathname === '/api/souffleur') return handleSouffleur(request, env);
     // Dernières versions des applications de la radio (versions GitHub « radio-apk-N », « studio-apk-N », « radio-N »).
     const appli = ({ '/radio/android.apk': ['radio-apk-', 'KCC-Radio.apk'], '/radio/studio.apk': ['studio-apk-', 'KCC-Studio-Radio.apk'], '/radio/windows.exe': ['radio-', 'KCC-Radio-Setup.exe'] } as Record<string, [string, string]>)[url.pathname];
     if (appli) return latestApp(appli[0], appli[1]);

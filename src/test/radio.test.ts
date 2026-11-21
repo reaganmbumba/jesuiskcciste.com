@@ -177,3 +177,16 @@ describe('audios récents', () => {
     expect(buildRound(list, () => 0.3).filter((i) => i.key === 'song:c')).toHaveLength(1);
   });
 });
+
+describe('message de partage de la radio', () => {
+  it('nomme ce qui passe et l’émission suivante', async () => {
+    const { shareRadioText } = await import('@/features/radio/RadioUi');
+    const tx = (fr: string) => fr;
+    const now = new Date('2026-11-21T09:00:00Z').getTime();
+    const progs = [{ title: 'Le chemin de la reconnaissance', startsAt: '2026-11-21T19:00:00Z' }];
+    expect(shareRadioText(tx, { kind: 'song', title: 'Petola motema', subtitle: 'Chorale' }, false, progs, now))
+      .toBe('J’écoute le chant « Petola motema » (Chorale) sur Radio Je suis KCCiste. Prochaine émission : « Le chemin de la reconnaissance » à 20h00. Écoutez avec moi, c’est gratuit :');
+    expect(shareRadioText(tx, { kind: 'live', title: 'L’heure de la prière', subtitle: '' }, true, [], now)).toContain('l’émission « L’heure de la prière » en ce moment');
+    expect(shareRadioText(tx, null, false, [], now)).toBe('J’écoute Radio Je suis KCCiste. Écoutez avec moi, c’est gratuit :');
+  });
+});

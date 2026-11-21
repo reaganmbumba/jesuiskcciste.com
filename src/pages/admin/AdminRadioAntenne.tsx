@@ -88,7 +88,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const fx = useRef<{ chain?: ReturnType<typeof voiceChain>; bus?: GainNode }>({});
 
   const ctx = useRef<AudioContext | null>(null);
-  const auditeurs = useRadioListeners(false, onAir);
+  const listenerCounts = useRadioListeners();
+  const auditeurs = onAir ? listenerCounts?.live ?? null : null;
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);

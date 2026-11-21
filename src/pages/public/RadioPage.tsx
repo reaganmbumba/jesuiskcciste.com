@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
+import { CallShowButton, KindIcon, ListenerCount, LiveBadge, RADIO_NAME, RadioModeChooser } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -36,11 +36,11 @@ export default function RadioPage() {
                 ? <img src={r.current.imageUrl} alt="" className="h-24 w-24 shrink-0 rounded-2xl object-cover ring-4 ring-gold/40 sm:h-28 sm:w-28" />
                 : <span className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-600 text-night sm:h-28 sm:w-28">{r.current ? <KindIcon item={r.current} className="h-10 w-10" /> : <Radio className="h-10 w-10" aria-hidden />}</span>}
               <div className="min-w-0" aria-live="polite">
-                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-300">
+                <p className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold-300">
                   {r.onLive && <LiveBadge />}
-                  {r.liveOn && r.liveListeners !== null && r.liveListeners > 0 && <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold normal-case tracking-normal text-white/80">🎧 {r.liveListeners} {tx(r.liveListeners > 1 ? 'auditeurs' : 'auditeur', r.liveListeners > 1 ? 'listeners' : 'listener', r.liveListeners > 1 ? 'ouvintes' : 'ouvinte')}</span>}
                   {r.playing && !r.onLive && <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />}
                   {r.active ? (r.playing ? tx('À l’antenne', 'On air', 'No ar') : tx('En pause', 'Paused', 'Em pausa')) : tx('Prête à démarrer', 'Ready to start', 'Pronta a começar')}
+                  <ListenerCount />
                 </p>
                 <h2 className="mt-1 font-display text-2xl font-semibold leading-tight sm:text-3xl">{r.current?.title ?? RADIO_NAME}</h2>
                 <p className="mt-1 truncate text-sm text-white/65">{r.current?.subtitle ?? (r.liveOn ? `${tx('Émission en direct', 'Live show', 'Emissão em direto')} : ${r.liveTitle}` : null) ?? tx('Appuyez sur « Écouter » pour lancer la radio.', 'Press “Listen” to start the radio.', 'Carregue em «Ouvir» para iniciar a rádio.')}</p>

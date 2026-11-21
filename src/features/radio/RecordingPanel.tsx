@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarClock, Download, Loader2, X } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { supabase } from '@/lib/supabase';
 import { formatDuration } from '@/utils/format';
 import { uploadSiteAudio } from '@/features/content/siteContent';
-import { radioSettingsOf, type RadioProgramme } from './radio';
+import { addDraft, scheduleProgramme, updateDraft, whenLabel } from './drafts';
 import type { ShowRecording } from './recorder';
 
 const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'emission';
@@ -13,8 +12,10 @@ const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/
  * Après le direct : l'enregistrement est mis en ligne, puis on peut le télécharger
  * (téléphone ou ordinateur) et le programmer en rediffusion.
  */
-export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: ShowRecording; title: string; topic: string; dark?: boolean; onClose: () => void }) {
+export function RecordingPanel({ rec, title, topic, dark, onClose, draft = false }: { rec: ShowRecording; title: string; topic: string; dark?: boolean; onClose: () => void; draft?: boolean }) {
   const { settings, setSettings } = useSiteSettings();
+  // Émission enregistrée sans diffuser : elle passera pour la première fois, donc pas « (rediffusion) ».
+  const [name, setName] = useState(draft ? title : `${title} (rediffusion)`);
   const [url, setUrl] = useState('');
   const [state, setState] = useState<'upload' | 'ok' | 'error'>('upload');
   const [error, setError] = useState('');
@@ -23,6 +24,7 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
   const [busy, setBusy] = useState(false);
   const date = new Date().toLocaleDateString('fr-CA');
   const fileName = `${slug(title)}-${date}.${rec.ext}`;
+  const draftId = useMemo(() => crypto.randomUUID?.() ?? `${Date.now()}`, [rec.blob]);
   const localUrl = useMemo(() => URL.createObjectURL(rec.blob), [rec.blob]);
   useEffect(() => () => URL.revokeObjectURL(localUrl), [localUrl]);
 
@@ -30,25 +32,22 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
     let off = false;
     const file = new File([rec.blob], fileName, { type: rec.mime });
     uploadSiteAudio(file, `${title} ${date}`)
-      .then((r) => { if (!off) { setUrl(r.url); setState('ok'); } })
+      .then((r) => {
+        // gardé dans la liste « à programmer » de ce navigateur, pour le programmer plus tard
+        if (draft) addDraft({ id: draftId, title, topic, url: r.url, seconds: rec.seconds, recordedAt: new Date().toISOString() });
+        if (!off) { setUrl(r.url); setState('ok'); }
+      })
       .catch((e) => { if (!off) { setError(e instanceof Error ? e.message : 'Envoi impossible.'); setState('error'); } });
     return () => { off = true; };
   }, [rec.blob]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function schedule() {
     if (!url || !when) return;
-    const start = new Date(when);
-    if (Number.isNaN(start.getTime()) || start.getTime() < Date.now() - 60_000) { setError('Choisissez une date et une heure à venir.'); return; }
     setBusy(true); setError('');
     try {
-      const r = radioSettingsOf(settings);
-      const p: RadioProgramme = { id: crypto.randomUUID?.() ?? `${Date.now()}`, title: `${title} (rediffusion)`.slice(0, 120), topic, url, startsAt: start.toISOString(), durationSeconds: rec.seconds };
-      // fonction radio_programme_add : accessible aux animateurs radio, n'ajoute qu'une émission au programme
-      const { error: e } = await supabase!.rpc('radio_programme_add', { p });
-      if (e) throw e;
-      const next = { ...settings, radio: { ...r, programmes: [...r.programmes, p] } };
-      setSettings(next);
-      setPlanned(start.toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }));
+      const start = await scheduleProgramme(settings, setSettings, { title: name.trim() || title, topic, url, seconds: rec.seconds, when });
+      if (draft) updateDraft(draftId, { title: name.trim() || title, programmedFor: start.toISOString() });
+      setPlanned(whenLabel(start));
     } catch (e) { setError(e instanceof Error ? e.message : 'La programmation a échoué.'); } finally { setBusy(false); }
   }
 
@@ -63,11 +62,13 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
     <section className={box}>
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold">🎙️ Enregistrement de l’émission · {formatDuration(rec.seconds)}</p>
+          <p className="font-semibold">{draft ? '⏺ Émission enregistrée (pas encore diffusée)' : '🎙️ Enregistrement de l’émission'} · {formatDuration(rec.seconds)}</p>
           <p className={`text-xs ${sub}`}>{state === 'upload' ? 'Mise en ligne en cours…' : state === 'ok' ? '✓ Gardé en ligne : vous pouvez le télécharger ou le repasser.' : 'Pas mis en ligne : téléchargez-le maintenant pour ne pas le perdre.'}</p>
         </div>
         <button type="button" onClick={onClose} className={`p-1 ${sub}`} aria-label="Fermer"><X className="h-4 w-4" /></button>
       </div>
+      {/* Réécouter avant de programmer */}
+      <audio controls preload="metadata" src={localUrl} className="mt-3 w-full" aria-label="Réécouter l’enregistrement" />
       <div className="mt-3 flex flex-wrap gap-2">
         <a href={downloadHref} download={fileName} className={`${btn} bg-gold text-night ${state === 'upload' ? 'pointer-events-none opacity-50' : ''}`}>
           {state === 'upload' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Télécharger
@@ -75,11 +76,12 @@ export function RecordingPanel({ rec, title, topic, dark, onClose }: { rec: Show
       </div>
       {state === 'ok' && (
         <div className="mt-4">
-          <p className="flex items-center gap-2 text-sm font-semibold"><CalendarClock className="h-4 w-4" />Repasser en rediffusion</p>
+          <p className="flex items-center gap-2 text-sm font-semibold"><CalendarClock className="h-4 w-4" />{draft ? 'Programmer à la radio (et sur YouTube)' : 'Repasser en rediffusion'}</p>
           {planned
-            ? <p className="mt-1 text-sm text-emerald-500">✓ Rediffusion programmée {planned}. L’alarme de l’appli préviendra les auditeurs.</p>
+            ? <p className="mt-1 text-sm text-emerald-500">✓ {draft ? 'Émission programmée' : 'Rediffusion programmée'} {planned}. Elle passera seule, même ordinateur éteint ; l’alarme de l’appli préviendra les auditeurs.</p>
             : (
               <div className="mt-2 flex flex-wrap gap-2">
+                <input value={name} maxLength={120} onChange={(e) => setName(e.target.value)} className={`${field} min-w-0 flex-1 basis-full`} aria-label="Nom affiché aux auditeurs" placeholder="Nom de l’émission" />
                 <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} className={field} aria-label="Date et heure de la rediffusion" />
                 <button type="button" onClick={schedule} disabled={!when || busy} className={`${btn} ${dark ? 'bg-white/10 text-white' : 'bg-[#2b3648] text-white'} disabled:opacity-50`}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}Programmer

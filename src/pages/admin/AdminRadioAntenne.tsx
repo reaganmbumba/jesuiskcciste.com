@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Headphones, Mic, Youtube, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
+import { Circle, Headphones, Mic, Youtube, Music2, Pause, Phone, PhoneOff, Play, Radio, Send, SkipForward, Square, UserX, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
@@ -15,6 +15,7 @@ import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@
 import { useRadioListeners } from '@/features/radio/listeners';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
+import { SavedDrafts } from '@/features/radio/SavedDrafts';
 import { RadioGrid } from '@/features/radio/RadioGrid';
 import { YouTubeChat } from '@/features/radio/YouTubeChat';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
@@ -87,9 +88,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [myPads, setMyPads] = useState<{ name: string; buf: AudioBuffer | null; file: File }[]>([]);
   const fx = useRef<{ chain?: ReturnType<typeof voiceChain>; bus?: GainNode }>({});
 
+  // Mode « enregistrement » : tout comme en direct (micro, musique, bruitages, effets), mais rien n'est diffusé ;
+  // l'émission est gardée pour être programmée plus tard.
+  const [recMode, setRecMode] = useState(false);
+  const [recPaused, setRecPaused] = useState(false);
   const ctx = useRef<AudioContext | null>(null);
   const listenerCounts = useRadioListeners();
-  const auditeurs = onAir ? listenerCounts?.live ?? null : null;
+  const liveOn = onAir && !recMode;
+  const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
   const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
@@ -103,7 +109,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   // Enregistrement du direct (téléchargement, rediffusion)
   const [recOn, setRecOn] = useState(() => { try { return localStorage.getItem('kcc-radio-rec') !== '0'; } catch { return true; } });
   const recorder = useRef<ShowRecorder | null>(null);
-  const [lastRec, setLastRec] = useState<{ rec: ShowRecording; title: string; topic: string } | null>(null);
+  const [lastRec, setLastRec] = useState<{ rec: ShowRecording; title: string; topic: string; draft?: boolean } | null>(null);
   const toggleRec = (v: boolean) => { setRecOn(v); try { localStorage.setItem('kcc-radio-rec', v ? '1' : '0'); } catch { /* navigation privée */ } };
   const screenInfo = useRef<ScreenInfo>({ title: '', topic: '', listeners: null, callsOpen: false });
   const lines = useRef<Map<string, Line>>(new Map());
@@ -116,7 +122,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   // File des appels : relue toutes les 3 s pendant l'émission
   useEffect(() => {
-    if (!onAir || !supabase) return;
+    if (!onAir || recMode || !supabase) return;
     const load = async () => {
       const { data } = await supabase!.from('radio_appels').select('id, nom, ville, statut, cree_le, session_id, genre, siege').in('statut', ['attente', 'antenne']).order('cree_le');
       if (data) setQueue(data as Appel[]);
@@ -124,7 +130,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     void load();
     const t = window.setInterval(load, 3000);
     return () => window.clearInterval(t);
-  }, [onAir]);
+  }, [onAir, recMode]);
 
   // Invités du plateau : branchés à l'antenne dès qu'ils arrivent ; voix débranchée quand quelqu'un s'en va
   const takeRef = useRef<(a: Appel) => Promise<void>>(async () => {});
@@ -167,12 +173,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     setSettings(next);
   }
 
-  async function goLive(force = false) {
+  /** rehearsal = enregistrer sans diffuser : pas de relais, pas d'auditeurs, pas d'appels, pas de YouTube. */
+  async function goLive(force = false, rehearsal = false) {
     if (!supabase) return;
     setBusy(true);
     try {
       // Un autre animateur est déjà à l'antenne : on ne le coupe pas, on propose de rejoindre son plateau.
-      const fresh = await fetchRadioSettings();
+      // (Un enregistrement ne touche pas l'antenne : on peut enregistrer pendant le direct d'un autre.)
+      const fresh = rehearsal ? null : await fetchRadioSettings();
       if (!force && fresh && fresh.live.rtc && isLiveOn(fresh.live)) {
         setLocked({ host: fresh.live.host || 'Un autre animateur', title: fresh.live.title || 'une émission' });
         setBusy(false);
@@ -182,6 +190,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error('Session expirée : reconnectez-vous.');
+      if (rehearsal && typeof MediaRecorder === 'undefined') throw new Error('Ce navigateur ne sait pas enregistrer : utilisez Chrome ou l’application Studio.');
       const ac = new AudioContext();
       ctx.current = ac;
       const mic = await microphone(micId || undefined);
@@ -221,6 +230,16 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
+      if (rehearsal) {
+        recorder.current = recordShow(program.stream);
+        if (!recorder.current) throw new Error('L’enregistrement n’a pas démarré sur ce navigateur : essayez Chrome.');
+        setRecMode(true);
+        setRecPaused(false);
+        setState('Enregistrement (non diffusé)');
+        setOnAir(true);
+        notify('Enregistrement lancé : rien ne part aux auditeurs. Faites votre émission comme en direct, puis « Terminer l’enregistrement ».');
+        return;
+      }
       recorder.current = recOn ? recordShow(program.stream) : null;
       setState('Connexion au relais…');
       pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0],
@@ -291,11 +310,42 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     fx.current = {};
     nodes.current = {};
     setOnAir(false);
+    setRecMode(false);
+    setRecPaused(false);
     setState('');
+  }
+
+  /** Pause de l'enregistrement : le passage n'est pas gardé (la musique s'arrête aussi). */
+  function togglePause() {
+    const r = recorder.current;
+    if (!r) return;
+    const el = nodes.current.musicEl;
+    if (r.paused()) {
+      r.resume();
+      if (el?.src && musicOn) void el.play().catch(() => {});
+      setState('Enregistrement (non diffusé)');
+    } else {
+      r.pause();
+      el?.pause();
+      setState('En pause : rien n’est enregistré');
+    }
+    setRecPaused(r.paused());
   }
 
   async function endShow() {
     setBusy(true);
+    if (recMode) {
+      try {
+        const rec = await recorder.current?.stop();
+        recorder.current = null;
+        stopAll();
+        if (rec) {
+          setLastRec({ rec, title: title.trim() || 'Émission', topic: topic.trim(), draft: true });
+          notify('Enregistrement terminé : réécoutez-le, puis choisissez quand il passera à la radio.');
+        } else notify('Rien n’a été enregistré.', 'error');
+      } finally { setBusy(false); }
+      return;
+    }
     try {
       for (const a of queue) await supabase!.from('radio_appels').update({ statut: 'termine', modifie_le: new Date().toISOString() }).eq('id', a.id);
       const rec = await recorder.current?.stop();
@@ -438,7 +488,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   // Pendant le direct : l'émission de l'heure suit la grille, à la seconde près.
   useEffect(() => {
-    if (!onAir) return;
+    if (!onAir || recMode) return;
     let n = 0;
     const tick = () => {
       if (n++ % 6 === 0) void fetchRadioSettings().then((r) => { if (r) progFetched.current = r.programmes; }).catch(() => undefined);
@@ -464,7 +514,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     tick();
     const t = window.setInterval(tick, 5000);
     return () => window.clearInterval(t);
-  }, [onAir]);
+  }, [onAir, recMode]);
 
   const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const progBox = (light: boolean) => {
@@ -489,17 +539,24 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     );
   };
   useEffect(() => { if (nodes.current.micGain) nodes.current.micGain.gain.value = micMuted ? 0 : 1; }, [micMuted]);
-  useEffect(() => () => { if (pub.current) stopAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { if (ctx.current) stopAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Pendant un enregistrement, fermer la page le perdrait : le navigateur demande confirmation.
+  useEffect(() => {
+    if (!recMode) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [recMode]);
 
   screenInfo.current = { title: title.trim() || 'Émission en direct', topic: topicSaved, listeners: auditeurs ?? null, callsOpen: calls };
   const waiting = queue.filter((a) => a.statut === 'attente');
   const live = queue.filter((a) => a.statut === 'antenne');
 
   useEffect(() => {
-    if (!onAir || variant !== 'studio') return;
+    if (!onAir || (variant !== 'studio' && !recMode)) return;
     const t = window.setInterval(() => setTick((x) => x + 1), 1000);
     return () => window.clearInterval(t);
-  }, [onAir, variant]);
+  }, [onAir, variant, recMode]);
 
   const lockBox = (dark: boolean) => locked && !onAir && (
     <div className={dark ? 'rounded-3xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-white' : 'rounded border border-red-300 bg-red-50 p-3 text-sm text-night'}>
@@ -523,7 +580,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
 
   if (variant === 'studio') {
-    const sec = onAir && startedAt ? Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)) : 0;
+    const sec = recMode ? recorder.current?.seconds() ?? 0 : onAir && startedAt ? Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)) : 0;
     const clock = `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
     const card = 'rounded-3xl border border-white/10 bg-white/[0.04] p-4';
     const hd = 'mb-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-gold-300';
@@ -539,7 +596,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className="truncate font-display text-lg font-semibold leading-tight">Studio Radio KCC</p>
             <p className="truncate text-xs text-white/55">{who || 'Animateur'}</p>
           </div>
-          {onAir
+          {recMode
+            ? <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold tabular-nums ${recPaused ? 'bg-white/15' : 'bg-orange-600'}`}><span className={`h-2 w-2 rounded-full bg-white ${recPaused ? '' : 'animate-pulse'}`} />{recPaused ? 'PAUSE' : 'REC'} {clock}</span>
+            : onAir
             ? <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-bold tabular-nums"><span className="h-2 w-2 animate-pulse rounded-full bg-white" />ON AIR {clock}</span>
             : <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">Hors antenne</span>}
         </header>
@@ -556,12 +615,18 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               className={`mx-auto mt-5 grid h-32 w-32 place-items-center rounded-full text-center font-bold shadow-2xl transition active:scale-95 disabled:opacity-60 ${onAir ? 'bg-red-600 text-white shadow-red-900/50' : 'bg-gold text-night shadow-[0_14px_40px_-8px_rgba(232,184,74,.75)]'}`}>
               <span>{busy ? '…' : onAir ? <>■<br />Terminer</> : <>●<br />Passer à<br />l’antenne</>}</span>
             </button>
-            <p className="mt-3 text-sm text-white/65">{onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule.'}</p>
-            <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {onAir ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((onAir ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {onAir ? 'sur votre direct' : 'à l’écoute de la radio'}{onAir && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
+            {!onAir && (
+              <button type="button" onClick={() => void goLive(false, true)} disabled={busy} className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-orange-400/60 bg-orange-500/15 px-4 py-2 text-sm font-semibold text-orange-200 disabled:opacity-50">
+                <Circle className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />Enregistrer sans diffuser
+              </button>
+            )}
+            <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, l’émission est gardée pour plus tard.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule. « Enregistrer sans diffuser » : préparez une émission à programmer plus tard.'}</p>
+            <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {liveOn ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((liveOn ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {liveOn ? 'sur votre direct' : 'à l’écoute de la radio'}{liveOn && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
             {onAir && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" onClick={() => setMicMuted((m) => !m)} className={small + (micMuted ? ' bg-red-600 text-white' : ' bg-white/[0.08] text-white')}><Mic className="h-4 w-4" />{micMuted ? 'Micro coupé' : 'Micro actif'}</button>
-                {outputsOf(dest).length > 0 && (diffOn
+                {recMode && <button type="button" onClick={togglePause} className={small + (recPaused ? ' bg-orange-600 text-white' : ' bg-white/[0.08] text-white')}>{recPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}{recPaused ? 'Reprendre' : 'Pause'}</button>}
+                {!recMode && outputsOf(dest).length > 0 && (diffOn
                   ? <button type="button" onClick={stopDiff} className={small + ' bg-white/[0.08] text-white'}><Square className="h-4 w-4" />Arrêter YouTube</button>
                   : <button type="button" onClick={startDiff} className={small + ' bg-white/[0.08] text-white'}><Youtube className="h-4 w-4" />YouTube/Facebook</button>)}
               </div>
@@ -580,8 +645,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </div>
             </section>
           )}
-          {lastRec && !onAir && <RecordingPanel dark rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} />}
-          {onAir && recorder.current && <p className="text-center text-xs text-red-300">● Enregistrement en cours</p>}
+          {lastRec && !onAir && <RecordingPanel dark draft={lastRec.draft} rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} />}
+          {onAir && !recMode && recorder.current && <p className="text-center text-xs text-red-300">● Enregistrement en cours</p>}
+          {!onAir && <SavedDrafts dark />}
           {!onAir && (
             <section className={card + ' space-y-3'}>
               <p className={hd}>Émission</p>
@@ -601,6 +667,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>
             {!onAir && <p className="text-sm text-white/50">Les appels arrivent ici pendant le direct.</p>}
+            {recMode && <p className="text-sm text-white/50">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
             {onAir && !queue.length && <p className="text-sm text-white/50">Aucun appel pour le moment.</p>}
             <ul className="space-y-2">
               {live.map((a) => (
@@ -623,7 +690,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
-              {onAir && <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className="rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-night disabled:opacity-40"><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher'}</button>}
+              {onAir && !recMode && <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className="rounded-lg bg-gold px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-night disabled:opacity-40"><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher'}</button>}
             </p>
             <textarea rows={4} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className={field + ' resize-y'} placeholder="Thème du jour, question, histoire… lu par les auditeurs." />
             {onAir && topic.trim() === topicSaved && topicSaved && <p className="mt-1 text-xs text-emerald-300">✓ Affiché aux auditeurs</p>}
@@ -707,13 +774,15 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <p className="text-xs text-white/65">Émission en direct · jesuiskcciste.com/radio</p>
         </div>
         {onAir && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Mic className="h-4 w-4" />} onClick={() => setMicMuted((m) => !m)}>{micMuted ? 'Rallumer le micro' : 'Couper le micro'}</Button>}
-        {onAir && (diffOn
+        {onAir && !recMode && (diffOn
           ? <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
           : outputsOf(dest).length > 0 && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Youtube className="h-4 w-4" />} onClick={startDiff}>YouTube/Facebook</Button>)}
+        {recMode && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={recPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={togglePause}>{recPaused ? 'Reprendre' : 'Pause'}</Button>}
+        {!onAir && <Button type="button" size="sm" variant="outline" className="border-orange-300/70 bg-transparent text-orange-100 hover:bg-white/10" icon={<Circle className="h-4 w-4 fill-orange-500 text-orange-500" />} disabled={busy} onClick={() => void goLive(false, true)}>Enregistrer sans diffuser</Button>}
         {!onAir
           ? <Button type="button" size="sm" className="bg-white text-[#2b3648] hover:bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
-          : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>Terminer l’émission</Button>}
-        <span className={`text-xs font-semibold ${onAir ? 'text-emerald-300' : 'text-white/60'}`}>{onAir ? `● ${state || 'À l’antenne'}` : 'Hors antenne'}</span>
+          : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>{recMode ? 'Terminer l’enregistrement' : 'Terminer l’émission'}</Button>}
+        <span className={`text-xs font-semibold ${recMode ? 'text-orange-300' : onAir ? 'text-emerald-300' : 'text-white/60'}`}>{recMode ? `⏺ ${state} · ${mmss(recorder.current?.seconds() ?? 0)}` : onAir ? `● ${state || 'À l’antenne'}` : 'Hors antenne'}</span>
       </header>
 
       <div className="flex flex-1 flex-col gap-4 p-3 lg:flex-row lg:items-start">
@@ -727,13 +796,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <div className="rounded border border-[#d3dae3] bg-white p-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Auditeurs connectés</p>
             <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{listenerCounts?.total ?? '…'}</p>
-            <p className="text-xs text-ink/55">{onAir ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
+            <p className="text-xs text-ink/55">{onAir && !recMode ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
           </div>
           <div className="rounded border border-[#d3dae3] bg-white">
             <p className="flex items-center gap-2 border-b border-[#d3dae3] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#2b3648]"><Phone className="h-3.5 w-3.5 text-red-600" />Appels ({queue.length})</p>
             {!onAir && <p className="px-3 py-3 text-xs text-ink/55">Les appels arrivent ici pendant l’émission.</p>}
-            {onAir && !queue.length && <p className="px-3 py-3 text-xs text-ink/55">Aucun appel pour le moment.</p>}
+            {recMode && <p className="px-3 py-3 text-xs text-ink/55">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
+            {onAir && !recMode && !queue.length && <p className="px-3 py-3 text-xs text-ink/55">Aucun appel pour le moment.</p>}
             <ul>
               {live.map((a) => (
                 <li key={a.id} className="border-b border-[#e3e8ee] border-l-4 border-l-red-600 bg-red-50 px-3 py-2">
@@ -776,14 +846,16 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               <p className="mt-1 text-xs text-ink/60">Émission : <b>{title || '—'}</b> | Appels : <b>{calls ? 'ouverts' : 'fermés'}</b> | Diffusion : <b>jesuiskcciste.com/radio{diffOn ? ', YouTube/Facebook' : ''}</b></p>
             </div>
             <table className="text-[13px]"><tbody>
-              <tr><td className={lbl.replace('w-44', 'w-24')}>Statut</td><td className={`${td} text-right font-semibold ${onAir ? 'text-red-600' : ''}`}>{onAir ? '● EN DIRECT' : 'Hors antenne'}</td></tr>
+              <tr><td className={lbl.replace('w-44', 'w-24')}>Statut</td><td className={`${td} text-right font-semibold ${recMode ? 'text-orange-600' : onAir ? 'text-red-600' : ''}`}>{recMode ? (recPaused ? '⏸ PAUSE' : '⏺ ENREGISTREMENT') : onAir ? '● EN DIRECT' : 'Hors antenne'}</td></tr>
               <tr><td className={lbl.replace('w-44', 'w-24')}>Date</td><td className={`${td} text-right font-semibold`}>{today}</td></tr>
               <tr><td className={lbl.replace('w-44', 'w-24')}>Début</td><td className={`${td} text-right font-semibold`}>{startTime}</td></tr>
             </tbody></table>
           </div>
 
           {locked && !onAir && <div className="mb-4">{lockBox(false)}</div>}
-          {lastRec && !onAir && <div className="mb-4"><RecordingPanel rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} /></div>}
+          {recMode && <div className="mb-4 rounded border-2 border-orange-400 bg-orange-50 p-3 text-sm text-night"><b>⏺ Enregistrement sans diffusion.</b> Personne ne vous entend : micro, musique, bruitages et effets marchent comme en direct. « Pause » arrête l’enregistrement le temps d’une coupure ; « Terminer l’enregistrement » vous laisse réécouter puis programmer l’émission.</div>}
+          {lastRec && !onAir && <div className="mb-4"><RecordingPanel draft={lastRec.draft} rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} /></div>}
+          {!onAir && <div className="mb-4"><SavedDrafts /></div>}
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="space-y-4">
               <Section title="Informations de l’émission">
@@ -801,9 +873,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <p className="px-3 py-2 text-[11px] text-ink/55">Utilisez un casque pour éviter l’écho.</p>
               </Section>
 
-              <Section title="Sujet de l’émission" action={onAir ? <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className={fileBtn + ' disabled:opacity-40'}><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher aux auditeurs'}</button> : undefined}>
+              <Section title="Sujet de l’émission" action={onAir && !recMode ? <button type="button" onClick={publishTopic} disabled={topic.trim() === topicSaved} className={fileBtn + ' disabled:opacity-40'}><Send className="mr-1 inline h-3 w-3" />{topicSaved ? 'Mettre à jour' : 'Afficher aux auditeurs'}</button> : undefined}>
                 <textarea rows={5} maxLength={3000} value={topic} onChange={(e) => setTopic(e.target.value)} className="block w-full resize-y border-0 p-3 text-[13px] outline-none" placeholder="Thème du jour, question, histoire… Il s’affiche sur la page des auditeurs pendant le direct." />
-                <p className="border-t border-[#e3e8ee] px-3 py-1.5 text-[11px] text-ink/55">{onAir ? (topic.trim() === topicSaved && topicSaved ? '✓ Affiché aux auditeurs' : 'Cliquez sur « Afficher aux auditeurs » en haut à droite.') : 'Il sera affiché dès que vous passez à l’antenne.'}</p>
+                <p className="border-t border-[#e3e8ee] px-3 py-1.5 text-[11px] text-ink/55">{recMode ? 'Gardé avec l’enregistrement : il sera affiché quand l’émission passera.' : onAir ? (topic.trim() === topicSaved && topicSaved ? '✓ Affiché aux auditeurs' : 'Cliquez sur « Afficher aux auditeurs » en haut à droite.') : 'Il sera affiché dès que vous passez à l’antenne.'}</p>
               </Section>
 
               {progBox(true)}

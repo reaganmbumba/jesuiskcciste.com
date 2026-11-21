@@ -5,6 +5,7 @@ import { useI18n, type Tri } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
 import { RadioCallDialog } from './RadioCall';
+import { useRadioListeners } from './listeners';
 import type { RadioItem, RadioMode } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
@@ -26,6 +27,26 @@ export function LiveBadge({ className }: { className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-full bg-red-600 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white', className)}>
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden />{tx('En direct', 'Live', 'Em direto')}
+    </span>
+  );
+}
+
+/**
+ * « 🎧 23 auditeurs en direct » : nombre de personnes qui écoutent la radio en ce moment,
+ * mis à jour en temps réel. Caché tant que le nombre est inconnu ou nul.
+ */
+export function ListenerCount({ light = true, compact, className }: { light?: boolean; compact?: boolean; className?: string }) {
+  const { tx } = useI18n();
+  const c = useRadioListeners();
+  const n = c?.total ?? 0;
+  if (n < 1) return null;
+  const many = n > 1;
+  const label = tx(many ? 'auditeurs en direct' : 'auditeur en direct', many ? 'listening live' : 'listening live', many ? 'ouvintes em direto' : 'ouvinte em direto');
+  return (
+    <span title={`${n} ${label}`} aria-label={`${n} ${label}`}
+      className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal tabular-nums', light ? 'bg-white/10 text-white/90' : 'bg-night/[0.06] text-night', className)}>
+      <span className="relative flex h-2 w-2" aria-hidden><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" /></span>
+      🎧 {n}{compact ? '' : ` ${label}`}
     </span>
   );
 }
@@ -93,7 +114,7 @@ export function MiniRadioPlayer() {
             {playing && <span className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-red-500 ring-2 ring-night" aria-hidden />}
           </span>
           <span className="min-w-0">
-            <span className="flex items-center gap-2 truncate text-[11px] font-semibold uppercase tracking-wider text-gold-300">{onLive ? <LiveBadge /> : RADIO_NAME}</span>
+            <span className="flex items-center gap-2 truncate text-[11px] font-semibold uppercase tracking-wider text-gold-300">{onLive ? <LiveBadge /> : RADIO_NAME}<ListenerCount compact /></span>
             <span className="block truncate text-sm font-medium">{current.title}</span>
             <span className="block truncate text-xs text-white/55">{current.subtitle}</span>
           </span>
@@ -119,7 +140,7 @@ export function HomeRadioBlock({ className }: { className?: string }) {
     <section className={cn('flex flex-col gap-4 rounded-3xl bg-gradient-to-br from-night to-night-700 p-5 text-white shadow-lift sm:flex-row sm:items-center sm:p-6', className)} aria-labelledby="radio-home-title">
       <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-600 text-night"><Radio className="h-7 w-7" aria-hidden /></span>
       <div className="min-w-0 flex-1">
-        <h2 id="radio-home-title" className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{RADIO_NAME}{liveOn && <LiveBadge />}</h2>
+        <h2 id="radio-home-title" className="flex flex-wrap items-center gap-2 font-display text-xl font-semibold">{RADIO_NAME}{liveOn && <LiveBadge />}<ListenerCount /></h2>
         <p className="mt-1 truncate text-sm text-white/70">{liveOn && !(active && current?.kind === 'live')
           ? <>{tx('Émission en direct', 'Live show', 'Emissão em direto')} : <span className="font-semibold text-white">{liveTitle}</span></>
           : active && current

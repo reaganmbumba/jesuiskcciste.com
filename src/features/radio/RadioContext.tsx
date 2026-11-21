@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { watchTrack } from './rtc';
-import { useRadioListeners } from './listeners';
+import { useRadioPresence } from './listeners';
 import { availableModes, buildRound, effectiveLive, fetchRadioSettings, isLiveOn, upcomingProgrammes, type RadioProgramme, liveItem, LIVE_POLL_MS, loadRadioCatalog, onAir, radioSettingsOf, type RadioItem, type RadioMode, type RadioSettings } from './radio';
 
 const MODE_KEY = 'kcc-radio-mode';
@@ -54,8 +54,6 @@ interface RadioValue {
   callUrl: string | null;
   /** L'émission en direct (antenne du site) accepte les appels par le site. */
   siteCalls: boolean;
-  /** Nombre d'auditeurs du direct en ce moment (null = inconnu). */
-  liveListeners: number | null;
   /** Sujet de l'émission en direct, écrit par l'animateur (vide sinon). */
   liveTopic: string;
   /** Session du relais de l'émission faite depuis l'antenne du site (sinon vide). */
@@ -433,7 +431,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(t);
   }, [active, playing]);
 
-  const liveListeners = useRadioListeners(active && playing && onLive && liveOn, liveOn);
+  useRadioPresence(active && playing, onLive && liveOn);
 
   // L'antenne du site a redémarré (nouvelle session du relais) : on se rebranche.
   useEffect(() => {
@@ -458,7 +456,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), liveListeners, onLive, mode: effectiveMode, modes, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), onLive, mode: effectiveMode, modes, items, current,
     upcoming: active && !onLive ? queue.list.slice(queue.index + 1, queue.index + 4) : [],
     time, duration,
     prepare, start, toggle, next, stop, setMode: changeMode,

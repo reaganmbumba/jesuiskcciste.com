@@ -5,7 +5,7 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, RADIO_NAME } from '@/features/radio/RadioUi';
+import { CallShowButton, ListenerCount, RADIO_NAME } from '@/features/radio/RadioUi';
 
 /** Texte WhatsApp (*gras*, _italique_) affiché proprement. */
 const plain = (t: string) => t.replace(/[*_~]/g, '').replace(/\n{3,}/g, '\n\n').trim();
@@ -85,8 +85,8 @@ export default function RadioAppPage() {
           {show || (r.liveOn && !r.active)
             ? tx('Émission en direct', 'Live show', 'Emissão em direto')
             : tx('En direct · 24 h/24', 'Live · 24/7', 'Em direto · 24 h/24')}
-          {r.liveOn && r.liveListeners !== null && r.liveListeners > 0 && <> · 🎧 {r.liveListeners}</>}
         </p>
+        <ListenerCount className="mt-2" />
 
         <button type="button" onClick={play}
           className="mt-7 grid h-24 w-24 place-items-center rounded-full bg-gold text-night shadow-[0_14px_40px_-8px_rgba(232,184,74,.75)] transition active:scale-95"

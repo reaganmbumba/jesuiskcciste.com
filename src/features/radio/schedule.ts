@@ -48,15 +48,20 @@ export function seededRandom(seed: string): () => number {
 }
 
 /** Titres qui peuvent passer dans la grille : il faut connaître leur durée. Triés pour être identiques partout. */
-export function schedulable(items: RadioItem[]): RadioItem[] {
+/**
+ * Ce qui passe tout seul entre les émissions : les chants (et le journal, les vocaux).
+ * Les prédications ne passent que lorsqu'elles sont programmées — sauf si l'auditeur a
+ * choisi lui-même d'écouter « Prédications ».
+ */
+export function schedulable(items: RadioItem[], mode: RadioMode = 'all'): RadioItem[] {
   return items
-    .filter((i) => i.kind !== 'live' && !!i.url && (i.durationSeconds ?? 0) > 0)
+    .filter((i) => i.kind !== 'live' && !!i.url && (i.durationSeconds ?? 0) > 0 && (i.kind !== 'sermon' || mode === 'sermons'))
     .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
 /** Empreinte de la liste : deux auditeurs avec la même empreinte ont la même grille. */
 export function scheduleFingerprint(items: RadioItem[], mode: RadioMode): string {
-  return `${mode}|${schedulable(items).map((i) => `${i.key}:${Math.round(i.durationSeconds ?? 0)}`).join(',')}`;
+  return `${mode}|${schedulable(items, mode).map((i) => `${i.key}:${Math.round(i.durationSeconds ?? 0)}`).join(',')}`;
 }
 
 /**
@@ -64,7 +69,7 @@ export function scheduleFingerprint(items: RadioItem[], mode: RadioMode): string
  * Vide quand rien ne peut passer.
  */
 export function scheduleAt(items: RadioItem[], mode: RadioMode, now: number, after = 3): RadioSlot[] {
-  const list = schedulable(items);
+  const list = schedulable(items, mode);
   if (!list.length) return [];
   const day = kinshasaDayStart(now);
   const out: RadioSlot[] = [];

@@ -16,11 +16,13 @@ const todayKin = () => new Date().toLocaleDateString('fr-CA', { timeZone: TZ });
 const QUICK = ['06:00', '09:00', '12:00', '12:30', '15:00', '18:30', '20:00', '21:00'];
 
 type Kind = 'emission' | 'sermon' | 'song';
-type Source = { url: string; title: string; subtitle: string; seconds: number | null; kind: Kind };
+type Source = { url: string; title: string; subtitle: string; seconds: number | null; kind: Kind; /** ajout dans le système (ms), 0 si inconnu */ added: number };
 
-/** Heures de départ du programme automatique (toutes les deux heures, heure de Kinshasa). */
-const AUTO_SLOTS = ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'];
-const shuffle = <T,>(a: T[]): T[] => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+const MIN = 60_000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+/** Programme automatique : entre deux émissions, environ 40 minutes de chants (joués seuls par la radio). */
+const SONG_BREAK = 40 * MIN;
+/** Poids d'un audio selon son ancienneté : les ajouts récents reviennent plus souvent. */
+const freshness = (added: number, now: number) => { const d = (now - added) / DAY; return !added ? 1 : d <= 7 ? 6 : d <= 14 ? 4 : d <= 30 ? 2 : 1; };
 
 /** Durée d'un fichier en ligne (lecture des seules informations du début). */
 function probe(url: string): Promise<number | null> {
@@ -72,9 +74,13 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
       const url = s.url?.startsWith('/') ? `https://jesuiskcciste.com${s.url}` : s.url;
       if (url && /^https:\/\//.test(url) && !seen.has(url)) { seen.add(url); out.push({ ...s, url }); }
     };
-    [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds, kind: 'emission' }));
-    items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'sermon' }));
-    items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'song' }));
+    // une émission est « ajoutée » le jour de sa première diffusion
+    const first = new Map<string, number>();
+    all.forEach((p) => { const t = new Date(p.startsAt).getTime(); if (!first.has(p.url) || t < first.get(p.url)!) first.set(p.url, t); });
+    const at = (d?: string) => (d ? new Date(d).getTime() || 0 : 0);
+    [...all].reverse().forEach((p) => add({ url: p.url, title: p.title.replace(/ \((rediffusion[^)]*)\)$/, ''), subtitle: 'Émission déjà diffusée', seconds: p.durationSeconds, kind: 'emission', added: first.get(p.url) ?? 0 }));
+    items.filter((i) => i.kind === 'sermon').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Prédication · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'sermon', added: at(i.addedAt) }));
+    items.filter((i) => i.kind === 'song').forEach((i) => add({ url: i.url, title: i.title, subtitle: `Chant · ${i.subtitle}`, seconds: i.durationSeconds, kind: 'song', added: at(i.addedAt) }));
     return out;
   }, [all, items]);
   const q = query.trim().toLowerCase();
@@ -88,42 +94,43 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
   const [draft, setDraft] = useState<RadioProgramme[] | null>(null);
   const [saving, setSaving] = useState(0);
 
+  /**
+   * Programme automatique sur 24 heures : de maintenant jusqu'à demain à la même heure.
+   * Prédications et émissions s'enchaînent avec des pauses de chants entre elles ; les audios
+   * ajoutés récemment sont choisis plus souvent, et un même audio ne revient pas trop vite.
+   * Ce qui est déjà programmé reste à sa place.
+   */
   function generate() {
     setMsg('');
-    const usable = library.filter((x) => x.seconds && x.seconds > 0 && x.seconds <= 6 * 3600);
-    // ce qui est déjà passé hier ou prévu ce jour passe en dernier, pour varier d'un jour à l'autre
-    const recent = new Set(all.filter((p) => Math.abs(new Date(p.startsAt).getTime() - startMs('12:00')) < 2 * 86_400_000).map((p) => p.url));
-    const pools: Record<Kind, Source[]> = { sermon: [], emission: [], song: [] };
-    usable.forEach((x) => pools[x.kind].push(x));
-    (Object.keys(pools) as Kind[]).forEach((k) => {
-      const sh = shuffle(pools[k]);
-      pools[k] = [...sh.filter((x) => !recent.has(x.url)), ...sh.filter((x) => recent.has(x.url))];
-    });
-    if (!usable.length) { setMsg('Aucun audio avec une durée connue dans le système.'); return; }
-    // ordre des genres : prédications et émissions en alternance, un chant de temps en temps
-    const order = shuffle<Kind>(['sermon', 'emission', 'sermon', 'song', 'emission', 'sermon', 'song', 'emission', 'sermon']);
-    const taken = new Set<string>();
-    const busy = list.map((p) => [new Date(p.startsAt).getTime(), endMs(p)] as const);
+    const t0 = Date.now();
+    const talks = library.filter((x) => x.kind !== 'song' && x.seconds && x.seconds >= 60 && x.seconds <= 3 * 3600);
+    if (!talks.length) { setMsg('Aucune prédication ni émission avec une durée connue dans le système.'); return; }
+    const start = Math.ceil((t0 + 5 * MIN) / (5 * MIN)) * (5 * MIN);
+    const end = start + DAY;
+    const busy = all.map((p) => [new Date(p.startsAt).getTime(), endMs(p)] as const).filter(([s, e]) => e > start && s < end).sort((x, y) => x[0] - y[0]);
+    // un même audio ne revient qu'après un certain temps (plus court s'il y a peu d'audios)
+    const gapOf = (x: Source) => (talks.length >= 12 ? 12 : talks.length >= 6 ? 6 : 3) * HOUR / (freshness(x.added, t0) >= 4 ? 2 : 1);
+    const last = new Map<string, number>();
+    all.forEach((p) => { const t = new Date(p.startsAt).getTime(); if (t > start - DAY && t < end && t > (last.get(p.url) ?? -Infinity)) last.set(p.url, t); });
     const out: RadioProgramme[] = [];
-    let k = 0;
-    AUTO_SLOTS.forEach((slot, i) => {
-      const start = startMs(slot);
-      if (start < Date.now() + 2 * 60_000) return;
-      // place libre jusqu'à l'émission suivante (ou au créneau suivant)
-      const nextBusy = Math.min(...busy.filter(([s]) => s >= start).map(([s]) => s), startMs('00:00') + 86_400_000);
-      if (busy.some(([s, e]) => s <= start && start < e)) return;
-      const room = Math.min(nextBusy, i + 1 < AUTO_SLOTS.length ? startMs(AUTO_SLOTS[i + 1]) : Infinity) - start;
-      const tries: Kind[] = [order[k++ % order.length], 'sermon', 'emission', 'song'];
-      for (const kind of tries) {
-        const pick = pools[kind].find((x) => !taken.has(x.url) && (x.seconds ?? 0) * 1000 <= room);
-        if (!pick) continue;
-        taken.add(pick.url);
-        const name = kind === 'emission' ? `${pick.title} (rediffusion)` : kind === 'song' ? `Chant : ${pick.title}` : pick.title;
-        out.push({ id: crypto.randomUUID?.() ?? `${Date.now()}-${i}`, title: name.slice(0, 120), topic: '', url: pick.url, startsAt: new Date(start).toISOString(), durationSeconds: Math.round(pick.seconds ?? 0) });
-        break;
-      }
-    });
-    if (!out.length) { setMsg('Plus de place libre ce jour-là pour un programme automatique.'); return; }
+    let cursor = start, prevKind: Kind | null = null;
+    while (cursor < end - 10 * MIN) {
+      const inside = busy.find(([s, e]) => s <= cursor && cursor < e);
+      if (inside) { cursor = Math.ceil((inside[1] + SONG_BREAK / 2) / (5 * MIN)) * (5 * MIN); continue; }
+      const nextBusy = busy.find(([s]) => s > cursor)?.[0] ?? end;
+      const room = Math.min(nextBusy, end) - cursor;
+      const ok = talks.filter((x) => (x.seconds ?? 0) * 1000 <= room && cursor - (last.get(x.url) ?? -Infinity) >= gapOf(x));
+      // on alterne prédication et émission quand c'est possible
+      const pool = ok.filter((x) => x.kind !== prevKind).length ? ok.filter((x) => x.kind !== prevKind) : ok;
+      if (!pool.length) { cursor = Math.min(nextBusy, cursor + HOUR); continue; }
+      let r = Math.random() * pool.reduce((n, x) => n + freshness(x.added, t0), 0);
+      const pick = pool.find((x) => (r -= freshness(x.added, t0)) <= 0) ?? pool[pool.length - 1];
+      const secs = Math.round(pick.seconds ?? 0);
+      out.push({ id: crypto.randomUUID?.() ?? `${t0}-${out.length}`, title: (pick.kind === 'emission' ? `${pick.title} (rediffusion)` : pick.title).slice(0, 120), topic: '', url: pick.url, startsAt: new Date(cursor).toISOString(), durationSeconds: secs });
+      last.set(pick.url, cursor); prevKind = pick.kind;
+      cursor = Math.ceil((cursor + secs * 1000 + SONG_BREAK) / (5 * MIN)) * (5 * MIN);
+    }
+    if (!out.length) { setMsg('Plus de place libre d’ici demain à la même heure.'); return; }
     setOpen(false);
     setDraft(out);
   }
@@ -272,7 +279,7 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
           <button key={t} type="button" onClick={() => openAt(t)} className={small + ' ' + c.btn}><Plus className="h-3.5 w-3.5" />{t}</button>
         ))}
         <button type="button" onClick={() => openAt(time)} className={small + ' bg-gold text-night'}><Plus className="h-4 w-4" />Autre heure</button>
-        <button type="button" onClick={generate} className={small + ' ' + c.btn}><Wand2 className="h-4 w-4" />Générer un programme</button>
+        <button type="button" onClick={generate} className={small + ' ' + c.btn}><Wand2 className="h-4 w-4" />Générer 24 h de programme</button>
         <button type="button" onClick={() => void poster()} disabled={!list.length} className={small + ' ' + c.btn}><Download className="h-4 w-4" />Affiche du programme (JPG)</button>
         <button type="button" onClick={() => setWeek((w) => !w)} aria-expanded={week} className={small + ' ' + (week ? 'bg-gold text-night' : c.btn)}><CalendarRange className="h-4 w-4" />Grille de la semaine{semaine.length ? ` (${semaine.length})` : ''}</button>
       </div>
@@ -281,12 +288,12 @@ export function RadioGrid({ dark }: { dark?: boolean }) {
 
       {draft && (
         <div className="mt-4 space-y-2 border-t border-current/10 pt-4">
-          <p className="text-sm font-semibold">Proposition de programme — {new Date(`${day}T12:00:00+01:00`).toLocaleDateString('fr-FR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          <p className={`text-xs ${c.sub}`}>Choisie dans tous les audios du système, sans répétition. Retirez ce qui ne convient pas, ou demandez une autre proposition. Entre ces émissions, la radio joue ses chants.</p>
+          <p className="text-sm font-semibold">Proposition de programme — de maintenant jusqu’à demain {hhmm(new Date(draft[0].startsAt).getTime())} ({draft.length} émissions)</p>
+          <p className={`text-xs ${c.sub}`}>Choisie dans tous les audios du système ; ceux ajoutés récemment passent plus souvent. Entre deux émissions, environ 40 minutes de chants. Ce qui était déjà programmé reste à sa place. Retirez ce qui ne convient pas, ou demandez une autre proposition.</p>
           <ol className="space-y-1.5">
             {draft.map((p) => (
               <li key={p.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${c.show}`}>
-                <span className="w-24 shrink-0 text-sm font-bold tabular-nums">{hhmm(new Date(p.startsAt).getTime())} → {hhmm(endMs(p))}</span>
+                <span className="w-24 shrink-0 text-sm font-bold tabular-nums">{dayOf(p.startsAt) !== todayKin() && <span className="block text-[10px] font-semibold uppercase text-gold">Demain</span>}{hhmm(new Date(p.startsAt).getTime())} → {hhmm(endMs(p))}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.title}</span>
                 <button type="button" onClick={() => setDraft((d) => d?.filter((x) => x.id !== p.id) ?? null)} className={`p-1 ${c.sub}`} aria-label={`Retirer ${p.title}`}><X className="h-4 w-4" /></button>
               </li>

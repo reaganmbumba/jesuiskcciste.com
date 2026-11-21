@@ -1,0 +1,9 @@
+name: tmp-meta
+on: { push: { branches: [claude/tmp-meta] } }
+jobs:
+  m:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in https://jesuiskcciste.com/radio "https://jesuiskcciste.com/radio?x=1"; do echo "== $u"; curl -sL -A "WhatsApp/2.23.20.0" "$u" | grep -oE '<meta (property|name)="(og:image|og:title|og:description|twitter:image)[^>]*>' ; done
+          curl -sI https://jesuiskcciste.com/images/radio/partage-radio.jpg | head -3

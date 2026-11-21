@@ -58,6 +58,11 @@ function PlacesLine({ places, className }: { places?: RadioPlace[]; className?: 
   return <p className={className}>📍 {top.map((p) => `${p.name} ${p.n}`).join(' · ')}{rest ? ` · ${rest} ailleurs` : ''}</p>;
 }
 
+/** Baisse automatique : seuil de voix (RMS du micro), niveau de la musique pendant la parole, durée de maintien. */
+const DUCK_VOICE_RMS = 0.035;
+const DUCK_LEVEL = 0.22;
+const DUCK_HOLD_MS = 900;
+
 /** Places d'invités sur le plateau (comme dans radio_plateau_rejoindre). */
 const PLATEAU_PLACES = 10;
 
@@ -89,6 +94,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   tracksRef.current = tracks;
   const idxRef = useRef(0);
   const [musicVol, setMusicVol] = useState(0.25);
+  // Baisse automatique (« ducking ») : la musique et l'émission sous la voix descendent quand l'animateur parle
+  const [autoDuck, setAutoDuck] = useState(() => { try { return localStorage.getItem('kcc-duck') !== '0'; } catch { return true; } });
+  const [ducking, setDucking] = useState(false);
+  const autoDuckRef = useRef(autoDuck); autoDuckRef.current = autoDuck;
   // Émission programmée pendant le direct : elle continue à sa place (même minute que pour
   // tous les auditeurs), sous la voix de l'animateur ; il en règle le volume ou la coupe.
   const [progVol, setProgVol] = useState(0.3);
@@ -116,7 +125,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const listenerCounts = useRadioListeners();
   const liveOn = onAir && !recMode;
   const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
-  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
+  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[]; micAn?: AnalyserNode; duckM?: GainNode; duckP?: GainNode }>({});
   const [plateauLink, setPlateauLink] = useState('');
   const jetonRef = useRef('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
@@ -221,6 +230,34 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     return () => cancelAnimationFrame(raf);
   }, [onAir]);
 
+  // Voix détectée → musique à DUCK_LEVEL en 80 ms ; 0,9 s après la dernière parole, elle remonte doucement.
+  useEffect(() => {
+    if (!onAir) { setDucking(false); return; }
+    const buf = new Float32Array(1024);
+    let down = false, lastVoice = 0;
+    const t = window.setInterval(() => {
+      const { micAn, duckM, duckP } = nodes.current, ac = ctx.current;
+      if (!micAn || !duckM || !duckP || !ac) return;
+      micAn.getFloatTimeDomainData(buf);
+      let sum = 0; for (const v of buf) sum += v * v;
+      const rms = Math.sqrt(sum / buf.length);
+      const now = performance.now();
+      if (autoDuckRef.current && rms > DUCK_VOICE_RMS) lastVoice = now;
+      const want = autoDuckRef.current && now - lastVoice < DUCK_HOLD_MS;
+      if (want !== down) {
+        down = want;
+        const g = want ? DUCK_LEVEL : 1, tc = want ? 0.03 : 0.25;
+        duckM.gain.setTargetAtTime(g, ac.currentTime, tc);
+        duckP.gain.setTargetAtTime(g, ac.currentTime, tc);
+        setDucking(want);
+      }
+    }, 40);
+    return () => window.clearInterval(t);
+  }, [onAir]);
+  function toggleDuck() {
+    setAutoDuck((v) => { try { localStorage.setItem('kcc-duck', v ? '0' : '1'); } catch { /* rien */ } return !v; });
+  }
+
   /** Silence à l'antenne : un jingle de la station tout de suite, puis la musique si elle est arrêtée. */
   async function rescueSilence() {
     const url = `/radio/jingles/kcc-${String(1 + Math.floor(Math.random() * 9)).padStart(2, '0')}.mp3`;
@@ -267,6 +304,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const micSrc = ac.createMediaStreamSource(mic);
       const micGain = ac.createGain();
       micSrc.connect(micGain);
+      // détecteur de voix (baisse automatique de la musique quand l'animateur parle)
+      const micAn = ac.createAnalyser(); micAn.fftSize = 1024;
+      micGain.connect(micAn);
+      const duckM = ac.createGain(), duckP = ac.createGain();
       const program = ac.createMediaStreamDestination();
       const retour = ac.createMediaStreamDestination();
       const analyser = ac.createAnalyser();
@@ -287,7 +328,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const progEl = new Audio();
       progEl.crossOrigin = 'anonymous';
       progEl.preload = 'auto';
-      ac.createMediaElementSource(progEl).connect(progGain);
+      ac.createMediaElementSource(progEl).connect(duckP); duckP.connect(progGain);
       // bruitages : à l'antenne, au téléphone des appelants et dans le casque
       const bus = ac.createGain(); bus.gain.value = fxVol;
       bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
@@ -296,8 +337,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const musicEl = new Audio();
       musicEl.onended = () => playTrack(idxRef.current + 1);
       musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
-      ac.createMediaElementSource(musicEl).connect(musicGain);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain };
+      ac.createMediaElementSource(musicEl).connect(duckM); duckM.connect(musicGain);
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain, micAn, duckM, duckP };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
       if (rehearsal) {
@@ -850,6 +891,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </>}
               <label className="flex flex-1 items-center gap-2 text-xs text-white/60">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" /></label>
             </div>
+            <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={small + ' mt-2 w-full justify-center ' + (autoDuck ? 'bg-gold/25 text-white' : 'bg-white/[0.06] text-white/60')}>
+              🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
+            </button>
           </section>
 
           <section className={card}>
@@ -1050,6 +1094,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   </>}
                   <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-[#2b3648]">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} /></label>
                 </div>
+                <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={'mt-2 rounded px-3 py-1.5 text-xs font-semibold ' + (autoDuck ? 'bg-gold/30 text-night' : 'border border-[#d3dae3] text-ink/60')}>
+                  🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
+                </button>
               </Section>
             </div>
 

@@ -5,6 +5,7 @@ import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
+import { DedicaceForm } from '@/features/radio/DedicaceForm';
 import { CallShowButton, RADIO_NAME, ShareRadioButton } from '@/features/radio/RadioUi';
 
 /** Texte WhatsApp (*gras*, _italique_) affiché proprement. */
@@ -138,6 +139,7 @@ export default function RadioAppPage() {
 
       <Modal open={vocal} onClose={() => setVocal(false)} title={tx('Envoyer un vocal', 'Send a voice note', 'Enviar voz')}>
         <SendVocalCard className="border-0 p-0 text-ink shadow-none" />
+        <DedicaceForm className="mt-6 border-t border-night/10 pt-5" />
       </Modal>
     </div>
   );

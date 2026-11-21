@@ -253,6 +253,25 @@ const LIVE_TITLE: Texts = { fr: '🔴 Culte en direct maintenant', en: '🔴 Liv
 const RADIO_TITLE: Texts = { fr: '📻 Radio en direct maintenant', en: '📻 Radio live now', pt: '📻 Rádio em direto agora' };
 const SERMON_TITLE: Texts = { fr: '🎙️ Nouvelle prédication', en: '🎙️ New sermon', pt: '🎙️ Nova pregação' };
 
+/** Rappel envoyé avant une émission ou un culte programmé (minutes). */
+export const REMINDER_MINUTES = 15;
+const REMINDER_TITLE: Texts = { fr: '⏰ Bientôt en direct', en: '⏰ Live soon', pt: '⏰ Em direto em breve' };
+/** Heure de Kinshasa (UTC+1), ex. « 14:00 ». */
+const hourOf = (iso: string) => new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kinshasa' }).format(new Date(iso));
+/** Message de rappel : commence par « Paix » et invite à être à l'heure. */
+function reminderBody(title: string, iso: string, where: Record<Lang, string>): Texts {
+  const h = hourOf(iso);
+  return {
+    fr: cut(`Paix à vous ! « ${title} » commence à ${h} (heure de Kinshasa) ${where.fr}. Soyez à l'heure pour suivre !`, 300),
+    en: cut(`Peace be with you! “${title}” starts at ${h} (Kinshasa time) ${where.en}. Be on time to follow it!`, 300),
+    pt: cut(`Paz a si! «${title}» começa às ${h} (hora de Kinshasa) ${where.pt}. Seja pontual para acompanhar!`, 300),
+  };
+}
+const ON_RADIO = { fr: 'sur Radio Je suis KCCiste', en: 'on Radio Je suis KCCiste', pt: 'na Rádio Je suis KCCiste' };
+const ON_SITE = { fr: 'en direct sur Je suis KCCiste', en: 'live on Je suis KCCiste', pt: 'em direto no Je suis KCCiste' };
+/** Commence dans plus d'1 min et au plus REMINDER_MINUTES min. */
+const soon = (iso: unknown, now: number) => { const t = typeof iso === 'string' ? Date.parse(iso) : NaN; return !Number.isNaN(t) && t > now + 60000 && t <= now + REMINDER_MINUTES * 60000; };
+
 const all = (s: string): Texts => ({ fr: s, en: s, pt: s });
 const mapTexts = (t: Texts, f: (s: string) => string): Texts => ({ fr: f(t.fr), en: f(t.en || t.fr), pt: f(t.pt || t.fr) });
 
@@ -262,6 +281,12 @@ export function candidatesFrom(feed: Feed, db: { lives: Feed['lives']; announcem
   const within = (iso: string, before: number, after = 5 * 60000) => { const t = Date.parse(iso); return t <= now + after && t >= now - before; };
 
   const seenVideos = new Set<string>();
+  const reminded = new Set<string>();
+  for (const l of [...db.lives, ...feed.lives]) {
+    if (reminded.has(l.id) || !soon(l.startsAt, now)) continue;
+    reminded.add(l.id);
+    out.push({ key: `rappel-direct:${l.id}`, topic: 'direct', title: REMINDER_TITLE, body: reminderBody(cut(l.title, 120), l.startsAt, ON_SITE), url: '/direct', image: null });
+  }
   for (const l of [...db.lives, ...feed.lives]) {
     if (seenVideos.has(l.id) || !within(l.startsAt, 30 * 60000, 60000)) continue;
     seenVideos.add(l.id);
@@ -295,18 +320,25 @@ export function radioCandidates(radio: unknown, now = Date.now()): NewMessage[] 
   const r = radio as { live?: Record<string, unknown>; programmes?: unknown };
   const within = (iso: unknown) => { const t = typeof iso === 'string' ? Date.parse(iso) : NaN; return !Number.isNaN(t) && t <= now + 60000 && t >= now - 30 * 60000; };
   const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  const out: NewMessage[] = [];
+  const progs = (Array.isArray(r.programmes) ? r.programmes : []).filter((p): p is Record<string, unknown> => !!p && typeof p === 'object');
+  // Rappel avant chaque émission programmée.
+  for (const o of progs) {
+    const startsAt = o.starts_at ?? o.startsAt;
+    if (!soon(startsAt, now) || !/^https:\/\//.test(str(o.url))) continue;
+    out.push({ key: `rappel-radio:${str(o.id) || str(startsAt)}`, topic: 'direct', title: REMINDER_TITLE, body: reminderBody(cut(str(o.title) || 'Émission programmée', 120), str(startsAt), ON_RADIO), url: '/radio', image: null });
+  }
   const l = r.live ?? {};
   const started = l.started_at ?? l.startedAt;
   if (l.on_air === true || l.onAir === true) {
     if ((str(l.url) || str(l.rtc)) && within(started)) {
       const title = str(l.title) || 'Émission en direct';
-      return [{ key: `radio:${str(started)}`, topic: 'direct', title: RADIO_TITLE, body: all(cut(`${title} — Radio Je suis KCCiste`, 300)), url: '/radio', image: null }];
+      return [...out, { key: `radio:${str(started)}`, topic: 'direct', title: RADIO_TITLE, body: all(cut(`${title} — Radio Je suis KCCiste`, 300)), url: '/radio', image: null }];
     }
     // Un direct déjà en cours garde l'antenne : pas d'alerte pour une émission programmée.
-    if (str(l.url) || str(l.rtc)) return [];
+    if (str(l.url) || str(l.rtc)) return out;
   }
-  const out: NewMessage[] = [];
-  for (const p of Array.isArray(r.programmes) ? r.programmes : []) {
+  for (const p of progs) {
     if (!p || typeof p !== 'object') continue;
     const o = p as Record<string, unknown>;
     const startsAt = o.starts_at ?? o.startsAt;
@@ -331,7 +363,7 @@ async function enqueueNew(env: PushEnv, budget: Budget, now = Date.now()) {
 
   const iso = (ms: number) => encodeURIComponent(new Date(ms).toISOString());
   const [lives, announcements, sermons, radio] = await Promise.all([
-    sb(env, budget, `livestreams?select=id,title,starts_at,duration_minutes&is_cancelled=eq.false&ended_at=is.null&starts_at=gte.${iso(now - 30 * 60000)}&starts_at=lte.${iso(now + 60000)}&limit=5`)
+    sb(env, budget, `livestreams?select=id,title,starts_at,duration_minutes&is_cancelled=eq.false&ended_at=is.null&starts_at=gte.${iso(now - 30 * 60000)}&starts_at=lte.${iso(now + REMINDER_MINUTES * 60000)}&limit=10`)
       .then((r) => rows<{ id: string; title: string; starts_at: string; duration_minutes: number }>(r)).catch(() => []),
     sb(env, budget, `announcements?select=id,title,summary,image_url,published_at&status=eq.published&audience=eq.public&published_at=gte.${iso(now - 6 * 3600000)}&published_at=lte.${iso(now + 5 * 60000)}&limit=5`)
       .then((r) => rows<{ id: string; title: string; summary: string; image_url: string | null; published_at: string }>(r)).catch(() => []),

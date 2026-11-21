@@ -41,7 +41,15 @@ describe('alertes automatiques', () => {
     expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(0)] }, NOW)).toMatchObject([{ key: 'direct:L', topic: 'direct', url: '/direct' }]);
     expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(-29)] }, NOW)).toHaveLength(1);
     expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(-31)] }, NOW)).toHaveLength(0);
-    expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(5)] }, NOW)).toHaveLength(0);
+    expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(5)] }, NOW).filter((m) => m.key === 'direct:L')).toHaveLength(0);
+  });
+
+  it('rappel 15 min avant un culte programmé, commençant par « Paix »', () => {
+    const live = (min: number) => ({ id: 'L', title: 'Culte du dimanche', startsAt: new Date(NOW + min * 60000).toISOString(), durationMinutes: 120 });
+    const [m] = candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(15)] }, NOW);
+    expect(m).toMatchObject({ key: 'rappel-direct:L', topic: 'direct', url: '/direct' });
+    expect(m.body.fr).toBe("Paix à vous ! « Culte du dimanche » commence à 13:15 (heure de Kinshasa) en direct sur Je suis KCCiste. Soyez à l'heure pour suivre !");
+    expect(candidatesFrom(emptyFeed, { ...emptyDb, lives: [live(16)] }, NOW)).toHaveLength(0);
   });
 
   it('article du site : 48 h, titres dans les 3 langues, lien vers l’article', () => {
@@ -210,8 +218,16 @@ describe('alertes radio', () => {
   it('émission programmée qui commence, sauf si un direct garde l’antenne', () => {
     const prog = { id: 'p1', title: 'Écho du Ciel', url: 'https://jesuiskcciste.com/radio/emissions/a.mp3', starts_at: at(0), duration_seconds: 1800 };
     expect(radioCandidates({ live: { on_air: false }, programmes: [prog] }, NOW)).toMatchObject([{ key: 'radio-prog:p1', topic: 'direct' }]);
-    expect(radioCandidates({ programmes: [{ ...prog, starts_at: at(10) }] }, NOW)).toHaveLength(0);
+    expect(radioCandidates({ programmes: [{ ...prog, starts_at: at(10) }] }, NOW).filter((m) => m.key?.startsWith('radio-prog'))).toHaveLength(0);
     expect(radioCandidates({ live: { on_air: true, url: 'https://stream.zeno.fm/x', started_at: at(-90) }, programmes: [prog] }, NOW)).toHaveLength(0);
     expect(radioCandidates(null, NOW)).toHaveLength(0);
+  });
+  it('rappel avant une émission programmée, même pendant un direct', () => {
+    const prog = { id: 'p2', title: 'Écho du Ciel', url: 'https://jesuiskcciste.com/radio/emissions/a.mp3', starts_at: at(10), duration_seconds: 1800 };
+    const [m] = radioCandidates({ programmes: [prog] }, NOW);
+    expect(m).toMatchObject({ key: 'rappel-radio:p2', topic: 'direct', url: '/radio' });
+    expect(m.body.fr).toMatch(/^Paix à vous ! « Écho du Ciel » commence à 13:10 .*sur Radio Je suis KCCiste\. Soyez à l'heure pour suivre !$/);
+    expect(radioCandidates({ live: { on_air: true, url: 'https://stream.zeno.fm/x', started_at: at(-90) }, programmes: [prog] }, NOW)).toHaveLength(1);
+    expect(radioCandidates({ programmes: [{ ...prog, starts_at: at(16) }] }, NOW)).toHaveLength(0);
   });
 });

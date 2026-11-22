@@ -8,7 +8,7 @@ import { HEURE_MONDE_FICHIERS, HEURE_MONDE_FUSEAUX } from './heureMondeFichiers'
  * Fabriqué par tools/heure-monde/ (voir LISEZ-MOI.md).
  */
 const hourIn = (d: Date, timeZone: string) =>
-  Number(new Intl.DateTimeFormat('fr-FR', { timeZone, hour: '2-digit', hourCycle: 'h23' }).format(d)) % 24;
+  Number(new Intl.DateTimeFormat('fr-FR', { timeZone, hour: '2-digit', hourCycle: 'h23' }).formatToParts(d).find((p) => p.type === 'hour')?.value ?? 0) % 24;
 
 /** Le fichier à jouer à l'heure pile de `d`, ou null (fichier absent : l'ancienne annonce prend le relais). */
 export function worldHourFile(d: Date): string | null {

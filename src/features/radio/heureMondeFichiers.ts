@@ -1,0 +1,4 @@
+// Fabriqué par tools/heure-monde/montage.py : annonces disponibles dans public/radio/heure-monde/.
+export const HEURE_MONDE_FICHIERS: readonly string[] = ["h00-00", "h00-01", "h01-01", "h02-20", "h02-21", "h03-03", "h03-04", "h04-05", "h05-00", "h05-23", "h06-05", "h06-06", "h07-07", "h08-04", "h09-09", "h09-10", "h10-03", "h10-04", "h11-02", "h11-03", "h12-12", "h12-13", "h13-13", "h14-08", "h14-09", "h15-15", "h15-16", "h16-17", "h17-11", "h17-12", "h18-17", "h18-18", "h19-19", "h20-16", "h21-21", "h21-22", "h22-15", "h22-16", "h23-14", "h23-15"];
+/** Fuseau de la ville annoncée : VILLES[heure RDC % 12] (même ordre que tools/heure-monde/villes.py). */
+export const HEURE_MONDE_FUSEAUX: readonly string[] = ["Europe/Paris", "Africa/Luanda", "America/New_York", "Europe/Brussels", "Africa/Johannesburg", "America/Toronto", "Europe/London", "Africa/Brazzaville", "America/Sao_Paulo", "Europe/Zurich", "America/Chicago", "America/Los_Angeles"];

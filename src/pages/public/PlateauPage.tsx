@@ -28,6 +28,7 @@ export default function PlateauPage() {
   const pcs = useRef<RTCPeerConnection[]>([]);
   const ear = useRef<HTMLAudioElement>(null);
   const poll = useRef<number | undefined>(undefined);
+  const watchdog = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     document.title = 'Plateau · Radio Je suis KCCiste';
@@ -38,6 +39,7 @@ export default function PlateauPage() {
 
   const cleanup = () => {
     window.clearInterval(poll.current);
+    window.clearInterval(watchdog.current);
     pcs.current.forEach((pc) => pc.close());
     pcs.current = [];
     mic.current?.getTracks().forEach((t) => t.stop());
@@ -72,12 +74,37 @@ export default function PlateauPage() {
       if (e) throw new Error(e.message);
       const r = data as { id: string; siege: number };
       id.current = r.id;
-      const back = await watchTrack(hostRtc, `plateau${r.siege}`);
-      pcs.current.push(back.pc);
-      const addAll = () => back.stream.getTracks().forEach((t) => { if (!ms.getTracks().includes(t)) ms.addTrack(t); });
-      addAll();
-      back.pc.addEventListener('track', () => setTimeout(addAll, 0));
-      void earEl.play().catch(() => {});
+      // Retour du plateau (ce que l'invité entend). Si aucun son n'arrive (la place de l'invité
+      // n'était pas encore ouverte chez l'animateur au moment de la connexion), on se reconnecte.
+      let back: { pc: RTCPeerConnection; stream: MediaStream } | null = null;
+      const listen = async () => {
+        const old = back;
+        const w = await watchTrack(hostRtc, `plateau${r.siege}`);
+        if (!id.current) { w.pc.close(); return; }
+        back = w;
+        pcs.current.push(w.pc);
+        if (old) { old.pc.close(); pcs.current = pcs.current.filter((x) => x !== old.pc); }
+        const addAll = () => {
+          ms.getTracks().forEach((t) => { if (!w.stream.getTracks().includes(t)) ms.removeTrack(t); });
+          w.stream.getTracks().forEach((t) => { if (!ms.getTracks().includes(t)) ms.addTrack(t); });
+          void earEl.play().catch(() => {});
+        };
+        addAll();
+        w.pc.addEventListener('track', () => setTimeout(addAll, 0));
+      };
+      await listen();
+      let lastBytes = -1, still = 0, busyListen = false;
+      watchdog.current = window.setInterval(async () => {
+        if (!back || !id.current || busyListen) return;
+        let bytes = 0;
+        try { (await back.pc.getStats()).forEach((x) => { if (x.type === 'inbound-rtp' && x.kind === 'audio') bytes += x.bytesReceived ?? 0; }); } catch { return; }
+        still = bytes > lastBytes ? 0 : still + 1;
+        lastBytes = bytes;
+        if (still >= 2) {
+          busyListen = true; still = 0; lastBytes = -1;
+          try { await listen(); } catch { /* nouvel essai au prochain tour */ } finally { busyListen = false; }
+        }
+      }, 3000);
       setStep('onair');
       poll.current = window.setInterval(async () => {
         if (!id.current || !supabase) return;

@@ -562,6 +562,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   async function take(a: Appel) {
     const ac = ctx.current;
     if (!ac || !nodes.current.program) return;
+    // Invité du plateau : sa place est ouverte tout de suite, pour qu'il entende le plateau dès sa connexion.
+    if (a.genre === 'plateau') seatSend(a.siege, true);
     try {
       const w = await watchTrack(a.session_id, 'voix');
       const el = new Audio();

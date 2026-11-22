@@ -21,7 +21,8 @@ const CATALOG_REFRESH_MS = 10 * 60_000;
 /** Après une coupure du flux en direct, on ne le retente qu'après ce délai (un chant passe entre-temps). */
 const LIVE_RETRY_MS = 3 * 60_000;
 /** Habillage de l'antenne : un jingle « Radio Je suis KCCiste » tous les quelques titres, comme une vraie radio. */
-const JINGLES = Array.from({ length: 9 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
+// kcc-01 à 09 : jingles de la station ; kcc-10 à 15 : messages courts (partage, application, appels, recensement…)
+const JINGLES = Array.from({ length: 15 }, (_, i) => `/radio/jingles/kcc-${String(i + 1).padStart(2, '0')}.mp3`);
 /** Fondus d'entrée et de sortie de chaque titre (secondes) : les titres s'enchaînent sans coupure nette. */
 const FADE_IN = 1.5;
 const FADE_OUT = 3.5;
@@ -67,6 +68,8 @@ interface RadioValue {
   callUrl: string | null;
   /** L'émission en direct (antenne du site) accepte les appels par le site. */
   siteCalls: boolean;
+  /** Appels dirigés vers le WhatsApp de la radio (réglé dans la régie) : lien wa.me, à tout moment. */
+  whatsappCall: string | null;
   /** Sujet de l'émission en direct, écrit par l'animateur (vide sinon). */
   liveTopic: string;
   /** Session du relais de l'émission faite depuis l'antenne du site (sinon vide). */
@@ -512,7 +515,7 @@ export function RadioProvider({ children }: { children: ReactNode }) {
   const prepare = useCallback(() => { void fetchCatalog(); refreshSettings(); }, [fetchCatalog, refreshSettings]);
 
   const value: RadioValue = {
-    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), onLive, items, current,
+    ready: !!catalog, loading, active, playing, failed, liveOn, liveTitle: liveItem(live).title, callUrl: liveOn && live.callUrl && radio.live.callMode !== 'whatsapp' ? live.callUrl : null, siteCalls: liveOn && !!live.rtc && live.calls && radio.live.callMode !== 'whatsapp', whatsappCall: radio.live.callMode === 'whatsapp' && /^https:\/\/wa\.me\//.test(radio.live.callUrl) ? radio.live.callUrl : null, liveRtc: liveOn ? live.rtc : '', liveTopic: liveOn ? live.topic : '', liveProgrammed: liveOn && !!eff.programme, programmes: upcomingProgrammes(radio.programmes, new Date(clock)), onLive, items, current,
     upcoming: active && !onLive ? slots.slice(1, 4).map((s) => s.item) : [],
     time, duration,
     prepare, start, toggle, stop,

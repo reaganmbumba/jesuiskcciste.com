@@ -28,7 +28,7 @@ async function post<T>(path: string, body: unknown, token?: string): Promise<T> 
 export type Watch = { pc: RTCPeerConnection; stream: MediaStream };
 
 /** Reçoit une piste (« audio », « retour » ou « voix ») d'une session du relais. */
-export async function watchTrack(sessionId: string, track: 'audio' | 'retour' | 'voix' | 'plateau1' | 'plateau2' | 'plateau3', onState?: (s: RTCPeerConnectionState) => void): Promise<Watch> {
+export async function watchTrack(sessionId: string, track: 'audio' | 'retour' | 'voix' | `plateau${number}`, onState?: (s: RTCPeerConnectionState) => void): Promise<Watch> {
   const j = await post<{ sessionId: string; sdp: string }>('watch', { sessionId, tracks: [track] });
   const pc = new RTCPeerConnection(ICE);
   const stream = new MediaStream();
@@ -44,7 +44,7 @@ export type Publish = { pc: RTCPeerConnection; sessionId: string };
 
 /**
  * L'animateur envoie l'antenne et le retour, plus un retour par place du plateau
- * (« plateau1 »…« plateau3 » : chaque invité entend tout le monde sauf lui-même).
+ * (« plateau1 »…« plateau10 » : chaque invité entend tout le monde sauf lui-même).
  */
 export async function publishShow(token: string, program: MediaStreamTrack, retour: MediaStreamTrack, extras: { name: string; track: MediaStreamTrack }[] = []): Promise<Publish> {
   const pc = new RTCPeerConnection(ICE);

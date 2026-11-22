@@ -20,7 +20,7 @@ describe('Radio Je suis KCCiste', () => {
 
   it('applique les réglages de l’administration et le choix de l’auditeur', () => {
     const all = [song('a'), song('b'), talk('p')];
-    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' }, programmes: [] });
+    expect(radioSettingsOf({})).toEqual({ songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' }, programmes: [], semaine: [] });
     expect(onAir(all, radioSettingsOf({}), 'songs').map((i) => i.key)).toEqual(['song:a', 'song:b']);
     expect(onAir(all, radioSettingsOf({}), 'sermons').map((i) => i.key)).toEqual(['sermon:p']);
     const r = radioSettingsOf({ radio: { songs: true, sermons: false, excluded: ['song:a'] } });
@@ -138,5 +138,65 @@ describe('émissions programmées', () => {
   it('le direct de l’animateur passe avant l’émission programmée', () => {
     const r = radioSettingsOf({ radio: { programmes: [p], live: { onAir: true, rtc: 'abcdefgh12345678', startedAt: '2026-11-20T18:05:00.000Z' } } } as never);
     expect(effectiveLive(r, new Date('2026-11-20T18:10:00Z')).programme).toBeNull();
+  });
+});
+
+import { parseSemaine } from '@/features/radio/radio';
+import { joursLabel } from '@/features/radio/programmePoster';
+describe('grille type de la semaine', () => {
+  it('garde les créneaux valides, triés par heure', () => {
+    const s = parseSemaine([
+      { id: 'b', jours: [1, 2], heure: '20:00', source: 'predication' },
+      { id: 'a', jours: [7, 9], heure: '05:00', source: 'fichier', url: 'https://jesuiskcciste.com/audio/x.mp3', durationSeconds: 300, titre: 'Prière' },
+      { id: 'c', jours: [], heure: '10:00', source: 'emission' },
+      { id: 'd', jours: [1], heure: '10h', source: 'emission' },
+      { id: 'e', jours: [1], heure: '11:00', source: 'autre' },
+    ]);
+    expect(s.map((x) => x.id)).toEqual(['a', 'b']);
+    expect(s[0]).toMatchObject({ jours: [7], url: 'https://jesuiskcciste.com/audio/x.mp3', durationSeconds: 300 });
+    expect(parseSemaine('x')).toEqual([]);
+  });
+  it('décrit les jours', () => {
+    expect(joursLabel([1, 2, 3, 4, 5, 6, 7])).toBe('Tous les jours');
+    expect(joursLabel([5, 1, 2, 3, 4])).toBe('Lun – Ven');
+    expect(joursLabel([6, 7])).toBe('Sam, Dim');
+  });
+});
+
+describe('audios récents', () => {
+  const song = (id: string, addedAt?: string): RadioItem => ({ key: `song:${id}`, kind: 'song', title: id, subtitle: '', url: `/audio/${id}.mp3`, durationSeconds: 200, imageUrl: null, ...(addedAt ? { addedAt } : {}) });
+  it('un chant ajouté récemment passe deux fois par tour, jamais deux fois de suite', async () => {
+    const { isRecent } = await import('@/features/radio/radio');
+    const now = new Date('2026-11-21T10:00:00Z').getTime();
+    const list = ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => song(id, id === 'c' ? '2026-11-20T02:00:00Z' : '2026-09-01T00:00:00Z'));
+    const round = buildRound(list, () => 0.3, null, (i) => isRecent(i, now));
+    const keys = round.filter((i) => i.kind === 'song').map((i) => i.key);
+    expect(keys.filter((k) => k === 'song:c')).toHaveLength(2);
+    expect(keys.filter((k) => k === 'song:a')).toHaveLength(1);
+    keys.forEach((k, i) => { if (i) expect(k).not.toBe(keys[i - 1]); });
+    expect(buildRound(list, () => 0.3).filter((i) => i.key === 'song:c')).toHaveLength(1);
+  });
+});
+
+describe('message de partage de la radio', () => {
+  it('nomme ce qui passe et l’émission suivante', async () => {
+    const { shareRadioText } = await import('@/features/radio/RadioUi');
+    const tx = (fr: string) => fr;
+    const now = new Date('2026-11-21T09:00:00Z').getTime();
+    const progs = [{ title: 'Le chemin de la reconnaissance', startsAt: '2026-11-21T19:00:00Z' }];
+    expect(shareRadioText(tx, { kind: 'song', title: 'Petola motema', subtitle: 'Chorale' }, false, progs, now))
+      .toBe('J’écoute le chant « Petola motema » (Chorale) sur Radio Je suis KCCiste. Prochaine émission : « Le chemin de la reconnaissance » à 20h00. Écoutez avec moi, c’est gratuit :');
+    expect(shareRadioText(tx, { kind: 'live', title: 'L’heure de la prière', subtitle: '' }, true, [], now)).toContain('l’émission « L’heure de la prière » en ce moment');
+    expect(shareRadioText(tx, null, false, [], now)).toBe('J’écoute Radio Je suis KCCiste. Écoutez avec moi, c’est gratuit :');
+  });
+});
+
+describe('direct du Studio coupé', () => {
+  it('un direct sans signe de vie depuis plus de 2 min 30 n’est plus à l’antenne', () => {
+    const now = new Date('2026-11-21T12:00:00Z');
+    const base = { url: '', title: 'Direct', onAir: true, startedAt: '2026-11-21T11:00:00Z', callUrl: '', rtc: 'session-abcdef12', calls: false, topic: '' };
+    expect(isLiveOn({ ...base, beat: '2026-11-21T11:59:30Z' }, now)).toBe(true);
+    expect(isLiveOn({ ...base, beat: '2026-11-21T11:55:00Z' }, now)).toBe(false);
+    expect(isLiveOn(base, now)).toBe(true); // ancien Studio sans battement
   });
 });

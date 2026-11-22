@@ -274,6 +274,7 @@ export interface Track {
   priceCurrency?: 'USD' | 'CDF' | null;
   /** Fichier livré à l'acheteur dans le bucket privé `music` (sinon audioUrl). */
   saleFilePath?: string | null;
+  createdAt?: string;
 }
 
 export type MusicOrderStatus = 'pending' | 'paid' | 'failed' | 'cancelled';

@@ -9,7 +9,9 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
-import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME } from '@/features/radio/RadioUi';
+import { DedicaceForm } from '@/features/radio/DedicaceForm';
+import { RadioAPropos } from '@/features/radio/RadioAPropos';
+import { CallShowButton, KindIcon, LiveBadge, RADIO_NAME, RadioProgrammeList, ShareRadioButton } from '@/features/radio/RadioUi';
 
 export default function RadioPage() {
   const { tx } = useI18n();
@@ -61,6 +63,12 @@ export default function RadioPage() {
               </button>
               {r.active && <button type="button" onClick={r.stop} className="inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"><StopCircle className="h-4 w-4" />{tx('Arrêter', 'Stop', 'Parar')}</button>}
             </div>
+            <ShareRadioButton className="mt-3 justify-start" />
+            <span className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              <Link to="/radio/rediffusions" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">⟲ Réécouter les émissions passées</Link>
+              <Link to="/notifications" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">🔔 Être prévenu quand une émission commence</Link>
+            </span>
+            <RadioProgrammeList className="mt-5" />
 
             {r.liveTopic && (
               <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 sm:p-5">
@@ -69,7 +77,7 @@ export default function RadioPage() {
               </div>
             )}
             {r.liveOn && !r.onLive && r.active && <p className="mt-4 text-sm text-white/70">{tx('Le son du direct est coupé pour le moment : la radio y revient d’elle-même dans quelques minutes.', 'The live sound is cut for now: the radio goes back to it by itself in a few minutes.', 'O som do direto está cortado de momento: a rádio volta a ele sozinha dentro de alguns minutos.')}</p>}
-            {(r.callUrl || r.siteCalls) && (
+            {(r.callUrl || r.siteCalls || r.whatsappCall) && (
               <div className="mt-6 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm text-white/80">{tx('Intervenez en direct : appelez l’émission. La radio se coupe pendant l’appel, vous entendez l’animateur dans l’appel, et tous les auditeurs vous entendent à l’antenne.', 'Join the show live: call in. The radio stops during the call, you hear the host in the call, and every listener hears you on air.', 'Participe em direto: ligue para a emissão. A rádio para durante a chamada, ouve o animador na chamada e todos os ouvintes o ouvem no ar.')}</p>
                 <CallShowButton className="mt-3" />
@@ -79,6 +87,7 @@ export default function RadioPage() {
             <a href="#vocal" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold"><Mic className="h-4 w-4" aria-hidden />{tx('Envoyer un vocal à l’antenne', 'Send a voice message on air', 'Enviar uma mensagem de voz para o ar')}</a>
           </div>
           <SendVocalCard className="mt-8" />
+          <div className="mt-6 rounded-3xl border border-night/[0.06] bg-white p-5 shadow-soft"><DedicaceForm /></div>
         </div>
 
         <aside className="space-y-6 lg:col-span-2">
@@ -107,6 +116,7 @@ export default function RadioPage() {
           </div>
         </aside>
       </section>
+      <RadioAPropos />
     </div>
   );
 }

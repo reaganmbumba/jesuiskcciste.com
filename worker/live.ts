@@ -19,8 +19,10 @@
 export interface LiveEnv { SUPABASE_URL?: string; SUPABASE_ANON_KEY?: string; CALLS_APP_ID?: string; CALLS_APP_SECRET?: string }
 
 const RTC = 'https://rtc.live.cloudflare.com/v1/apps/';
-const TRACKS = new Set(['video', 'audio', 'retour', 'plateau1', 'plateau2', 'plateau3']);
-const WATCHABLE = new Set(['video', 'audio', 'retour', 'voix', 'plateau1', 'plateau2', 'plateau3']);
+/** Places du plateau : plateau1 … plateau10 (une piste de retour par invité). */
+const PLATEAU = Array.from({ length: 10 }, (_, i) => `plateau${i + 1}`);
+const TRACKS = new Set(['video', 'audio', 'retour', ...PLATEAU]);
+const WATCHABLE = new Set(['video', 'audio', 'retour', 'voix', ...PLATEAU]);
 const SID = /^[A-Za-z0-9_-]{8,128}$/;
 
 const json = (body: unknown, status = 200) =>

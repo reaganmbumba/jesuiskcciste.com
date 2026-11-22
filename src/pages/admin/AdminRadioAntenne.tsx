@@ -11,8 +11,16 @@ import { currentProgramme, fetchRadioSettings, isLiveOn, radioSettingsOf, type R
 import { RADIO_NAME } from '@/features/radio/RadioUi';
 import { isRadioDesktop, studioBridge } from '@/features/radio/desktop';
 import { microphone, publishShow, watchTrack, type Publish } from '@/features/radio/rtc';
-import { PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
-import { useRadioListeners } from '@/features/radio/listeners';
+import { GENERIQUES, PADS, playBuffer, playPad, voiceChain, type Pad, type VoiceFx } from '@/features/radio/effects';
+import { useRadioListeners, type RadioPlace } from '@/features/radio/listeners';
+import { DedicacesPanel } from '@/features/radio/DedicacesPanel';
+import { RadioStats } from '@/features/radio/RadioStats';
+import { JournalAntenne } from '@/features/radio/JournalAntenne';
+import { Conduite } from '@/features/radio/Conduite';
+import { Charte } from '@/features/radio/Charte';
+import { Secours } from '@/features/radio/Secours';
+import { SiteSongsPicker } from '@/features/radio/SiteSongsPicker';
+import { Souffleur } from '@/features/radio/Souffleur';
 import { recordShow, type ShowRecorder, type ShowRecording } from '@/features/radio/recorder';
 import { RecordingPanel } from '@/features/radio/RecordingPanel';
 import { SavedDrafts } from '@/features/radio/SavedDrafts';
@@ -20,7 +28,7 @@ import { RadioGrid } from '@/features/radio/RadioGrid';
 import { YouTubeChat } from '@/features/radio/YouTubeChat';
 import { loadDestinations, outputsOf, saveDestinations, startDiffusion, type Destinations, type ScreenInfo } from '@/features/radio/diffusion';
 
-type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null };
+type Appel = { id: string; nom: string; ville: string | null; statut: 'attente' | 'antenne'; cree_le: string; session_id: string; genre?: 'appel' | 'plateau'; siege?: number | null; plateau_jeton?: string | null };
 type Line = { pc: RTCPeerConnection; node: MediaStreamAudioSourceNode; gain: GainNode; el: HTMLAudioElement };
 
 const since = (iso: string) => {
@@ -45,6 +53,29 @@ function Section({ title: t, action, children }: { title: string; action?: React
  * envoyés au relais du site (pas besoin de Caster.fm ni de Jitsi). Les auditeurs qui appellent
  * depuis /radio arrivent dans la file ; « Prendre à l'antenne » mélange leur voix à l'émission.
  */
+/** « Kinshasa 7 · Muanda 3 · Luanda (Angola) 2 · 4 autres » : d'où l'on écoute en ce moment. */
+function PlacesLine({ places, className }: { places?: RadioPlace[]; className?: string }) {
+  if (!places?.length) return null;
+  const top = places.slice(0, 5), rest = places.slice(5).reduce((n, p) => n + p.n, 0);
+  return <p className={className}>📍 {top.map((p) => `${p.name} ${p.n}`).join(' · ')}{rest ? ` · ${rest} ailleurs` : ''}</p>;
+}
+
+/** Fondu enchaîné : durée en fin de chant, et quand l'animateur passe au chant suivant. */
+const FONDU_S = 5;
+const FONDU_MANUEL_S = 1.5;
+
+/** Baisse automatique : seuil de voix (RMS du micro), niveau de la musique pendant la parole, durée de maintien. */
+const DUCK_VOICE_RMS = 0.035;
+const DUCK_LEVEL = 0.22;
+const DUCK_HOLD_MS = 900;
+
+/** Places d'invités sur le plateau (comme dans radio_plateau_rejoindre). */
+const PLATEAU_PLACES = 10;
+
+/** Silence à l'antenne : seuil (crête, 1 = plein niveau) et durée avant le jingle automatique. */
+const SILENCE_LEVEL = 0.012;
+const SILENCE_S = 30;
+
 export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?: 'colmatage' | 'studio' }) {
   const { settings, setSettings } = useSiteSettings();
   const { profile } = useAuth();
@@ -54,7 +85,9 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [, setTick] = useState(0);
   const saved = radioSettingsOf(settings);
   const [title, setTitle] = useState(saved.live.title || 'Tosungana en direct');
-  const [calls, setCalls] = useState(true);
+  // Où vont les appels des auditeurs : la régie (file d'attente du Studio) ou le WhatsApp de la radio
+  const [callMode, setCallModeState] = useState<'regie' | 'whatsapp'>(() => (saved.live.callMode === 'whatsapp' ? 'whatsapp' : 'regie'));
+  const [calls, setCalls] = useState(() => saved.live.callMode !== 'whatsapp');
   const [mics, setMics] = useState<MediaDeviceInfo[]>([]);
   const [micId, setMicId] = useState('');
   const [onAir, setOnAir] = useState(false);
@@ -68,7 +101,26 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
   const idxRef = useRef(0);
+  // Fondu enchaîné entre les chants (réglable, gardé sur l'appareil)
+  const [fondu, setFondu] = useState(() => { try { return localStorage.getItem('kcc-fondu') !== '0'; } catch { return true; } });
+  const fonduRef = useRef(fondu); fonduRef.current = fondu;
+  const fadingRef = useRef(false);
+  // Pré-écoute au casque : joué sur cet appareil seulement, jamais à l'antenne
+  const [cueUrl, setCueUrl] = useState('');
+  const [cueMode, setCueMode] = useState(false);
+  const cueEl = useRef<HTMLAudioElement | null>(null);
+  function cue(url: string) {
+    if (!cueEl.current) { cueEl.current = new Audio(); cueEl.current.onended = () => setCueUrl(''); }
+    const el = cueEl.current;
+    if (cueUrl === url) { el.pause(); setCueUrl(''); return; }
+    el.src = url; el.currentTime = 0; void el.play().catch(() => {}); setCueUrl(url);
+  }
+  useEffect(() => () => { cueEl.current?.pause(); }, []);
   const [musicVol, setMusicVol] = useState(0.25);
+  // Baisse automatique (« ducking ») : la musique et l'émission sous la voix descendent quand l'animateur parle
+  const [autoDuck, setAutoDuck] = useState(() => { try { return localStorage.getItem('kcc-duck') !== '0'; } catch { return true; } });
+  const [ducking, setDucking] = useState(false);
+  const autoDuckRef = useRef(autoDuck); autoDuckRef.current = autoDuck;
   // Émission programmée pendant le direct : elle continue à sa place (même minute que pour
   // tous les auditeurs), sous la voix de l'animateur ; il en règle le volume ou la coupe.
   const [progVol, setProgVol] = useState(0.3);
@@ -83,7 +135,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [micMuted, setMicMuted] = useState(false);
   const [level, setLevel] = useState(0);
   // Effets : sur la voix (écho, réverbération, voix radio) et bruitages d'un clic
-  const [voiceFx, setVoiceFx] = useState<Record<VoiceFx, boolean>>({ echo: false, reverb: false, radio: false });
+  const [voiceFx, setVoiceFx] = useState<Record<VoiceFx, boolean>>({ pro: true, echo: false, reverb: false, radio: false });
   const [fxVol, setFxVol] = useState(0.8);
   const [myPads, setMyPads] = useState<{ name: string; buf: AudioBuffer | null; file: File }[]>([]);
   const fx = useRef<{ chain?: ReturnType<typeof voiceChain>; bus?: GainNode }>({});
@@ -93,11 +145,22 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   const [recMode, setRecMode] = useState(false);
   const [recPaused, setRecPaused] = useState(false);
   const ctx = useRef<AudioContext | null>(null);
-  const listenerCounts = useRadioListeners();
+  const liveCounts = useRadioListeners();
+  // Compteur de secours (écoutes signalées ces 6 dernières minutes) quand le temps réel ne répond pas
+  const [secours, setSecours] = useState<{ total: number; live: number } | null>(null);
+  useEffect(() => {
+    if (liveCounts || !supabase) return;
+    const get = () => void supabase!.rpc('radio_auditeurs_maintenant').then(({ data }) => { if (data) setSecours(data as { total: number; live: number }); });
+    get();
+    const t = window.setInterval(get, 60_000);
+    return () => window.clearInterval(t);
+  }, [!!liveCounts]); // eslint-disable-line react-hooks/exhaustive-deps
+  const listenerCounts = liveCounts ?? (secours ? { ...secours, places: [] as RadioPlace[], livePlaces: [] as RadioPlace[] } : null);
   const liveOn = onAir && !recMode;
   const auditeurs = liveOn ? listenerCounts?.live ?? null : null;
-  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[] }>({});
+  const nodes = useRef<{ mic?: MediaStream; micGain?: GainNode; musicEl?: HTMLAudioElement; musicGain?: GainNode; progEl?: HTMLAudioElement; progGain?: GainNode; program?: MediaStreamAudioDestinationNode; retour?: MediaStreamAudioDestinationNode; analyser?: AnalyserNode; plateau?: MediaStreamAudioDestinationNode[]; micAn?: AnalyserNode; duckM?: GainNode; duckP?: GainNode; decks?: { el: HTMLAudioElement; g: GainNode }[] }>({});
   const [plateauLink, setPlateauLink] = useState('');
+  const jetonRef = useRef('');
   const [locked, setLocked] = useState<{ host: string; title: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const pub = useRef<Publish | null>(null);
@@ -122,10 +185,15 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   // File des appels : relue toutes les 3 s pendant l'émission
   useEffect(() => {
-    if (!onAir || recMode || !supabase) return;
+    if (!onAir || !supabase) return;
     const load = async () => {
-      const { data } = await supabase!.from('radio_appels').select('id, nom, ville, statut, cree_le, session_id, genre, siege').in('statut', ['attente', 'antenne']).order('cree_le');
-      if (data) setQueue(data as Appel[]);
+      // « * » : marche aussi avant l'ajout de la colonne plateau_jeton dans Supabase
+      const { data } = await supabase!.from('radio_appels').select('*').in('statut', ['attente', 'antenne']).order('cree_le');
+      if (!data) return;
+      const mine = (a: Appel) => a.genre === 'plateau' && !!jetonRef.current && a.plateau_jeton === jetonRef.current;
+      // Brouillon : seulement mes invités du plateau (les appels d'auditeurs vont au direct).
+      // Direct : les appels + les invités de mon plateau (ou d'avant le rattachement au lien).
+      setQueue((data as Appel[]).filter((a) => (recMode ? mine(a) : a.genre !== 'plateau' || !a.plateau_jeton || mine(a))));
     };
     void load();
     const t = window.setInterval(load, 3000);
@@ -150,19 +218,120 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     });
   }, [queue, onAir]);
 
-  // Vu-mètre de l'antenne
+  // Signe de vie du direct toutes les 30 s : sans lui pendant 3 minutes (coupure, téléphone éteint),
+  // l'antenne est rendue toute seule à la radio automatique.
   useEffect(() => {
-    if (!onAir) return;
-    let raf = 0;
-    const buf = new Uint8Array(256);
+    if (!onAir || recMode || !supabase) return;
+    let warned = false;
+    const beat = () => void supabase!.rpc('radio_live_beat').then(({ data, error }) => {
+      if (!error && data === false && !warned) {
+        warned = true;
+        notify('Votre direct a été coupé plus de 3 minutes : la radio a repris toute seule. Terminez puis relancez le direct.', 'error');
+      }
+    });
+    beat();
+    const t = window.setInterval(beat, 30_000);
+    return () => window.clearInterval(t);
+  }, [onAir, recMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Vu-mètre de l'antenne, et détection du silence : au bout de SILENCE_S secondes sans aucun son
+  // à l'antenne (micro coupé, ligne tombée, chanson finie…), un jingle part tout seul, puis la musique.
+  const [silentFor, setSilentFor] = useState(0);
+  const [silenceAlert, setSilenceAlert] = useState<string | null>(null);
+  const silenceRef = useRef({ rec: false, paused: false, rescue: () => {} });
+  silenceRef.current = { rec: recMode, paused: recPaused, rescue: () => void rescueSilence() };
+  useEffect(() => {
+    if (!onAir) { setSilentFor(0); return; }
+    let raf = 0, loud = performance.now(), shown = 0;
+    const buf = new Uint8Array(1024);
     const tick = () => {
       const a = nodes.current.analyser;
-      if (a) { a.getByteTimeDomainData(buf); let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128)); setLevel(m / 128); }
+      const now = performance.now();
+      if (a) {
+        a.getByteTimeDomainData(buf);
+        let m = 0; for (const v of buf) m = Math.max(m, Math.abs(v - 128));
+        setLevel(m / 128);
+        // en dessous d'environ -40 dB : silence (souffle du micro compris)
+        if (m / 128 > SILENCE_LEVEL || silenceRef.current.paused) loud = now;
+      }
+      const sec = Math.floor((now - loud) / 1000);
+      if (sec !== shown) { shown = sec; setSilentFor(sec); }
+      if (sec >= SILENCE_S) { loud = now; if (!silenceRef.current.rec) silenceRef.current.rescue(); }
       raf = requestAnimationFrame(tick);
     };
     tick();
     return () => cancelAnimationFrame(raf);
   }, [onAir]);
+
+  // Voix détectée → musique à DUCK_LEVEL en 80 ms ; 0,9 s après la dernière parole, elle remonte doucement.
+  useEffect(() => {
+    if (!onAir) { setDucking(false); return; }
+    const buf = new Float32Array(1024);
+    let down = false, lastVoice = 0;
+    const t = window.setInterval(() => {
+      const { micAn, duckM, duckP } = nodes.current, ac = ctx.current;
+      if (!micAn || !duckM || !duckP || !ac) return;
+      micAn.getFloatTimeDomainData(buf);
+      let sum = 0; for (const v of buf) sum += v * v;
+      const rms = Math.sqrt(sum / buf.length);
+      const now = performance.now();
+      if (autoDuckRef.current && rms > DUCK_VOICE_RMS) lastVoice = now;
+      const want = autoDuckRef.current && now - lastVoice < DUCK_HOLD_MS;
+      if (want !== down) {
+        down = want;
+        const g = want ? DUCK_LEVEL : 1, tc = want ? 0.03 : 0.25;
+        duckM.gain.setTargetAtTime(g, ac.currentTime, tc);
+        duckP.gain.setTargetAtTime(g, ac.currentTime, tc);
+        setDucking(want);
+      }
+    }, 40);
+    return () => window.clearInterval(t);
+  }, [onAir]);
+  function toggleFondu() {
+    setFondu((v) => { try { localStorage.setItem('kcc-fondu', v ? '0' : '1'); } catch { /* rien */ } return !v; });
+  }
+  function toggleDuck() {
+    setAutoDuck((v) => { try { localStorage.setItem('kcc-duck', v ? '0' : '1'); } catch { /* rien */ } return !v; });
+  }
+
+  /** Silence à l'antenne : un jingle de la station tout de suite, puis la musique si elle est arrêtée. */
+  async function rescueSilence() {
+    const url = `/radio/jingles/kcc-${String(1 + Math.floor(Math.random() * 9)).padStart(2, '0')}.mp3`;
+    await fireGenerique(url);
+    const el = nodes.current.musicEl;
+    const musicStopped = !!el && (el.paused || el.ended);
+    if (musicStopped && tracksRef.current.length) window.setTimeout(() => playTrack(idxRef.current + 1), 6000);
+    const at = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const what = musicStopped && tracksRef.current.length ? 'un jingle, puis la musique' : 'un jingle';
+    setSilenceAlert(`${at} : ${SILENCE_S} secondes de silence à l’antenne. La radio a lancé ${what} toute seule. Vérifiez le micro et la ligne.`);
+    notify(`Silence à l’antenne : ${what} lancé automatiquement.`, 'error');
+  }
+
+  async function setCallMode(m: 'regie' | 'whatsapp') {
+    setCallModeState(m);
+    setCalls(m === 'regie');
+    try {
+      await saveLive({ callMode: m, ...(onAir && !recMode ? { calls: m === 'regie' } : {}) });
+      notify(m === 'whatsapp' ? 'Appels dirigés vers le WhatsApp de la radio.' : 'Appels dirigés vers la régie du Studio.');
+    } catch (e) { notify(e instanceof Error ? e.message : 'Réglage impossible.', 'error'); }
+  }
+  const waReady = /^https:\/\/wa\.me\//.test(saved.live.callUrl);
+  const callSwitch = (dark: boolean) => (
+    <div>
+      <p className={dark ? 'text-sm text-white/85' : 'text-sm font-semibold text-night'}>Appels des auditeurs</p>
+      <div className="mt-1.5 grid grid-cols-2 gap-2">
+        {(['regie', 'whatsapp'] as const).map((m) => (
+          <button key={m} type="button" onClick={() => void setCallMode(m)} aria-pressed={callMode === m}
+            className={'rounded-xl px-3 py-2 text-sm font-semibold ' + (callMode === m ? (m === 'whatsapp' ? 'bg-[#25D366] text-white' : 'bg-gold text-night') : dark ? 'bg-white/[0.08] text-white/70' : 'border border-[#d3dae3] text-ink/70')}>
+            {m === 'regie' ? '🎙️ Régie' : '💬 WhatsApp'}
+          </button>
+        ))}
+      </div>
+      <p className={dark ? 'mt-1 text-xs text-white/50' : 'mt-1 text-xs text-ink/55'}>
+        {callMode === 'regie' ? 'Les appels arrivent dans la file du Studio pendant vos directs, et passent à l’antenne quand vous les prenez.' : waReady ? 'Le bouton « Appeler la radio » ouvre votre WhatsApp, à tout moment (même sans direct). Les appels ne passent pas à l’antenne.' : 'Aucun numéro WhatsApp réglé : ajoutez-le dans Administration › Radio (« Appeler l’émission »).'}
+      </p>
+    </div>
+  );
 
   /** Seul l'état du direct est écrit (fonction radio_live_set) : les animateurs radio n'ont aucun autre droit sur les réglages. */
   async function saveLive(live: Partial<RadioSettings['live']>) {
@@ -197,13 +366,17 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const micSrc = ac.createMediaStreamSource(mic);
       const micGain = ac.createGain();
       micSrc.connect(micGain);
+      // détecteur de voix (baisse automatique de la musique quand l'animateur parle)
+      const micAn = ac.createAnalyser(); micAn.fftSize = 1024;
+      micGain.connect(micAn);
+      const duckM = ac.createGain(), duckP = ac.createGain();
       const program = ac.createMediaStreamDestination();
       const retour = ac.createMediaStreamDestination();
       const analyser = ac.createAnalyser();
       const sum = ac.createGain(); sum.connect(analyser);
       // voix → effets (écho, réverbération, voix radio) → antenne
       // une sortie par place du plateau : chaque invité entend tout le monde sauf lui-même
-      const plateau = [0, 1, 2].map(() => ac.createMediaStreamDestination());
+      const plateau = Array.from({ length: PLATEAU_PLACES }, () => ac.createMediaStreamDestination());
       const chain = voiceChain(ac, micGain, [program, retour, sum, ...plateau]);
       (Object.keys(voiceFx) as VoiceFx[]).forEach((k) => chain.set(k, voiceFx[k]));
       const musicGain = ac.createGain();
@@ -217,17 +390,30 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       const progEl = new Audio();
       progEl.crossOrigin = 'anonymous';
       progEl.preload = 'auto';
-      ac.createMediaElementSource(progEl).connect(progGain);
+      ac.createMediaElementSource(progEl).connect(duckP); duckP.connect(progGain);
       // bruitages : à l'antenne, au téléphone des appelants et dans le casque
       const bus = ac.createGain(); bus.gain.value = fxVol;
       bus.connect(program); bus.connect(retour); bus.connect(ac.destination); bus.connect(sum);
       plateau.forEach((d) => bus.connect(d));
       fx.current = { chain, bus };
-      const musicEl = new Audio();
-      musicEl.onended = () => playTrack(idxRef.current + 1);
-      musicEl.onerror = () => { if (tracksRef.current.length > 1) playTrack(idxRef.current + 1); };
-      ac.createMediaElementSource(musicEl).connect(musicGain);
-      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain };
+      // Deux platines pour le fondu enchaîné : le chant suivant monte pendant que le précédent descend.
+      const decks = [0, 1].map((k) => {
+        const el = new Audio();
+        el.crossOrigin = 'anonymous';
+        const g = ac.createGain(); g.gain.value = k === 0 ? 1 : 0;
+        ac.createMediaElementSource(el).connect(g); g.connect(duckM);
+        el.ontimeupdate = () => {
+          if (nodes.current.musicEl !== el || fadingRef.current || !fonduRef.current) return;
+          const left = el.duration - el.currentTime;
+          if (Number.isFinite(left) && left > 0 && left <= FONDU_S && tracksRef.current.length > 1) playTrack(idxRef.current + 1, FONDU_S);
+        };
+        el.onended = () => { if (nodes.current.musicEl === el && !fadingRef.current) playTrack(idxRef.current + 1, 0); };
+        el.onerror = () => { if (nodes.current.musicEl === el && tracksRef.current.length > 1) playTrack(idxRef.current + 1, 0); };
+        return { el, g };
+      });
+      duckM.connect(musicGain);
+      const musicEl = decks[0].el;
+      nodes.current = { mic, micGain, musicGain, program, retour, analyser, musicEl, plateau, progEl, progGain, micAn, duckM, duckP, decks };
       if (tracksRef.current.length && musicOn) playTrack(0);
       setLastRec(null);
       if (rehearsal) {
@@ -235,15 +421,28 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
         if (!recorder.current) throw new Error('L’enregistrement n’a pas démarré sur ce navigateur : essayez Chrome.');
         setRecMode(true);
         setRecPaused(false);
-        setState('Enregistrement (non diffusé)');
+        setState('Brouillon en cours d’enregistrement (non diffusé)');
         setOnAir(true);
-        notify('Enregistrement lancé : rien ne part aux auditeurs. Faites votre émission comme en direct, puis « Terminer l’enregistrement ».');
+        // Plateau du brouillon : les invités rejoignent par le relais, mais l'antenne du site n'est pas touchée
+        // (pas de radio_live_set) : les auditeurs et la grille continuent comme si de rien n'était.
+        void publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0],
+          plateau.map((d, i) => ({ name: `plateau${i + 1}`, track: d.stream.getAudioTracks()[0] })))
+          .then(async (p) => {
+            if (!ctx.current) { p.pc.close(); return; }
+            pub.current = p;
+            seatsOff();
+            const { data: j } = await supabase!.rpc('radio_plateau_lien');
+            if (j && ctx.current) { jetonRef.current = String(j); setPlateauLink(`${window.location.origin}/radio/plateau?c=${String(j)}&s=${encodeURIComponent(p.sessionId)}&b=1`); }
+          })
+          .catch(() => { /* pas de relais : l'enregistrement continue, sans invités */ });
+        notify('Mode brouillon : rien ne part aux auditeurs. Faites votre émission comme en direct, puis « Terminer le brouillon ».');
         return;
       }
       recorder.current = recOn ? recordShow(program.stream) : null;
       setState('Connexion au relais…');
       pub.current = await publishShow(token, program.stream.getAudioTracks()[0], retour.stream.getAudioTracks()[0],
         plateau.map((d, i) => ({ name: `plateau${i + 1}`, track: d.stream.getAudioTracks()[0] })));
+      seatsOff();
       pub.current.pc.onconnectionstatechange = () => {
         const s = pub.current?.pc.connectionState;
         setState(s === 'connected' ? 'À l’antenne' : s === 'failed' ? 'Connexion perdue : arrêtez puis relancez l’antenne.' : s ?? '');
@@ -252,7 +451,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
       setTopicSaved(topic.trim());
       if (outputsOf(dest).length) startDiff();
       // lien des invités du plateau (valable pendant cette émission)
-      void supabase.rpc('radio_plateau_lien').then(({ data: j }) => { if (j) setPlateauLink(`${window.location.origin}/radio/plateau?c=${String(j)}`); });
+      void supabase.rpc('radio_plateau_lien').then(({ data: j }) => { if (j) { jetonRef.current = String(j); setPlateauLink(`${window.location.origin}/radio/plateau?c=${String(j)}`); } });
       await writeAudit(profile ? `${profile.firstName} ${profile.lastName}` : '', 'settings.update', 'radio antenne : début');
       setOnAir(true);
       try { studioBridge()?.onAir?.(title.trim() || 'Émission en direct'); } catch { /* hors application */ }
@@ -289,7 +488,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
   }
 
   function stopAll() {
-    if (plateauLink) { void supabase?.rpc('radio_plateau_fermer'); setPlateauLink(''); }
+    if (plateauLink || jetonRef.current) { void supabase?.rpc('radio_plateau_fermer'); setPlateauLink(''); }
+    jetonRef.current = '';
     recorder.current?.cancel();
     recorder.current = null;
     try { studioBridge()?.offAir?.(); } catch { /* hors application */ }
@@ -300,6 +500,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     pub.current?.pc.close();
     pub.current = null;
     nodes.current.mic?.getTracks().forEach((t) => t.stop());
+    nodes.current.decks?.forEach((d) => { d.el.pause(); d.el.ontimeupdate = null; d.el.onended = null; d.el.onerror = null; });
     nodes.current.musicEl?.pause();
     if (nodes.current.progEl) { nodes.current.progEl.pause(); nodes.current.progEl.removeAttribute('src'); }
     setProgNow(null);
@@ -323,7 +524,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     if (r.paused()) {
       r.resume();
       if (el?.src && musicOn) void el.play().catch(() => {});
-      setState('Enregistrement (non diffusé)');
+      setState('Brouillon en cours d’enregistrement (non diffusé)');
     } else {
       r.pause();
       el?.pause();
@@ -375,9 +576,11 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           const gain = ac.createGain();
           node.connect(gain);
           gain.connect(nodes.current.program!); // à l'antenne
+          if (nodes.current.analyser) gain.connect(nodes.current.analyser); // vu-mètre et détection du silence
           gain.connect(ac.destination); // dans le casque de l'animateur
           const pl = nodes.current.plateau ?? [];
           if (a.genre === 'plateau') {
+            seatSend(a.siege, true);
             // un invité du plateau : entendu des appelants et des autres invités, pas de lui-même
             if (nodes.current.retour) gain.connect(nodes.current.retour);
             pl.forEach((d, i) => { if (i + 1 !== a.siege) gain.connect(d); });
@@ -398,24 +601,52 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
   takeRef.current = take;
 
+  /**
+   * Retour d'une place du plateau : envoyé seulement quand un invité l'occupe
+   * (10 places, mais pas 10 sons envoyés en permanence par la connexion de l'animateur).
+   */
+  function seatSend(siege: number | null | undefined, on: boolean) {
+    const p = pub.current, d = siege ? nodes.current.plateau?.[siege - 1] : undefined;
+    if (!p || !d || !siege) return;
+    const t = p.pc.getTransceivers()[1 + siege];
+    void t?.sender.replaceTrack(on ? d.stream.getAudioTracks()[0] : null).catch(() => {});
+  }
+  function seatsOff() { for (let i = 1; i <= PLATEAU_PLACES; i++) seatSend(i, false); }
+
   async function hang(a: Appel, statut: 'termine' | 'refuse') {
     const l = lines.current.get(a.id);
     if (l) { l.gain?.disconnect(); l.node?.disconnect(); l.pc.close(); l.el.srcObject = null; lines.current.delete(a.id); }
+    if (a.genre === 'plateau') seatSend(a.siege, false);
     setTaken((t) => t.filter((x) => x !== a.id));
     await supabase!.from('radio_appels').update({ statut, modifie_le: new Date().toISOString() }).eq('id', a.id);
     setQueue((q) => q.filter((x) => x.id !== a.id));
   }
 
   /** Joue le morceau n° i de la liste (on revient au premier après le dernier). */
-  function playTrack(i: number) {
+  function playTrack(i: number, fade = FONDU_MANUEL_S) {
     const list = tracksRef.current;
-    const el = nodes.current.musicEl;
-    if (!el || !list.length) return;
+    const decks = nodes.current.decks, ac = ctx.current;
+    if (!decks || !ac || !list.length) return;
     const n = ((i % list.length) + list.length) % list.length;
     idxRef.current = n;
     setTrackIdx(n);
-    el.src = list[n].url;
-    void el.play().catch(() => {});
+    const cur = decks.find((d) => d.el === nodes.current.musicEl) ?? decks[0];
+    const nxt = decks.find((d) => d !== cur)!;
+    const busy = !!cur.el.src && !cur.el.paused && !cur.el.ended;
+    const f = fonduRef.current && busy ? Math.max(0, fade) : 0;
+    const t = ac.currentTime;
+    nxt.el.src = list[n].url;
+    nxt.g.gain.cancelScheduledValues(t); cur.g.gain.cancelScheduledValues(t);
+    if (f > 0) {
+      fadingRef.current = true;
+      nxt.g.gain.setValueAtTime(0, t); nxt.g.gain.linearRampToValueAtTime(1, t + f);
+      cur.g.gain.setValueAtTime(cur.g.gain.value, t); cur.g.gain.linearRampToValueAtTime(0, t + f);
+      window.setTimeout(() => { cur.el.pause(); fadingRef.current = false; }, f * 1000 + 100);
+    } else {
+      cur.el.pause(); cur.g.gain.setValueAtTime(0, t); nxt.g.gain.setValueAtTime(1, t);
+    }
+    nodes.current.musicEl = nxt.el;
+    void nxt.el.play().catch(() => {});
   }
 
   function addMusic(files: FileList | null) {
@@ -429,15 +660,25 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     if (wasEmpty && onAir && musicOn) playTrack(0);
   }
 
+  function addSiteSongs(list: { name: string; url: string }[]) {
+    const fresh = list.filter((x) => !tracksRef.current.some((t) => t.url === x.url));
+    if (!fresh.length) return;
+    const wasEmpty = !tracksRef.current.length;
+    const next = [...tracksRef.current, ...fresh];
+    tracksRef.current = next;
+    setTracks(next);
+    if (wasEmpty && onAir && musicOn) playTrack(0, 0);
+  }
+
   function removeTrack(i: number) {
     const list = tracksRef.current;
-    URL.revokeObjectURL(list[i].url);
+    if (list[i].url.startsWith('blob:')) URL.revokeObjectURL(list[i].url);
     const next = list.filter((_, k) => k !== i);
     tracksRef.current = next;
     setTracks(next);
     if (!onAir) return;
     if (!next.length) { nodes.current.musicEl?.pause(); return; }
-    if (i === idxRef.current) playTrack(i);
+    if (i === idxRef.current) playTrack(i, 0);
     else if (i < idxRef.current) { idxRef.current -= 1; setTrackIdx(idxRef.current); }
   }
 
@@ -466,6 +707,24 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     if (!buf) {
       try { buf = await ac.decodeAudioData(await p.file.arrayBuffer()); } catch { notify(`« ${p.name} » ne peut pas être lu.`, 'error'); return; }
       setMyPads((l) => l.map((x, k) => (k === i ? { ...x, buf } : x)));
+    }
+    playBuffer(ac, bus, buf);
+  }
+  const padUrls = useRef(new Map<File, string>());
+  function padUrl(i: number) {
+    const f = myPads[i].file;
+    let u = padUrls.current.get(f);
+    if (!u) { u = URL.createObjectURL(f); padUrls.current.set(f, u); }
+    return u;
+  }
+  const genBufs = useRef(new Map<string, AudioBuffer>());
+  async function fireGenerique(url: string) {
+    const ac = ctx.current, bus = fx.current.bus;
+    if (!ac || !bus) return;
+    let buf = genBufs.current.get(url);
+    if (!buf) {
+      try { buf = await ac.decodeAudioData(await (await fetch(url)).arrayBuffer()); genBufs.current.set(url, buf); }
+      catch { notify('Le générique ne peut pas être lu.', 'error'); return; }
     }
     playBuffer(ac, bus, buf);
   }
@@ -566,7 +825,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
     </div>
   );
   const copyLink = () => { void navigator.clipboard?.writeText(plateauLink).then(() => { setLinkCopied(true); window.setTimeout(() => setLinkCopied(false), 1500); }).catch(() => {}); };
-  const waLink = `https://wa.me/?text=${encodeURIComponent(`🎙️ Rejoins-moi sur le plateau de « ${title.trim() || 'Radio Je suis KCCiste'} » (Radio Je suis KCCiste). Ouvre ce lien, mets des écouteurs et appuie sur « Rejoindre le plateau » :\n${plateauLink}`)}`;
+  const waLink = `https://wa.me/?text=${encodeURIComponent(`🎙️ Rejoins-moi sur le plateau de « ${title.trim() || 'Radio Je suis KCCiste'} » (Radio Je suis KCCiste). ${recMode ? ' C’est un enregistrement : il passera plus tard à la radio.' : ''} Ouvre ce lien, mets des écouteurs et appuie sur « Rejoindre le plateau » :\n${plateauLink}`)}`;
   const seat = (a: Appel) => (a.genre === 'plateau' ? `🎙️ Plateau ${a.siege ?? ''} · ` : '');
 
   const who = profile ? `${profile.firstName} ${profile.lastName}`.trim() : '';
@@ -611,17 +870,29 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <span key={i} className={`w-2 rounded-sm transition-colors ${i < lit ? (i > 16 ? 'bg-red-500' : i > 12 ? 'bg-gold' : 'bg-emerald-400') : 'bg-white/10'}`} style={{ height: `${30 + i * 3.5}%` }} />
               ))}
             </div>
-            <button type="button" onClick={onAir ? endShow : () => void goLive()} disabled={busy}
-              className={`mx-auto mt-5 grid h-32 w-32 place-items-center rounded-full text-center font-bold shadow-2xl transition active:scale-95 disabled:opacity-60 ${onAir ? 'bg-red-600 text-white shadow-red-900/50' : 'bg-gold text-night shadow-[0_14px_40px_-8px_rgba(232,184,74,.75)]'}`}>
-              <span>{busy ? '…' : onAir ? <>■<br />Terminer</> : <>●<br />Passer à<br />l’antenne</>}</span>
-            </button>
-            {!onAir && (
-              <button type="button" onClick={() => void goLive(false, true)} disabled={busy} className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-orange-400/60 bg-orange-500/15 px-4 py-2 text-sm font-semibold text-orange-200 disabled:opacity-50">
-                <Circle className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />Enregistrer sans diffuser
+            {onAir ? (
+              <button type="button" onClick={endShow} disabled={busy}
+                className={`mx-auto mt-5 grid h-32 w-32 place-items-center rounded-full text-center font-bold shadow-2xl transition active:scale-95 disabled:opacity-60 ${recMode ? 'bg-orange-600 text-white shadow-orange-900/50' : 'bg-red-600 text-white shadow-red-900/50'}`}>
+                <span>{busy ? '…' : recMode ? <>■<br />Terminer<br />le brouillon</> : <>■<br />Terminer</>}</span>
               </button>
+            ) : (
+              /* Deux choix : le direct, ou le brouillon (même studio, rien n'est diffusé) */
+              <div className="mt-5 grid grid-cols-2 gap-3 text-left">
+                <button type="button" onClick={() => void goLive()} disabled={busy} className="rounded-3xl bg-red-600 p-4 text-white shadow-xl shadow-red-900/40 transition active:scale-95 disabled:opacity-60">
+                  <span className="flex items-center gap-2 text-lg font-bold"><Radio className="h-5 w-5" />Direct</span>
+                  <span className="mt-1 block text-xs text-white/85">Passer à l’antenne : tous les auditeurs vous entendent tout de suite.</span>
+                </button>
+                <button type="button" onClick={() => void goLive(false, true)} disabled={busy} className="rounded-3xl bg-orange-500 p-4 text-night shadow-xl shadow-orange-900/30 transition active:scale-95 disabled:opacity-60">
+                  <span className="flex items-center gap-2 text-lg font-bold"><Circle className="h-5 w-5 fill-night" />Brouillon</span>
+                  <span className="mt-1 block text-xs text-night/80">Même studio, rien n’est diffusé. À la fin : enregistrer et programmer.</span>
+                </button>
+              </div>
             )}
-            <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, l’émission est gardée pour plus tard.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule. « Enregistrer sans diffuser » : préparez une émission à programmer plus tard.'}</p>
+            {onAir && !recMode && silentFor >= 10 && <p className="mt-3 rounded-2xl bg-amber-500/20 px-3 py-2 text-sm font-semibold text-amber-200" role="status">🔇 Silence à l’antenne depuis {silentFor} s : jingle automatique à {SILENCE_S} s.</p>}
+            {silenceAlert && <p className="mt-3 flex items-start gap-2 rounded-2xl bg-red-600/25 px-3 py-2 text-left text-sm text-red-100" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}
+            <p className="mt-3 text-sm text-white/65">{recMode ? `${state} · personne ne vous entend, la radio continue ses programmes. Tout le studio marche : micro, chansons qui s’enchaînent, jingles, effets, invités du plateau.` : onAir ? (state || 'À l’antenne') : 'Hors direct, la radio automatique joue seule.'}</p>
             <p className="mt-1 text-sm font-semibold text-gold-300">🎧 {liveOn ? auditeurs ?? '…' : listenerCounts?.total ?? '…'} auditeur{((liveOn ? auditeurs : listenerCounts?.total) ?? 0) > 1 ? 's' : ''} {liveOn ? 'sur votre direct' : 'à l’écoute de la radio'}{liveOn && taken.length ? ` · ${taken.length} au téléphone` : ''}</p>
+            <PlacesLine places={liveOn ? listenerCounts?.livePlaces : listenerCounts?.places} className="mt-1 text-xs text-white/60" />
             {onAir && (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <button type="button" onClick={() => setMicMuted((m) => !m)} className={small + (micMuted ? ' bg-red-600 text-white' : ' bg-white/[0.08] text-white')}><Mic className="h-4 w-4" />{micMuted ? 'Micro coupé' : 'Micro actif'}</button>
@@ -636,8 +907,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           {lockBox(true)}
           {onAir && plateauLink && (
             <section className={card}>
-              <p className={hd}>Invités plateau (3 places)</p>
-              <p className="text-sm text-white/65">Envoyez ce lien : l’invité passe directement à l’antenne et entend tout le plateau.</p>
+              <p className={hd}>Invités plateau (10 places)</p>
+              <p className="text-sm text-white/65">{recMode ? 'Envoyez ce lien : l’invité est enregistré avec vous (rien n’est diffusé) et entend tout le plateau.' : 'Envoyez ce lien : l’invité passe directement à l’antenne et entend tout le plateau.'}</p>
               <p className="mt-2 truncate rounded-xl bg-white/[0.06] px-3 py-2 font-mono text-xs text-white/80">{plateauLink}</p>
               <div className="mt-2 flex gap-2">
                 <button type="button" onClick={copyLink} className={small + ' bg-white/[0.08] text-white'}>{linkCopied ? '✓ Copié' : 'Copier'}</button>
@@ -656,7 +927,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <option value="" className="text-night">Micro du téléphone</option>
                 {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId} className="text-night">{m.label || `Micro ${i + 1}`}</option>)}
               </select>
-              <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={calls} onChange={(e) => setCalls(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Accepter les appels des auditeurs</label>
+              {callSwitch(true)}
               <label className="flex items-center gap-2 text-sm text-white/85"><input type="checkbox" checked={recOn} onChange={(e) => toggleRec(e.currentTarget.checked)} className="h-4 w-4 accent-[#e8b84a]" />Enregistrer l’émission (téléchargement, rediffusion)</label>
               <p className="text-xs text-white/45">Mettez des écouteurs pour éviter l’écho.</p>
             </section>
@@ -667,8 +938,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-red-400" />Appels ({queue.length})</span></p>
             {!onAir && <p className="text-sm text-white/50">Les appels arrivent ici pendant le direct.</p>}
-            {recMode && <p className="text-sm text-white/50">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
-            {onAir && !queue.length && <p className="text-sm text-white/50">Aucun appel pour le moment.</p>}
+            {recMode && !queue.length && <p className="text-sm text-white/50">Brouillon : les auditeurs n’appellent pas (ils écoutent la radio normale). Invitez des personnes avec le lien du plateau : elles sont enregistrées avec vous.</p>}
+            {onAir && !recMode && !queue.length && <p className="text-sm text-white/50">Aucun appel pour le moment.</p>}
             <ul className="space-y-2">
               {live.map((a) => (
                 <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-red-500/60 bg-red-500/15 p-3">
@@ -686,7 +957,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             </ul>
           </section>
 
+          {onAir && <Conduite title={title} dark />}
+          <Souffleur title={title} topic={topic} dark />
+          <DedicacesPanel dark />
           <YouTubeChat dark />
+          <RadioStats dark />
+          <JournalAntenne dark />
+          <Charte dark />
+          <Secours dark />
 
           <section className={card}>
             <p className={hd}>Sujet de l’émission
@@ -700,7 +978,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
 
           <section className={card}>
             <p className={hd}><span className="flex items-center gap-2"><Music2 className="h-3.5 w-3.5" />Musique de fond</span>
-              <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>
+              <span className="flex flex-wrap justify-end gap-1.5">
+                <SiteSongsPicker dark onAdd={addSiteSongs} have={tracks.map((t) => t.url)} />
+                <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ fichiers<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>
+              </span>
             </p>
             {!tracks.length && <p className="text-sm text-white/50">Ajoutez des morceaux : ils passent à tour de rôle sous votre voix.</p>}
             <ol className="max-h-56 space-y-1 overflow-y-auto">
@@ -710,6 +991,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   <li key={t.url} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm ${now ? 'bg-gold/20 text-white' : 'text-white/75'}`}>
                     <span className="w-6 text-right text-xs text-white/40">{now ? '▶' : i + 1}</span>
                     <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }}>{t.name}</button>
+                    <button type="button" onClick={() => cue(t.url)} className={`p-1 ${cueUrl === t.url ? 'text-gold-300' : 'text-white/40'}`} aria-label={`Pré-écouter ${t.name} au casque`} title="Pré-écoute au casque (pas à l’antenne)"><Headphones className="h-3.5 w-3.5" /></button>
                     <button type="button" onClick={() => removeTrack(i)} className="p-1 text-white/40" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
                   </li>
                 );
@@ -722,26 +1004,40 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </>}
               <label className="flex flex-1 items-center gap-2 text-xs text-white/60">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} className="flex-1 accent-[#e8b84a]" /></label>
             </div>
+            <button type="button" onClick={toggleFondu} aria-pressed={fondu} className={small + ' mt-2 w-full justify-center ' + (fondu ? 'bg-gold/25 text-white' : 'bg-white/[0.06] text-white/60')}>
+              〰️ Fondu enchaîné entre les chants : {fondu ? 'oui' : 'non'}
+            </button>
+            <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={small + ' mt-2 w-full justify-center ' + (autoDuck ? 'bg-gold/25 text-white' : 'bg-white/[0.06] text-white/60')}>
+              🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
+            </button>
           </section>
 
           <section className={card}>
             <p className={hd}>Effets
               <label className="cursor-pointer rounded-lg bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold normal-case tracking-normal text-white">+ bruitage<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} /></label>
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              {([['echo', 'Écho'], ['reverb', 'Réverb'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+            <div className="grid grid-cols-4 gap-2">
+              {([['pro', 'Voix pro'], ['echo', 'Écho'], ['reverb', 'Réverb'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
                 <button key={k} type="button" disabled={!onAir} onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]}
                   className={`rounded-xl px-2 py-2.5 text-sm font-semibold disabled:opacity-40 ${voiceFx[k] ? 'bg-gold text-night' : 'bg-white/[0.08] text-white'}`}>{l}</button>
               ))}
             </div>
+            <button type="button" onClick={() => { setCueMode((v) => !v); cueEl.current?.pause(); setCueUrl(''); }} aria-pressed={cueMode} className={small + ' mt-3 w-full justify-center ' + (cueMode ? 'bg-sky-600 text-white' : 'bg-white/[0.06] text-white/70')}>
+              <Headphones className="h-4 w-4" />{cueMode ? 'Pré-écoute au casque : touchez un générique (rien ne part à l’antenne)' : 'Pré-écouter les génériques au casque'}
+            </button>
             <div className="mt-3 grid grid-cols-4 gap-2">
               {PADS.map((p) => (
                 <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="rounded-2xl bg-white/[0.06] px-1 py-3 text-center text-[11px] font-semibold text-white/85 active:scale-95 active:bg-gold/30 disabled:opacity-40">
                   <span className="block text-xl" aria-hidden>{p.emoji}</span>{p.label}
                 </button>
               ))}
+              {GENERIQUES.map((g) => (
+                <button key={g.url} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(g.url) : void fireGenerique(g.url))} className="truncate rounded-2xl bg-gold/25 px-1 py-3 text-center text-[11px] font-semibold text-white active:scale-95 disabled:opacity-40" title={`Générique : ${g.name}`}>
+                  <span className="block text-xl" aria-hidden>🎬</span>{g.name}
+                </button>
+              ))}
               {myPads.map((p, i) => (
-                <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
+                <button key={i} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(padUrl(i)) : void fireMyPad(i))} className="truncate rounded-2xl bg-gold/20 px-1 py-3 text-center text-[11px] font-semibold active:scale-95 disabled:opacity-40" title={p.name}>
                   <span className="block text-xl" aria-hidden>🔊</span>{p.name}
                 </button>
               ))}
@@ -778,10 +1074,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           ? <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Square className="h-4 w-4" />} onClick={stopDiff}>Arrêter YouTube/Facebook</Button>
           : outputsOf(dest).length > 0 && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={<Youtube className="h-4 w-4" />} onClick={startDiff}>YouTube/Facebook</Button>)}
         {recMode && <Button type="button" size="sm" variant="outline" className="border-white/40 bg-transparent text-white hover:bg-white/10" icon={recPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} onClick={togglePause}>{recPaused ? 'Reprendre' : 'Pause'}</Button>}
-        {!onAir && <Button type="button" size="sm" variant="outline" className="border-orange-300/70 bg-transparent text-orange-100 hover:bg-white/10" icon={<Circle className="h-4 w-4 fill-orange-500 text-orange-500" />} disabled={busy} onClick={() => void goLive(false, true)}>Enregistrer sans diffuser</Button>}
+        {!onAir && <Button type="button" size="sm" variant="outline" className="!border-orange-300/70 !bg-transparent !text-orange-100 hover:!bg-white/10" icon={<Circle className="h-4 w-4 fill-orange-500 text-orange-500" />} disabled={busy} onClick={() => void goLive(false, true)}>Mode brouillon</Button>}
         {!onAir
-          ? <Button type="button" size="sm" className="bg-white text-[#2b3648] hover:bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
-          : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>{recMode ? 'Terminer l’enregistrement' : 'Terminer l’émission'}</Button>}
+          ? <Button type="button" size="sm" className="!bg-white !text-[#2b3648] hover:!bg-white/90" icon={<Radio className="h-4 w-4" />} loading={busy} onClick={() => void goLive()}>Passer à l’antenne</Button>
+          : <Button type="button" size="sm" variant="danger" icon={<Square className="h-4 w-4" />} loading={busy} onClick={endShow}>{recMode ? 'Terminer le brouillon' : 'Terminer l’émission'}</Button>}
         <span className={`text-xs font-semibold ${recMode ? 'text-orange-300' : onAir ? 'text-emerald-300' : 'text-white/60'}`}>{recMode ? `⏺ ${state} · ${mmss(recorder.current?.seconds() ?? 0)}` : onAir ? `● ${state || 'À l’antenne'}` : 'Hors antenne'}</span>
       </header>
 
@@ -797,12 +1093,15 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Auditeurs connectés</p>
             <p className="mt-1 text-4xl font-semibold tabular-nums text-night">{listenerCounts?.total ?? '…'}</p>
             <p className="text-xs text-ink/55">{onAir && !recMode ? `dont ${auditeurs ?? '…'} sur votre direct` : 'écoutent la radio en ce moment'}</p>
+            <PlacesLine places={listenerCounts?.places} className="mt-1 text-xs text-ink/70" />
             {onAir && <div className="mt-2 h-2 overflow-hidden rounded bg-night/10" aria-label="Niveau de l’antenne"><div className="h-full bg-gradient-to-r from-emerald-500 via-gold to-red-500 transition-[width] duration-75" style={{ width: `${Math.min(100, level * 140)}%` }} /></div>}
+            {onAir && !recMode && silentFor >= 10 && <p className="mt-2 rounded bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-900" role="status">🔇 Silence à l’antenne depuis {silentFor} s : jingle automatique à {SILENCE_S} s.</p>}
+            {silenceAlert && <p className="mt-2 flex items-start gap-2 rounded bg-red-100 px-3 py-2 text-sm text-red-900" role="alert"><span className="flex-1">{silenceAlert}</span><button type="button" onClick={() => setSilenceAlert(null)} className="font-bold" aria-label="Fermer l’alerte">✕</button></p>}
           </div>
           <div className="rounded border border-[#d3dae3] bg-white">
             <p className="flex items-center gap-2 border-b border-[#d3dae3] px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-[#2b3648]"><Phone className="h-3.5 w-3.5 text-red-600" />Appels ({queue.length})</p>
             {!onAir && <p className="px-3 py-3 text-xs text-ink/55">Les appels arrivent ici pendant l’émission.</p>}
-            {recMode && <p className="px-3 py-3 text-xs text-ink/55">Pas d’appels pendant un enregistrement : personne n’écoute.</p>}
+            {recMode && !queue.length && <p className="px-3 py-3 text-xs text-ink/55">Brouillon : les auditeurs n’appellent pas (ils écoutent la radio normale). Invitez des personnes avec le lien du plateau : elles sont enregistrées avec vous.</p>}
             {onAir && !recMode && !queue.length && <p className="px-3 py-3 text-xs text-ink/55">Aucun appel pour le moment.</p>}
             <ul>
               {live.map((a) => (
@@ -826,8 +1125,8 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
           </div>
           {onAir && plateauLink && (
             <div className="rounded border border-[#d3dae3] bg-white p-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Invités plateau (3 places)</p>
-              <p className="mt-1 text-xs text-ink/60">Envoyez ce lien : l’invité passe directement à l’antenne.</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#2b3648]">Invités plateau (10 places)</p>
+              <p className="mt-1 text-xs text-ink/60">{recMode ? 'Envoyez ce lien : l’invité est enregistré avec vous (rien n’est diffusé).' : 'Envoyez ce lien : l’invité passe directement à l’antenne.'}</p>
               <p className="mt-2 truncate rounded bg-[#f3f6f9] px-2 py-1 font-mono text-[11px]">{plateauLink}</p>
               <div className="mt-2 flex gap-1.5">
                 <button type="button" onClick={copyLink} className="rounded border border-[#d3dae3] px-2 py-0.5 text-xs font-semibold">{linkCopied ? '✓ Copié' : 'Copier'}</button>
@@ -843,17 +1142,29 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
             <div className="text-center"><img src="/images/logo-kcc.svg" alt="KCC" className="mx-auto h-14" /><p className="mt-1 text-[10px] font-bold tracking-[0.3em] text-[#2b3648]">RADIO KCC</p></div>
             <div className="min-w-0 flex-1 text-center">
               <h1 className="font-display text-xl font-bold uppercase text-[#2b3648] sm:text-2xl">Antenne en direct — Radio Je suis KCCiste</h1>
-              <p className="mt-1 text-xs text-ink/60">Émission : <b>{title || '—'}</b> | Appels : <b>{calls ? 'ouverts' : 'fermés'}</b> | Diffusion : <b>jesuiskcciste.com/radio{diffOn ? ', YouTube/Facebook' : ''}</b></p>
+              <p className="mt-1 text-xs text-ink/60">Émission : <b>{title || '—'}</b> | Appels : <b>{callMode === 'whatsapp' ? 'WhatsApp' : calls ? 'régie' : 'fermés'}</b> | Diffusion : <b>jesuiskcciste.com/radio{diffOn ? ', YouTube/Facebook' : ''}</b></p>
             </div>
             <table className="text-[13px]"><tbody>
-              <tr><td className={lbl.replace('w-44', 'w-24')}>Statut</td><td className={`${td} text-right font-semibold ${recMode ? 'text-orange-600' : onAir ? 'text-red-600' : ''}`}>{recMode ? (recPaused ? '⏸ PAUSE' : '⏺ ENREGISTREMENT') : onAir ? '● EN DIRECT' : 'Hors antenne'}</td></tr>
+              <tr><td className={lbl.replace('w-44', 'w-24')}>Statut</td><td className={`${td} text-right font-semibold ${recMode ? 'text-orange-600' : onAir ? 'text-red-600' : ''}`}>{recMode ? (recPaused ? '⏸ PAUSE' : '⏺ BROUILLON') : onAir ? '● EN DIRECT' : 'Hors antenne'}</td></tr>
               <tr><td className={lbl.replace('w-44', 'w-24')}>Date</td><td className={`${td} text-right font-semibold`}>{today}</td></tr>
               <tr><td className={lbl.replace('w-44', 'w-24')}>Début</td><td className={`${td} text-right font-semibold`}>{startTime}</td></tr>
             </tbody></table>
           </div>
 
           {locked && !onAir && <div className="mb-4">{lockBox(false)}</div>}
-          {recMode && <div className="mb-4 rounded border-2 border-orange-400 bg-orange-50 p-3 text-sm text-night"><b>⏺ Enregistrement sans diffusion.</b> Personne ne vous entend : micro, musique, bruitages et effets marchent comme en direct. « Pause » arrête l’enregistrement le temps d’une coupure ; « Terminer l’enregistrement » vous laisse réécouter puis programmer l’émission.</div>}
+          {recMode && <div className="mb-4 rounded border-2 border-orange-400 bg-orange-50 p-3 text-sm text-night"><b>⏺ Mode brouillon : rien n’est diffusé.</b> Les auditeurs et la grille de la radio continuent normalement. Tout le studio marche comme en direct : micro, chansons qui s’enchaînent, bruitages, effets, invités du plateau (lien à gauche). « Pause » arrête l’enregistrement le temps d’une coupure ; « Terminer le brouillon » vous laisse réécouter puis programmer l’émission.</div>}
+          {!onAir && (
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+              <button type="button" onClick={() => void goLive()} disabled={busy} className="rounded border-2 border-red-600 bg-red-50 p-4 text-left hover:bg-red-100 disabled:opacity-60">
+                <span className="flex items-center gap-2 text-lg font-bold text-red-700"><Radio className="h-5 w-5" />1. Passer en direct</span>
+                <span className="mt-1 block text-sm text-night/75">Tout de suite à l’antenne : les auditeurs vous entendent, les appels sont ouverts, YouTube/Facebook si la clé est mise.</span>
+              </button>
+              <button type="button" onClick={() => void goLive(false, true)} disabled={busy} className="rounded border-2 border-orange-500 bg-orange-50 p-4 text-left hover:bg-orange-100 disabled:opacity-60">
+                <span className="flex items-center gap-2 text-lg font-bold text-orange-700"><Circle className="h-5 w-5 fill-orange-500 text-orange-500" />2. Mode brouillon</span>
+                <span className="mt-1 block text-sm text-night/75">Le même studio avec toutes ses options, mais rien n’est diffusé et la radio continue ses programmes. À la fin : réécouter, enregistrer, programmer.</span>
+              </button>
+            </div>
+          )}
           {lastRec && !onAir && <div className="mb-4"><RecordingPanel draft={lastRec.draft} rec={lastRec.rec} title={lastRec.title} topic={lastRec.topic} onClose={() => setLastRec(null)} /></div>}
           {!onAir && <div className="mb-4"><SavedDrafts /></div>}
           <div className="grid gap-4 xl:grid-cols-2">
@@ -866,7 +1177,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                       <option value="">Micro par défaut</option>
                       {mics.map((m, i) => <option key={m.deviceId || i} value={m.deviceId}>{m.label || `Micro ${i + 1}`}</option>)}
                     </select></td></tr>
-                  <tr><td className={lbl}>Appels des auditeurs</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={calls} disabled={onAir} onChange={(e) => setCalls(e.currentTarget.checked)} /> Accepter les appels</label></td></tr>
+                  <tr><td className={lbl}>Appels des auditeurs</td><td className={td}>{callSwitch(false)}</td></tr>
                   <tr><td className={lbl}>Enregistrement</td><td className={td}><label className="inline-flex items-center gap-2"><input type="checkbox" checked={recOn} disabled={onAir} onChange={(e) => toggleRec(e.currentTarget.checked)} /> Enregistrer l’émission (téléchargement, rediffusion)</label></td></tr>
                   <tr><td className={lbl}>Animateur</td><td className={td}>{who || '—'}</td></tr>
                 </tbody></table>
@@ -879,7 +1190,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
 
               {progBox(true)}
-              <Section title="Musique de fond" action={<label className={fileBtn}><Music2 className="mr-1 inline h-3 w-3" />+ morceaux<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label>}>
+              <Section title="Musique de fond" action={<span className="flex gap-1.5"><SiteSongsPicker onAdd={addSiteSongs} have={tracks.map((t) => t.url)} /><label className={fileBtn}><Music2 className="mr-1 inline h-3 w-3" />+ fichiers<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { addMusic(e.target.files); e.currentTarget.value = ''; }} /></label></span>}>
                 <table className="w-full"><thead><tr><th className={th + ' w-10'}>N°</th><th className={th}>Morceau</th><th className={th + ' w-24'}>État</th><th className={th + ' w-8'} /></tr></thead>
                   <tbody>
                     {!tracks.length && <tr><td colSpan={4} className={td + ' text-center text-ink/55'}>Aucun morceau. Cliquez sur « + morceaux » (plusieurs à la fois) : ils passent à tour de rôle.</td></tr>}
@@ -890,7 +1201,10 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                           <td className={td + ' text-center text-ink/60'}>{i + 1}</td>
                           <td className={td}><button type="button" className="w-full truncate text-left hover:underline" onClick={() => { if (onAir) { setMusicOn(true); playTrack(i); } }} title={onAir ? 'Jouer ce morceau' : t.name}>{t.name}</button></td>
                           <td className={td + ` text-center text-xs font-semibold ${playing ? 'text-emerald-700' : 'text-ink/45'}`}>{playing ? '▶ En cours' : 'En attente'}</td>
-                          <td className={td + ' text-center'}><button type="button" onClick={() => removeTrack(i)} className="text-ink/40 hover:text-red-600" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button></td>
+                          <td className={td + ' whitespace-nowrap text-center'}>
+                            <button type="button" onClick={() => cue(t.url)} className={`mr-1 ${cueUrl === t.url ? 'text-gold-700' : 'text-ink/40 hover:text-night'}`} aria-label={`Pré-écouter ${t.name} au casque`} title="Pré-écoute au casque (pas à l’antenne)"><Headphones className="h-3.5 w-3.5" /></button>
+                            <button type="button" onClick={() => removeTrack(i)} className="text-ink/40 hover:text-red-600" aria-label={`Retirer ${t.name}`}><X className="h-3.5 w-3.5" /></button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -902,6 +1216,12 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                   </>}
                   <label className="ml-auto flex items-center gap-2 text-xs font-semibold text-[#2b3648]">Volume<input type="range" min={0} max={1} step={0.05} value={musicVol} onChange={(e) => setMusicVol(Number(e.target.value))} /></label>
                 </div>
+                <button type="button" onClick={toggleFondu} aria-pressed={fondu} className={'mt-2 mr-2 rounded px-3 py-1.5 text-xs font-semibold ' + (fondu ? 'bg-gold/30 text-night' : 'border border-[#d3dae3] text-ink/60')}>
+                  〰️ Fondu enchaîné : {fondu ? 'oui' : 'non'}
+                </button>
+                <button type="button" onClick={toggleDuck} aria-pressed={autoDuck} className={'mt-2 rounded px-3 py-1.5 text-xs font-semibold ' + (autoDuck ? 'bg-gold/30 text-night' : 'border border-[#d3dae3] text-ink/60')}>
+                  🎚️ Baisse auto quand je parle : {autoDuck ? 'oui' : 'non'}{autoDuck && ducking ? ' · musique baissée' : ''}
+                </button>
               </Section>
             </div>
 
@@ -909,7 +1229,7 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               <Section title="Effets sur la voix">
                 <table className="w-full"><thead><tr><th className={th}>Effet</th><th className={th}>État</th></tr></thead>
                   <tbody>
-                    {([['echo', 'Écho'], ['reverb', 'Réverbération'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
+                    {([['pro', 'Voix pro (studio)'], ['echo', 'Écho'], ['reverb', 'Réverbération'], ['radio', 'Voix radio']] as [VoiceFx, string][]).map(([k, l]) => (
                       <tr key={k}><td className={td}>{l}</td><td className={td + ' text-center'}>
                         <button type="button" onClick={() => toggleVoiceFx(k)} aria-pressed={voiceFx[k]} disabled={!onAir}
                           className={`rounded px-3 py-0.5 text-xs font-semibold ${voiceFx[k] ? 'bg-emerald-600 text-white' : 'border border-[#d3dae3] text-night'} disabled:opacity-40`}>{voiceFx[k] ? 'Activé' : 'Désactivé'}</button>
@@ -919,14 +1239,22 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
               </Section>
 
               <Section title="Bruitages" action={<label className={fileBtn}>+ bruitage<input type="file" accept="audio/*" multiple className="sr-only" onChange={(e) => { const f = Array.from(e.target.files ?? []); setMyPads((l) => [...l, ...f.map((file) => ({ name: file.name.replace(/\.[^.]+$/, ''), buf: null, file }))]); e.currentTarget.value = ''; }} /></label>}>
+                <button type="button" onClick={() => { setCueMode((v) => !v); cueEl.current?.pause(); setCueUrl(''); }} aria-pressed={cueMode} className={'m-2 inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-semibold ' + (cueMode ? 'bg-sky-600 text-white' : 'border border-[#d3dae3] text-night')}>
+                  <Headphones className="h-3.5 w-3.5" />{cueMode ? 'Pré-écoute au casque active : rien ne part à l’antenne' : 'Pré-écouter les génériques et bruitages au casque'}
+                </button>
                 <div className="grid grid-cols-2 gap-px bg-[#d3dae3] sm:grid-cols-4">
                   {PADS.map((p) => (
                     <button key={p.id} type="button" disabled={!onAir} onClick={() => firePad(p.id)} className="bg-white px-2 py-3 text-center text-xs font-semibold text-night hover:bg-[#eef2f6] active:bg-[#dfe5ec] disabled:opacity-50">
                       <span className="block text-xl" aria-hidden>{p.emoji}</span>{p.label}
                     </button>
                   ))}
+                  {GENERIQUES.map((g) => (
+                    <button key={g.url} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(g.url) : void fireGenerique(g.url))} className="truncate bg-gold/30 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/40 disabled:opacity-50" title={`Générique : ${g.name}`}>
+                      <span className="block text-xl" aria-hidden>🎬</span>{g.name}
+                    </button>
+                  ))}
                   {myPads.map((p, i) => (
-                    <button key={i} type="button" disabled={!onAir} onClick={() => void fireMyPad(i)} className="truncate bg-gold/20 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/30 disabled:opacity-50" title={p.name}>
+                    <button key={i} type="button" disabled={!onAir && !cueMode} onClick={() => (cueMode ? cue(padUrl(i)) : void fireMyPad(i))} className="truncate bg-gold/20 px-2 py-3 text-center text-xs font-semibold text-night hover:bg-gold/30 disabled:opacity-50" title={p.name}>
                       <span className="block text-xl" aria-hidden>🔊</span>{p.name}
                     </button>
                   ))}
@@ -934,7 +1262,14 @@ export default function AdminRadioAntenne({ variant = 'colmatage' }: { variant?:
                 <label className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#2b3648]">Volume des bruitages<input type="range" min={0} max={1.5} step={0.05} value={fxVol} onChange={(e) => setFxVol(Number(e.target.value))} className="flex-1" /></label>
               </Section>
 
+              {onAir && <Conduite title={title} />}
+              <Souffleur title={title} topic={topic} />
+              <DedicacesPanel />
               <YouTubeChat />
+              <RadioStats />
+              <JournalAntenne />
+              <Charte />
+              <Secours />
 
               <Section title="YouTube et Facebook">
                 <table className="w-full"><thead><tr><th className={th + ' w-28'}>Destination</th><th className={th}>Clé de stream</th></tr></thead>

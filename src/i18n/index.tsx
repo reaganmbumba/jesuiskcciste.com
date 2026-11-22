@@ -49,14 +49,17 @@ function readStoredLocale(): Locale | null {
   return null;
 }
 
+/** Le site s'ouvre toujours en français ; l'anglais et le portugais restent au choix du visiteur. */
 function browserLocale(): Locale {
-  const l = (typeof navigator !== 'undefined' ? navigator.language : 'fr').slice(0, 2);
-  return l === 'en' || l === 'pt' ? l : 'fr';
+  return 'fr';
 }
+
+/** Applications de la radio (auditeurs, Studio) : toujours en français, sans choix de langue. */
+const frenchOnly = () => typeof window !== 'undefined' && /^\/radio\/(app|studio|plateau)/.test(window.location.pathname);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [stored] = useState(readStoredLocale);
-  const [locale, setLocaleState] = useState<Locale>(() => stored ?? browserLocale());
+  const [locale, setLocaleState] = useState<Locale>(() => (frenchOnly() ? 'fr' : stored ?? browserLocale()));
   const [chosen, setChosen] = useState(stored !== null);
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);

@@ -36,7 +36,13 @@ export interface RadioItem {
   url: string;
   durationSeconds: number | null;
   imageUrl: string | null;
+  /** Date d'ajout dans le système : les audios récents passent plus souvent. */
+  addedAt?: string;
 }
+
+/** Ajouté depuis moins de `RECENT_DAYS` jours (par rapport à `now`). */
+export const RECENT_DAYS = 14;
+export const isRecent = (i: RadioItem, now: number) => !!i.addedAt && now - new Date(i.addedAt).getTime() < RECENT_DAYS * 86_400_000 && new Date(i.addedAt).getTime() <= now;
 
 export interface RadioLive {
   /** Adresse https du flux audio (ex. https://stream.zeno.fm/abc123). */
@@ -54,6 +60,10 @@ export interface RadioLive {
   calls: boolean;
   /** Sujet de l'émission écrit par l'animateur, affiché aux auditeurs pendant le direct. */
   topic: string;
+  /** Dernier signe de vie du Studio (toutes les 30 s pendant un direct du site). */
+  beat?: string;
+  /** Où vont les appels des auditeurs : la régie du Studio, ou le WhatsApp de la radio (callUrl). */
+  callMode?: 'regie' | 'whatsapp';
   /** Nom de l'animateur à l'antenne (pour ne pas lancer deux directs en même temps). */
   host?: string;
 }
@@ -72,6 +82,33 @@ export interface RadioSettings {
   live: RadioLive;
   /** Émissions enregistrées à l'avance, diffusées seules à l'heure prévue (même ordinateur éteint). */
   programmes: RadioProgramme[];
+  /** Grille type de la semaine : la base remplit seule les 7 prochains jours chaque nuit. */
+  semaine: RadioSlot[];
+}
+
+/** Créneau de la grille type. jours : 1 = lundi … 7 = dimanche. */
+export interface RadioSlot {
+  id: string;
+  jours: number[];
+  heure: string;
+  source: 'fichier' | 'predication' | 'emission';
+  titre?: string;
+  url?: string;
+  durationSeconds?: number;
+}
+
+export function parseSemaine(raw: unknown): RadioSlot[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((x): RadioSlot[] => {
+    const o = x as Partial<RadioSlot>;
+    if (!o || typeof o.heure !== 'string' || !/^\d{2}:\d{2}$/.test(o.heure)) return [];
+    if (o.source !== 'fichier' && o.source !== 'predication' && o.source !== 'emission') return [];
+    const jours = Array.isArray(o.jours) ? o.jours.filter((d) => Number.isInteger(d) && d >= 1 && d <= 7) : [];
+    if (!jours.length) return [];
+    return [{ id: String(o.id ?? ''), jours, heure: o.heure, source: o.source,
+      ...(o.titre ? { titre: String(o.titre) } : {}),
+      ...(o.source === 'fichier' && typeof o.url === 'string' ? { url: o.url, durationSeconds: Number(o.durationSeconds) || 0 } : {}) }];
+  }).sort((a, b) => a.heure.localeCompare(b.heure));
 }
 
 /** Émission programmée : un fichier audio qui passe à l'antenne à une date et une heure fixées. */
@@ -87,7 +124,7 @@ export interface RadioProgramme {
 }
 
 export const defaultRadioLive: RadioLive = { url: '', title: '', onAir: false, startedAt: null, callUrl: '', rtc: '', calls: false, topic: '' };
-export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive, programmes: [] };
+export const defaultRadioSettings: RadioSettings = { songs: true, sermons: true, news: true, vocals: true, vocalWhatsapp: '', excluded: [], live: defaultRadioLive, programmes: [], semaine: [] };
 
 /** Un direct oublié s'arrête seul au bout de 6 h. */
 export const LIVE_MAX_HOURS = 6;
@@ -127,8 +164,13 @@ export function newCallRoomUrl(domain = 'meet.jit.si', random: () => number = Ma
 }
 
 /** Le direct est-il à l'antenne en ce moment ? */
+/** Délai sans « battement » du Studio après lequel un direct est considéré comme tombé. */
+export const LIVE_BEAT_TIMEOUT_MS = 150_000;
+
 export function isLiveOn(live: RadioLive, now = new Date()): boolean {
   if (!live.onAir || !(live.url || live.rtc)) return false;
+  // Direct du Studio sans signe de vie depuis 2 min 30 : l'animateur a été coupé, la radio reprend.
+  if (live.rtc && live.beat) { const b = new Date(live.beat).getTime(); if (!Number.isNaN(b) && now.getTime() - b > LIVE_BEAT_TIMEOUT_MS) return false; }
   if (!live.startedAt) return true;
   const started = new Date(live.startedAt).getTime();
   return Number.isNaN(started) || now.getTime() - started < LIVE_MAX_HOURS * 3600000;
@@ -159,8 +201,11 @@ export function radioSettingsOf(settings: Pick<SiteSettings, 'radio'> | null | u
       calls: l.calls === true,
       topic: typeof l.topic === 'string' ? l.topic.slice(0, 3000) : '',
       ...(typeof l.host === 'string' && l.host ? { host: l.host.slice(0, 80) } : {}),
+      ...(typeof l.beat === 'string' && l.beat ? { beat: l.beat } : {}),
+      ...(l.callMode === 'whatsapp' || l.callMode === 'regie' ? { callMode: l.callMode } : {}),
     },
     programmes: parseProgrammes((r as { programmes?: unknown } | undefined)?.programmes),
+    semaine: parseSemaine((r as { semaine?: unknown } | undefined)?.semaine),
   };
 }
 
@@ -237,13 +282,13 @@ export function currentNews(list: Journal[] = JOURNAUX, now = new Date()): Radio
 
 export function songItem(t: Track, artistName?: string): RadioItem | null {
   if (!t.audioUrl || t.broadcastRights !== 'authorized') return null;
-  return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null };
+  return { key: songKey(t.id), kind: 'song', title: t.title, subtitle: artistName || t.author || '', url: t.audioUrl, durationSeconds: t.durationSeconds || null, imageUrl: null, ...(t.createdAt ? { addedAt: t.createdAt } : {}) };
 }
 
 export function sermonItem(s: AudioSermon): RadioItem | null {
   if (!s.audioUrl || !s.published) return null;
   const who = [s.preacherTitle, s.preacherName].filter(Boolean).join(' ');
-  return { key: sermonKey(s.id), kind: 'sermon', title: s.title, subtitle: [who, s.parish].filter(Boolean).join(' · '), url: s.audioUrl, durationSeconds: s.durationSeconds ?? null, imageUrl: s.preacherPhotoUrl ?? null };
+  return { key: sermonKey(s.id), kind: 'sermon', title: s.title, subtitle: [who, s.parish].filter(Boolean).join(' · '), url: s.audioUrl, durationSeconds: s.durationSeconds ?? null, imageUrl: s.preacherPhotoUrl ?? null, ...(s.createdAt ? { addedAt: s.createdAt } : {}) };
 }
 
 export function vocalItem(v: RadioVocal): RadioItem | null {
@@ -313,9 +358,21 @@ export function shuffle<T>(list: T[], random: () => number = Math.random): T[] {
  * Les vocaux des auditeurs passent un par un, après chaque série.
  * `avoidFirst` : le dernier titre joué, pour ne pas l'entendre deux fois de suite.
  */
-export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null): RadioItem[] {
-  const songs = shuffle(items.filter((i) => i.kind === 'song'), random);
-  const talks = shuffle(items.filter((i) => i.kind === 'sermon'), random);
+/** Les audios récents passent deux fois par tour : la seconde fois, environ un demi-tour plus tard. */
+function twice(list: RadioItem[], recent?: (i: RadioItem) => boolean): RadioItem[] {
+  if (!recent || list.length < 2) return list;
+  const out = [...list];
+  list.forEach((x) => {
+    if (!recent(x)) return;
+    const at = Math.min(out.length, out.indexOf(x) + Math.max(2, Math.floor(list.length / 2)));
+    out.splice(at, 0, x);
+  });
+  return out;
+}
+
+export function buildRound(items: RadioItem[], random: () => number = Math.random, avoidFirst?: string | null, recent?: (i: RadioItem) => boolean): RadioItem[] {
+  const songs = twice(shuffle(items.filter((i) => i.kind === 'song'), random), recent);
+  const talks = twice(shuffle(items.filter((i) => i.kind === 'sermon'), random), recent);
   const news = items.filter((i) => i.kind === 'news');
   const voices = shuffle(items.filter((i) => i.kind === 'vocal'), random);
   const out: RadioItem[] = [...news];

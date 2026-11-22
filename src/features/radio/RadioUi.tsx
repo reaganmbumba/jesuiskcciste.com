@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, X } from 'lucide-react';
+import { CalendarClock, MessageCircle, Mic, Music2, Newspaper, Pause, Phone, Play, Radio, X } from 'lucide-react';
+import { PUBLIC_SITE_URL } from '@/config/site';
 import { useI18n } from '@/i18n';
 import { cn } from '@/utils/format';
 import { useRadio } from './RadioContext';
@@ -9,6 +10,103 @@ import { useRadioListeners } from './listeners';
 import type { RadioItem } from './radio';
 
 export const RADIO_NAME = 'Radio Je suis KCCiste';
+// « ?ecouter » : nouvelle adresse pour WhatsApp, qui garde longtemps l’ancien aperçu de /radio
+export const RADIO_URL = `${PUBLIC_SITE_URL}/radio?ecouter`;
+
+/**
+ * « Inviter quelqu'un à écouter » : partage du lien de la radio sans jamais quitter la page,
+ * pour que la radio continue de jouer (feuille de partage du téléphone, ou WhatsApp /
+ * Facebook dans une nouvelle fenêtre, ou lien copié).
+ */
+type Tx = (fr: string, en: string, pt: string) => string;
+const at = (iso: string) => new Date(iso).toLocaleTimeString('fr-FR', { timeZone: 'Africa/Kinshasa', hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+
+/** Le message partagé nomme ce qu'on écoute en ce moment, et l'émission suivante. */
+export function shareRadioText(tx: Tx, current: Pick<RadioItem, 'kind' | 'title' | 'subtitle'> | null, onLive: boolean, programmes: { title: string; startsAt: string }[] = [], now = Date.now()): string {
+  const by = current?.subtitle ? ` (${current.subtitle})` : '';
+  const now1 = !current ? tx(`J’écoute ${RADIO_NAME}.`, `I’m listening to ${RADIO_NAME}.`, `Estou a ouvir a ${RADIO_NAME}.`)
+    : onLive ? tx(`J’écoute l’émission « ${current.title} » en ce moment sur ${RADIO_NAME}.`, `I’m listening to “${current.title}” right now on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}» agora na ${RADIO_NAME}.`)
+    : current.kind === 'sermon' ? tx(`J’écoute la prédication « ${current.title} »${by} sur ${RADIO_NAME}.`, `I’m listening to the sermon “${current.title}”${by} on ${RADIO_NAME}.`, `Estou a ouvir a pregação «${current.title}»${by} na ${RADIO_NAME}.`)
+    : current.kind === 'song' ? tx(`J’écoute le chant « ${current.title} »${by} sur ${RADIO_NAME}.`, `I’m listening to “${current.title}”${by} on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}»${by} na ${RADIO_NAME}.`)
+    : tx(`J’écoute « ${current.title} » sur ${RADIO_NAME}.`, `I’m listening to “${current.title}” on ${RADIO_NAME}.`, `Estou a ouvir «${current.title}» na ${RADIO_NAME}.`);
+  const next = programmes.filter((p) => new Date(p.startsAt).getTime() > now && (!onLive || p.title !== current?.title)).sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  const then = next ? ' ' + tx(`Prochaine émission : « ${next.title} » à ${at(next.startsAt)}.`, `Next show: “${next.title}” at ${at(next.startsAt)}.`, `Próxima emissão: «${next.title}» às ${at(next.startsAt)}.`) : '';
+  return `${now1}${then} ${tx('Écoutez avec moi, c’est gratuit :', 'Listen with me, it’s free:', 'Ouça comigo, é grátis:')}`;
+}
+
+export function ShareRadioButton({ className, compact }: { className?: string; compact?: boolean }) {
+  const { tx } = useI18n();
+  const { current, onLive, active, programmes } = useRadio();
+  const text = shareRadioText(tx, active ? current : null, onLive, programmes);
+  // Nouvelle fenêtre : la page de la radio reste ouverte et continue de jouer.
+  const links = [
+    { name: 'WhatsApp', href: `https://wa.me/?text=${encodeURIComponent(`${text} ${RADIO_URL}`)}`, icon: <MessageCircle className="h-3.5 w-3.5" aria-hidden />, color: 'bg-[#25D366] text-white hover:bg-[#1ebe5b]' },
+    { name: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(RADIO_URL)}&quote=${encodeURIComponent(text)}`, icon: <span className="text-xs font-bold leading-none" aria-hidden>f</span>, color: 'bg-[#1877F2] text-white hover:bg-[#0f63d6]' },
+  ];
+  if (compact) {
+    return (
+      <>
+        {links.map((l) => (
+          <a key={l.name} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={tx(`Partager la radio sur ${l.name}`, `Share the radio on ${l.name}`, `Partilhar a rádio no ${l.name}`)}
+            className={cn('grid h-7 w-7 shrink-0 place-items-center rounded-full', l.color)}>{l.icon}</a>
+        ))}
+      </>
+    );
+  }
+  return (
+    <div className={cn('flex items-center justify-center gap-2 text-xs', className)}>
+      <span className="text-white/55">{tx('Partager :', 'Share:', 'Partilhar:')}</span>
+      {links.map((l) => (
+        <a key={l.name} href={l.href} target="_blank" rel="noopener noreferrer"
+          className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold', l.color)}>
+          {l.icon}{l.name}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Le programme bien en vue, sous le bouton « Écouter » : l'émission en cours et les
+ * suivantes avec leur heure, en grand, pour que chacun le voie sans rien toucher.
+ */
+export function RadioProgrammeList({ className, light }: { className?: string; light?: boolean }) {
+  const { tx } = useI18n();
+  const { programmes } = useRadio();
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(t); }, []);
+  const list = [...programmes]
+    .filter((p) => new Date(p.startsAt).getTime() + p.durationSeconds * 1000 > now && new Date(p.startsAt).getTime() < now + 36 * 3600_000)
+    .sort((x, y) => x.startsAt.localeCompare(y.startsAt)).slice(0, 4);
+  const today = new Date(now).toLocaleDateString('fr-CA', { timeZone: 'Africa/Kinshasa' });
+  const c = light
+    ? { box: 'rounded-3xl border border-night/[0.06] bg-white p-5 text-night shadow-soft', sub: 'text-ink/55', row: 'bg-night/[0.04]', on: 'bg-gold/15 ring-2 ring-gold', time: 'text-gold-700' }
+    : { box: 'rounded-3xl border border-gold/25 bg-white/[0.05] p-4 text-left text-white', sub: 'text-white/55', row: 'bg-white/[0.05]', on: 'bg-gold/15 ring-2 ring-gold', time: 'text-gold-300' };
+  return (
+    <section className={cn(c.box, className)} aria-label={tx('Programme de la radio', 'Radio programme', 'Programa da rádio')}>
+      <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider"><CalendarClock className="h-4 w-4 text-gold" aria-hidden />{tx('Au programme', 'On the programme', 'No programa')}</p>
+      {list.length ? (
+        <ol className="mt-3 space-y-2">
+          {list.map((p) => {
+            const s = new Date(p.startsAt).getTime(), live = s <= now;
+            const day = new Date(s).toLocaleDateString('fr-CA', { timeZone: 'Africa/Kinshasa' });
+            return (
+              <li key={p.id} className={cn('flex items-center gap-3 rounded-2xl px-3 py-2.5', live ? c.on : c.row)}>
+                <span className={cn('w-16 shrink-0 text-lg font-bold tabular-nums', c.time)}>
+                  {day !== today && <span className="block text-[10px] font-semibold uppercase leading-none">{tx('Demain', 'Tomorrow', 'Amanhã')}</span>}
+                  {at(p.startsAt)}
+                </span>
+                <span className="min-w-0 flex-1 text-[15px] font-semibold leading-snug">{p.title}</span>
+                {live && <span className="shrink-0 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">{tx('En cours', 'Now', 'Agora')}</span>}
+              </li>
+            );
+          })}
+        </ol>
+      ) : <p className={cn('mt-2 text-sm', c.sub)}>{tx('Chants et prédications toute la journée.', 'Songs and sermons all day.', 'Cânticos e pregações todo o dia.')}</p>}
+      <p className={cn('mt-3 text-xs', c.sub)}>{tx('Heure de Kinshasa. Entre les émissions : chants et prédications.', 'Kinshasa time. Between shows: songs and sermons.', 'Hora de Kinshasa. Entre as emissões: cânticos e pregações.')}</p>
+    </section>
+  );
+}
 
 export function KindIcon({ item, className }: { item: Pick<RadioItem, 'kind'>; className?: string }) {
   const Icon = item.kind === 'live' ? Radio : item.kind === 'sermon' ? Mic : item.kind === 'news' ? Newspaper : item.kind === 'vocal' ? MessageCircle : Music2;
@@ -52,8 +150,17 @@ export function ListenerCount({ light = true, compact, className }: { light?: bo
  */
 export function CallShowButton({ className }: { className?: string }) {
   const { tx } = useI18n();
-  const { callUrl, siteCalls, stop } = useRadio();
+  const { callUrl, siteCalls, whatsappCall, stop } = useRadio();
   const [open, setOpen] = useState(false);
+  if (whatsappCall) {
+    // Appels dirigés vers le WhatsApp de la radio : nouvelle fenêtre, la radio continue de jouer
+    return (
+      <a href={whatsappCall} target="_blank" rel="noopener noreferrer"
+        className={cn('inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1ebe5b]', className)}>
+        <Phone className="h-4 w-4" aria-hidden />{tx('Appeler la radio', 'Call the radio', 'Ligar para a rádio')}
+      </a>
+    );
+  }
   if (siteCalls) {
     return (
       <>
@@ -100,6 +207,7 @@ export function MiniRadioPlayer() {
         <button type="button" onClick={toggle} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold text-night hover:bg-gold-300" aria-label={playing ? tx('Pause', 'Pause', 'Pausa') : tx('Écouter', 'Play', 'Ouvir')}>
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
         </button>
+        <ShareRadioButton compact />
         <button type="button" onClick={stop} className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white" aria-label={tx('Fermer la radio', 'Close the radio', 'Fechar a rádio')}><X className="h-4 w-4" /></button>
       </div>
       {!onLive && <div className="h-0.5 bg-white/10" aria-hidden><div className="h-full bg-gold transition-[width] duration-500" style={{ width: `${pct}%` }} /></div>}

@@ -31,6 +31,7 @@ const CallingPage = lazy(() => import('@/pages/public/CallingPage'));
 const ProphetWordsPage = lazy(() => import('@/pages/public/ProphetWordsPage'));
 const KccismeBookPage = lazy(() => import('@/pages/public/KccismeBookPage'));
 const CivilRecognitionPage = lazy(() => import('@/pages/public/CivilRecognitionPage'));
+const ChurchHistoryPage = lazy(() => import('@/pages/public/ChurchHistoryPage'));
 const ProphetTourPage = lazy(() => import('@/pages/public/ProphetTourPage'));
 const SermonsPage = lazy(() => import('@/pages/public/SermonsPage'));
 const GalleryPage = lazy(() => import('@/pages/public/GalleryPage'));
@@ -205,6 +206,7 @@ export function AppRoutes() {
         <Route path="appel-du-prophete" element={<CallingPage />} />
         <Route path="paroles-du-prophete" element={<ProphetWordsPage />} />
         <Route path="livre-kccisme" element={<KccismeBookPage />} />
+        <Route path="histoire" element={<ChurchHistoryPage />} />
         <Route path="histoire/reconnaissance-juridique" element={<CivilRecognitionPage />} />
         <Route path="predications/tournee-bas-congo-2012" element={<ProphetTourPage />} />
         <Route path="predications" element={<SermonsPage />} />

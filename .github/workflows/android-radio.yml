@@ -69,10 +69,12 @@ jobs:
           path: out/
 
       - name: Publier la version GitHub
-        if: github.ref == 'refs/heads/main'
+        # Depuis une branche de travail : version « pré-publication » (pour récupérer le fichier avant la fusion).
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ format('radio-{0}', github.run_number) }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
           name: Radio Je suis KCCiste Android ${{ env.KCC_VERSION_NAME }}
           files: |
             out/radio-je-suis-kcciste.apk

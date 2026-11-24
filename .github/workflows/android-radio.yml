@@ -63,6 +63,14 @@ jobs:
           cp $(find android/app/build/outputs/apk -name '*.apk' | head -1) out/radio-je-suis-kcciste.apk
           cp android/app/build/outputs/bundle/release/app-release.aab out/radio-je-suis-kcciste-google-play.aab
 
+      - name: Réparer la version radio-2 (studio) touchée par erreur, une seule fois
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete-asset radio-2 radio-je-suis-kcciste-google-play.aab -y -R "$GITHUB_REPOSITORY" || true
+          gh release delete-asset radio-2 radio-je-suis-kcciste.apk -y -R "$GITHUB_REPOSITORY" || true
+          gh release edit radio-2 --title "Radio Je suis KCCiste 1.0.2" --prerelease=false -R "$GITHUB_REPOSITORY" || true
+
       - uses: actions/upload-artifact@v4
         with:
           name: radio-kcc-android
@@ -72,7 +80,7 @@ jobs:
         # Depuis une branche de travail : version « pré-publication » (pour récupérer le fichier avant la fusion).
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ format('radio-{0}', github.run_number) }}
+          tag_name: ${{ format('radio-android-{0}', github.run_number) }}
           target_commitish: ${{ github.sha }}
           prerelease: ${{ github.ref != 'refs/heads/main' }}
           name: Radio Je suis KCCiste Android ${{ env.KCC_VERSION_NAME }}

@@ -8,6 +8,7 @@ import { formatDuration } from '@/utils/format';
 import { useAuth } from '@/features/auth/AuthContext';
 import { can } from '@/lib/permissions';
 import { useRadio } from '@/features/radio/RadioContext';
+import { isRadioApp } from '@/features/pwa/install';
 import { SendVocalCard } from '@/features/radio/SendVocalCard';
 import { DedicaceForm } from '@/features/radio/DedicaceForm';
 import { RadioAPropos } from '@/features/radio/RadioAPropos';
@@ -23,12 +24,15 @@ export default function RadioPage() {
   const sermons = r.items.filter((i) => i.kind === 'sermon').length;
   const pct = r.duration > 0 ? Math.min(100, (r.time / r.duration) * 100) : 0;
 
+  // Dans l'application Radio, le lecteur s'affiche tout en haut, sans le grand bandeau de présentation.
+  const radioApp = isRadioApp();
+
   return (
     <div>
-      <PageHeader eyebrow={tx('Médias', 'Media', 'Média')} title={RADIO_NAME}
+      {!radioApp && <PageHeader eyebrow={tx('Médias', 'Media', 'Média')} title={RADIO_NAME}
         description={tx('Les chants et les prédications de la communauté en continu, comme à la radio : tous les auditeurs entendent la même chose au même moment, toute la journée. L’écoute continue pendant que vous visitez le site.', 'The community’s songs and sermons non-stop, just like the radio: every listener hears the same thing at the same moment, all day long. Listening goes on while you browse the site.', 'Os cânticos e as pregações da comunidade sem parar, como na rádio: todos os ouvintes ouvem a mesma coisa ao mesmo tempo, o dia todo. A escuta continua enquanto navega no site.')}>
         {can(profile, 'settings.manage') && <Link to="/admin/radio" className="inline-flex items-center gap-2 rounded-xl border border-white/30 px-4 py-2 text-sm font-semibold hover:bg-white/10"><Settings2 className="h-4 w-4" />{tx('Régler la radio', 'Radio settings', 'Configurar a rádio')}</Link>}
-      </PageHeader>
+      </PageHeader>}
 
       <section className="container-page grid gap-8 py-10 lg:grid-cols-5">
         <div className="lg:col-span-3">

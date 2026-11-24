@@ -1,0 +1,81 @@
+name: Application Android Radio
+
+# Deuxième application Google Play : « Radio Je suis KCCiste » (com.jesuiskcciste.radio).
+# Même site, même clé d'importation que l'application principale, mais elle s'ouvre directement sur /radio.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android/radio/**'
+      - '.github/workflows/android-radio.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KCC_APP: radio
+      KCC_VERSION_CODE: ${{ github.run_number }}
+      KCC_VERSION_NAME: ${{ format('1.0.{0}', github.run_number) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npx cap sync android
+
+      - name: Icône et nom de la Radio
+        run: |
+          cp -r android/radio/res/. android/app/src/main/res/
+          grep -q '"appId": "com.jesuiskcciste.radio"' android/app/src/main/assets/capacitor.config.json
+          grep -q 'jesuiskcciste.com/radio' android/app/src/main/assets/capacitor.config.json
+
+      - name: Préparer la clé de signature
+        env:
+          KCC_KEYSTORE_PASSWORD: ${{ secrets.KCC_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KCC_KEYSTORE_PASSWORD" ]; then echo "::error::Secret KCC_KEYSTORE_PASSWORD absent"; exit 1; fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in android/kcc-upload.jks.enc \
+            -out "$RUNNER_TEMP/kcc.jks" -pass env:KCC_KEYSTORE_PASSWORD
+          echo "KCC_KEYSTORE_PATH=$RUNNER_TEMP/kcc.jks" >> "$GITHUB_ENV"
+
+      - name: Construire APK et AAB
+        working-directory: android
+        env:
+          KCC_KEYSTORE_PASSWORD: ${{ secrets.KCC_KEYSTORE_PASSWORD }}
+          KCC_KEY_ALIAS: kcc-upload
+          KCC_KEY_PASSWORD: ${{ secrets.KCC_KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease
+
+      - name: Rassembler les fichiers
+        run: |
+          mkdir -p out
+          cp $(find android/app/build/outputs/apk -name '*.apk' | head -1) out/radio-je-suis-kcciste.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab out/radio-je-suis-kcciste-google-play.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: radio-kcc-android
+          path: out/
+
+      - name: Publier la version GitHub
+        # Depuis une branche de travail : version « pré-publication » (pour récupérer le fichier avant la fusion).
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ format('radio-android-{0}', github.run_number) }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          name: Radio Je suis KCCiste Android ${{ env.KCC_VERSION_NAME }}
+          files: |
+            out/radio-je-suis-kcciste.apk
+            out/radio-je-suis-kcciste-google-play.aab

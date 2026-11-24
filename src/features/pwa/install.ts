@@ -45,6 +45,11 @@ export function isAndroidApp(ua = typeof navigator !== 'undefined' ? navigator.u
   return /KCCisteApp/.test(ua);
 }
 
+/** Vrai dans la deuxième application Android, « Radio Je suis KCCiste » (com.jesuiskcciste.radio). */
+export function isRadioApp(ua = typeof navigator !== 'undefined' ? navigator.userAgent : '') {
+  return /KCCisteRadio/.test(ua);
+}
+
 export function useInstallApp() {
   const [, force] = useState(0);
   useEffect(() => {

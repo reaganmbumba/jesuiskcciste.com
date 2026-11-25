@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.view.WindowInsets;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -42,6 +43,15 @@ public class MainActivity extends Activity {
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#0b0e16"));
         setContentView(web);
+        // Android 15+ affiche l'application bord à bord : on garde la page hors de la barre d'état,
+        // de la barre de navigation et du clavier.
+        if (Build.VERSION.SDK_INT >= 30) {
+            web.setOnApplyWindowInsetsListener((v, insets) -> {
+                android.graphics.Insets b = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.ime() | WindowInsets.Type.displayCutout());
+                v.setPadding(b.left, b.top, b.right, b.bottom);
+                return WindowInsets.CONSUMED;
+            });
+        }
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);

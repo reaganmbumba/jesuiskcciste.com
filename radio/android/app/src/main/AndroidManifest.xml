@@ -12,8 +12,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Alarme exacte : SCHEDULE_EXACT_ALARM (l'utilisateur l'autorise) et non USE_EXACT_ALARM, réservée par
+         Google Play aux applications de réveil. Sans autorisation, l'alarme sonne à quelques minutes près. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:label="@string/app_name"

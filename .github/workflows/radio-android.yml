@@ -53,18 +53,35 @@ jobs:
           ./gradlew --no-daemon assembleDebug
           mkdir -p ../out
           cp app/build/outputs/apk/debug/*.apk ../out/KCC-Radio.apk
+      # Google Play : même application en .aab, signée avec la clé d'importation de l'application principale
+      # (android/kcc-upload.jks.enc + secret KCC_KEYSTORE_PASSWORD). Numéro de version 100 + N, toujours
+      # plus grand que les envois précédents sur Google Play.
+      - name: Construire l'AAB Google Play
+        working-directory: radio/android
+        env:
+          KCC_KEYSTORE_PASSWORD: ${{ secrets.KCC_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KCC_KEYSTORE_PASSWORD" ]; then echo "::warning::Secret KCC_KEYSTORE_PASSWORD absent : pas d'AAB."; exit 0; fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in ../../android/kcc-upload.jks.enc \
+            -out "$RUNNER_TEMP/kcc.jks" -pass env:KCC_KEYSTORE_PASSWORD
+          KCC_PLAY_KEYSTORE_PATH="$RUNNER_TEMP/kcc.jks" KCC_VERSION_CODE=$((100 + ${{ github.run_number }})) \
+            ./gradlew --no-daemon bundleRelease
+          cp app/build/outputs/bundle/release/app-release.aab ../out/KCC-Radio-google-play.aab
       - uses: actions/upload-artifact@v4
         with:
           name: KCC-Radio-apk
-          path: radio/out/KCC-Radio.apk
-      - if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v2
+          path: radio/out/
+      # Depuis une PR : version « pré-publication », pour récupérer les fichiers avant la fusion.
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: radio-apk-${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ github.event.pull_request.head.sha || github.sha }}
+          prerelease: ${{ github.event_name == 'pull_request' }}
           name: Radio Je suis KCCiste Android ${{ env.KCC_VERSION_NAME }}
           make_latest: false
           body: |
             Application Android des auditeurs de la Radio Je suis KCCiste : écouter le direct, lire le sujet, appeler l'émission.
             Alarme de 30 secondes avec jingle d'annonce dès qu'une émission commence.
-          files: radio/out/KCC-Radio.apk
+          files: |
+            radio/out/KCC-Radio.apk
+            radio/out/KCC-Radio-google-play.aab

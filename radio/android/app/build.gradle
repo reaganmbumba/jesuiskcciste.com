@@ -6,16 +6,26 @@ def vName = System.getenv('KCC_VERSION_NAME') ?: '1.0.0'
 
 android {
     namespace 'com.jesuiskcciste.radio'
-    compileSdk 34
+    compileSdk 36
     defaultConfig {
         applicationId 'com.jesuiskcciste.radio'
         minSdk 24
-        targetSdk 34
+        targetSdk 36
         versionCode vCode
         versionName vName
     }
     def ks = System.getenv('KCC_RADIO_KEYSTORE_PATH')
+    // Google Play (.aab) : clé d'importation de l'application principale (android/kcc-upload.jks.enc).
+    def playKs = System.getenv('KCC_PLAY_KEYSTORE_PATH')
     signingConfigs {
+        if (playKs) {
+            play {
+                storeFile file(playKs)
+                storePassword System.getenv('KCC_KEYSTORE_PASSWORD')
+                keyAlias 'kcc-upload'
+                keyPassword System.getenv('KCC_KEYSTORE_PASSWORD')
+            }
+        }
         if (ks) {
             radio {
                 storeFile file(ks)
@@ -28,6 +38,10 @@ android {
     buildTypes {
         debug {
             if (ks) signingConfig signingConfigs.radio
+        }
+        release {
+            if (playKs) signingConfig signingConfigs.play
+            minifyEnabled false
         }
     }
     compileOptions {

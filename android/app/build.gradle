@@ -5,8 +5,7 @@ android {
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         // Identifiant définitif sur Google Play (ne plus jamais le changer).
-        // KCC_APP=radio : deuxième application « Radio Je suis KCCiste » (workflow android-radio.yml).
-        applicationId(System.getenv("KCC_APP") == "radio" ? "com.jesuiskcciste.radio" : "com.jesuiskcciste.app")
+        applicationId "com.jesuiskcciste.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode((System.getenv("KCC_VERSION_CODE") ?: "1") as int)

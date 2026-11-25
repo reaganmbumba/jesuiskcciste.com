@@ -71,6 +71,7 @@ export default function RadioPage() {
             <span className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
               <Link to="/radio/rediffusions" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">⟲ Réécouter les émissions passées</Link>
               <Link to="/notifications" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">🔔 Être prévenu quand une émission commence</Link>
+              <Link to="/radio/animateurs" className="inline-flex items-center gap-2 text-sm font-semibold text-gold-300 hover:text-gold">🎙 {tx('Présenter une émission (formulaire des animateurs)', 'Host a show (host form)', 'Apresentar um programa (formulário)')}</Link>
             </span>
             <RadioProgrammeList className="mt-5" />
 

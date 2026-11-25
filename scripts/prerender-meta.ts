@@ -47,6 +47,7 @@ const PAGES: Record<string, [string, string]> = {
   '/notifications': ['Notifications sur le téléphone', 'Soyez prévenu dès qu’un culte commence en direct, qu’un communiqué paraît ou qu’une nouvelle prédication est ajoutée.'],
   '/direct': ['Cultes en direct', 'Suivez en direct les cultes et les grandes fêtes de l’Église Bon Nouveau Message sur la chaîne YouTube « Je suis KCCiste », avec le compte à rebours avant le début.'],
   '/radio': ['Radio Je suis KCCiste', 'Chants, prédications et émissions 24h/24. Appuyez sur « Écouter » : c’est gratuit, sur téléphone comme sur ordinateur.'],
+  '/radio/animateurs': ['Radio KCC : formulaire des animateurs d’émissions', 'Vous souhaitez présenter une émission sur Radio KCC, depuis chez vous ou en émission préenregistrée ? Remplissez le formulaire d’identification et de disponibilité des animateurs.'],
   '/radio/rediffusions': ['Réécouter les émissions de la radio', 'Les émissions de Radio Je suis KCCiste déjà diffusées, par rubrique : prédications, Journal KCC, Tosungana, prière.'],
   '/recensement': ['Recensement des fidèles : faites-vous compter', 'Une fiche par foyer, en 2 minutes : aidez l’Église Bon Nouveau Message (KCC) à savoir combien nous sommes par paroisse, par pays et par âge.'],
   '/memorial': ['Mémorial', 'En mémoire des fidèles de l’Église Bon Nouveau Message (KCC) rappelés à Dieu : photo, biographie et messages de condoléances à leur famille.'],
@@ -136,6 +137,7 @@ const PAGE_IMAGES: Record<string, string> = {
   '/liturgie': '/images/actualites/actes-alliance-en-ligne.jpg',
   // Aperçu du lien de la radio (WhatsApp, Facebook) : l'image de la Radio Je suis KCCiste.
   '/radio': '/images/radio/partage-radio-kcc.jpg',
+  '/radio/animateurs': '/images/radio/partage-radio-kcc.jpg',
   // La biographie la plus récente illustre la rubrique.
   '/apotres/biographies': APOSTLE_BIOGRAPHIES.find((b) => b.image)?.image ?? '',
   '/memorial': SHIPPED_MEMORIALS[0]?.photoUrl ?? '',
